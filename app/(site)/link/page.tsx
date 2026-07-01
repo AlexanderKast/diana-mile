@@ -69,19 +69,21 @@ export default async function LinkPage() {
     <div className="min-h-screen flex flex-col bg-blanco">
       <div className="w-full max-w-[480px] mx-auto flex flex-col flex-1 px-6 pt-14 pb-6">
         <div className="flex flex-col items-center animate-fade-in-up">
-          <div className="relative w-[88px] h-[88px] rounded-full overflow-hidden border-[1.5px] border-dorado bg-crema">
-            <Image
-              src="/images/diana-profile.jpg"
-              alt={titulo}
-              fill
-              sizes="88px"
-              className="object-cover"
-            />
+          <div className="w-[88px] h-[88px] rounded-full p-[1.5px] bg-gradient-to-br from-lila to-dorado">
+            <div className="relative w-full h-full rounded-full overflow-hidden bg-crema">
+              <Image
+                src="/images/diana-profile.jpg"
+                alt={titulo}
+                fill
+                sizes="88px"
+                className="object-cover"
+              />
+            </div>
           </div>
           <h1 className="mt-4 font-display text-[28px] leading-tight text-carbon text-center">
             {titulo}
           </h1>
-          <div className="linea-dorada w-10 mt-3" />
+          <div className="linea-dorada-lila w-10 mt-3" />
           <p className="mt-3 font-sans text-[13px] text-ceniza text-center">
             {subtitulo}
           </p>

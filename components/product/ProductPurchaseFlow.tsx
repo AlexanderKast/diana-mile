@@ -38,7 +38,7 @@ function getVariantSubtitle(variant: ProductVariant, product: Product) {
     return (
       <span className="flex items-center gap-2">
         <span className="text-xs text-ceniza">{product.metafields.ahorroPack2}</span>
-        <span className="rounded-[2px] bg-dorado px-2 py-0.5 text-[10px] text-blanco">POPULAR</span>
+        <span className="rounded-[2px] bg-morado px-2 py-0.5 text-[10px] text-blanco">POPULAR</span>
       </span>
     );
   }
@@ -48,8 +48,7 @@ function getVariantSubtitle(variant: ProductVariant, product: Product) {
     return (
       <span className="flex items-center gap-2">
         <span className="text-xs text-ceniza">{product.metafields.ahorroPack3}</span>
-        {/* #2D4A3E = "verde-epoch", aun no existe como token en el design system */}
-        <span className="rounded-[2px] bg-[#2D4A3E] px-2 py-0.5 text-[10px] text-blanco">
+        <span className="rounded-[2px] bg-morado-oscuro px-2 py-0.5 text-[10px] text-blanco">
           MEJOR VALOR
         </span>
       </span>
@@ -142,13 +141,13 @@ export function ProductPurchaseFlow({ product }: { product: Product }) {
                 onKeyDown={(e) => handleCardKeyDown(e, variant.id, () => selectVariant(variant.id))}
                 className={cx(
                   "flex cursor-pointer flex-col gap-1.5 rounded-[4px] border-[1.5px] border-arena p-4 transition-colors",
-                  isSelected && "border-dorado bg-crema"
+                  isSelected && "border-morado bg-crema"
                 )}
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-arena">
-                      {isSelected && <span className="h-2.5 w-2.5 rounded-full bg-dorado" />}
+                      {isSelected && <span className="h-2.5 w-2.5 rounded-full bg-morado" />}
                     </span>
                     <span className="text-sm font-medium text-carbon">{variant.title}</span>
                   </div>
@@ -174,13 +173,13 @@ export function ProductPurchaseFlow({ product }: { product: Product }) {
               onKeyDown={(e) => handleCardKeyDown(e, "nuskin", selectNuskin)}
               className={cx(
                 "flex cursor-pointer flex-col gap-1.5 rounded-[4px] border-[1.5px] border-arena p-4 transition-colors",
-                selectedIsNuskin && "border-dorado bg-crema"
+                selectedIsNuskin && "border-morado bg-crema"
               )}
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-arena">
-                    {selectedIsNuskin && <span className="h-2.5 w-2.5 rounded-full bg-dorado" />}
+                    {selectedIsNuskin && <span className="h-2.5 w-2.5 rounded-full bg-morado" />}
                   </span>
                   <span className="flex items-center gap-1.5 text-sm font-medium text-carbon">
                     Compra directo en Nu Skin
@@ -208,7 +207,12 @@ export function ProductPurchaseFlow({ product }: { product: Product }) {
             Compra a precio de distribuidora directamente en la plataforma oficial de Nu Skin y
             acumula tus puntos con nuestro link.
           </p>
-          <Button variant="secondary" type="button" onClick={openNuskin} className="mt-4">
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={openNuskin}
+            className="mt-4 border-morado! text-morado! hover:bg-lila-suave!"
+          >
             Comprar en Nu Skin ↗
           </Button>
           <p className="mt-3 text-xs text-ceniza">

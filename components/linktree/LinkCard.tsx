@@ -30,7 +30,7 @@ export function LinkCard({ link, index }: LinkCardProps) {
   const cardClassName = cx(
     "group flex items-center justify-between gap-3 min-h-[44px] rounded-[4px] border border-arena bg-blanco px-5 py-4",
     "shadow-[0_1px_3px_rgba(26,23,20,0.08)] transition-colors duration-200",
-    "hover:border-dorado focus:border-dorado focus:outline-none animate-fade-in-up"
+    "hover:border-morado focus:border-morado focus:outline-none animate-fade-in-up"
   );
 
   const style = { animationDelay: `${index * 80}ms` };

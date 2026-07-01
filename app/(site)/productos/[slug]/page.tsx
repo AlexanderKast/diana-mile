@@ -128,7 +128,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         </div>
       </div>
 
-      <section className="bg-crema py-12 px-6 mt-10 flex flex-col items-center gap-6 text-center">
+      <section className="bg-lila-suave py-12 px-6 mt-10 flex flex-col items-center gap-6 text-center">
         <h2 className="font-display text-[28px] text-carbon max-w-md">
           El secreto que la naturaleza guardó por siglos
         </h2>

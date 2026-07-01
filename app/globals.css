@@ -10,6 +10,12 @@
   --dorado: #C4A882;
   --dorado-oscuro: #A8885E;
   --error: #B3413A;
+
+  /* Lila — identidad personal de Mile, acento secundario. El dorado sigue siendo el acento de lujo principal. */
+  --lila-suave: #EDE8F5;
+  --lila: #9B8EA8;
+  --morado: #6B4E8C;
+  --morado-oscuro: #4A3066;
 }
 
 @theme inline {
@@ -22,6 +28,10 @@
   --color-dorado: var(--dorado);
   --color-dorado-oscuro: var(--dorado-oscuro);
   --color-error: var(--error);
+  --color-lila-suave: var(--lila-suave);
+  --color-lila: var(--lila);
+  --color-morado: var(--morado);
+  --color-morado-oscuro: var(--morado-oscuro);
 
   --font-display: var(--font-cormorant), serif;
   --font-sans: var(--font-inter), sans-serif;
@@ -55,5 +65,11 @@ body {
 .linea-dorada {
   height: 1px;
   background: var(--dorado);
+  border: none;
+}
+
+.linea-dorada-lila {
+  height: 1px;
+  background: linear-gradient(90deg, var(--dorado), var(--lila));
   border: none;
 }
