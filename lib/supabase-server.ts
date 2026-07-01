@@ -36,13 +36,27 @@ export function createAdminSupabaseClient() {
 }
 
 /**
- * Verifica sesion admin en API routes (app/api/admin/**). Usar antes de
- * tocar createAdminSupabaseClient(), que bypassa RLS con service_role.
+ * Verifica sesion admin en API routes (app/api/admin/**) y en app/(admin)/layout.tsx.
+ * NEXT_PUBLIC_SUPABASE_ANON_KEY es publica: cualquiera puede auto-registrarse
+ * contra Supabase Auth sin pasar por nuestra UI. Por eso no basta con "hay
+ * usuario logueado" — hay que confirmar que ese user_id esta en la tabla
+ * "admins" (solo legible con service_role, un usuario autenticado normal
+ * nunca puede insertarse ahi mismo).
  */
 export async function requireAdminSession(): Promise<boolean> {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user !== null;
+
+  if (!user) return false;
+
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  return data !== null;
 }
