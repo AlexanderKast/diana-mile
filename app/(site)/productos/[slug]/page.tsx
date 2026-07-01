@@ -5,6 +5,9 @@ import { getProductByHandle } from "@/lib/shopify";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductBenefits, Benefit } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
+import { VariantSelector } from "@/components/product/VariantSelector";
+import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
+import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
 import { IngredientsAccordion } from "@/components/product/IngredientsAccordion";
 
 const BENEFICIOS: Benefit[] = [
@@ -106,13 +109,14 @@ export default async function ProductoPage({ params }: ProductPageProps) {
   }
 
   return (
+    <OrderSheetProvider product={product}>
     <main className="flex flex-col pb-28">
       <div className="grid md:grid-cols-2 md:gap-8 px-6 pt-6 md:px-10 md:pt-10">
         <div className="md:sticky md:top-6 md:self-start">
           <ProductGallery images={product.images} />
         </div>
 
-        <div className="flex flex-col gap-4 pt-6 md:pt-0">
+        <div className="flex flex-col gap-6 pt-6 md:pt-0">
           <div className="flex flex-col gap-3">
             <p className="text-[11px] text-ceniza uppercase tracking-wide">
               Colección Epoch® · Nu Skin
@@ -124,9 +128,13 @@ export default async function ProductoPage({ params }: ProductPageProps) {
             </p>
           </div>
 
-          <ProductPurchaseFlow product={product} />
+          <VariantSelector />
+
+          <OrderBottomSheet />
         </div>
       </div>
+
+      <ProductPurchaseFlow />
 
       <section className="bg-lila-suave py-12 px-6 mt-10 flex flex-col items-center gap-6 text-center">
         <h2 className="font-display text-[28px] text-carbon max-w-md">
@@ -206,5 +214,6 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         <IngredientsAccordion />
       </section>
     </main>
+    </OrderSheetProvider>
   );
 }
