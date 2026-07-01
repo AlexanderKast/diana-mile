@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Product } from "@/types";
-import { formatCOP } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
+import { formatCOP, cx } from "@/lib/utils";
 
 export function ProductCard({ product }: { product: Product }) {
   const image = product.images[0];
@@ -18,7 +17,10 @@ export function ProductCard({ product }: { product: Product }) {
   const badgeLabel = product.title.includes("Epoch") ? "Epoch®" : null;
 
   return (
-    <div className="group flex flex-col gap-3 border border-arena rounded-[4px] p-3 bg-blanco shadow-[0_1px_3px_rgba(26,23,20,0.08)]">
+    <Link
+      href={`/productos/${product.handle}`}
+      className="group flex flex-col gap-3 border border-arena rounded-[4px] p-3 bg-blanco shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
+    >
       <div className="relative aspect-square w-full overflow-hidden rounded-[2px] bg-arena">
         {image ? (
           <Image
@@ -40,13 +42,15 @@ export function ProductCard({ product }: { product: Product }) {
       <h3 className="font-display text-lg text-carbon">{product.title}</h3>
       <p className="font-display text-xl text-dorado-oscuro">Desde {formatCOP(minPrice)}</p>
 
-      <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-        <Link href={`/productos/${product.handle}`} className="w-full">
-          <Button variant="secondary" className="w-full">
-            Ver producto
-          </Button>
-        </Link>
-      </div>
-    </div>
+      <span
+        className={cx(
+          "inline-flex items-center justify-center gap-2 rounded-[2px] px-6 py-3.5 min-h-[44px]",
+          "text-sm font-medium tracking-wide border border-carbon text-carbon transition-colors duration-200",
+          "group-hover:bg-crema"
+        )}
+      >
+        Ver producto
+      </span>
+    </Link>
   );
 }
