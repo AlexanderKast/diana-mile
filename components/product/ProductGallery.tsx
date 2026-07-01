@@ -18,20 +18,20 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative w-full aspect-[4/5] rounded-[4px] overflow-hidden bg-crema">
+      <div className="relative mx-auto aspect-square w-[62%] max-w-[280px] rounded-[4px] overflow-hidden bg-crema md:mx-0 md:aspect-[4/5] md:w-full md:max-w-none">
         <Image
           key={activeIndex}
           src={activeImage.url}
           alt={activeImage.altText ?? "Imagen del producto"}
           fill
           className="object-cover transition-opacity duration-200 ease-out"
-          sizes="(min-width: 768px) 50vw, 100vw"
+          sizes="(min-width: 768px) 50vw, 62vw"
           priority={activeIndex === 0}
         />
       </div>
 
       {gallery.length > 1 ? (
-        <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+        <div className="flex justify-center gap-2 overflow-x-auto md:justify-start" style={{ scrollbarWidth: "none" }}>
           {gallery.map((image, index) => (
             <button
               key={index}

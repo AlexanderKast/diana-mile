@@ -5,7 +5,7 @@ import { getProductByHandle } from "@/lib/shopify";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductBenefits, Benefit } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
-import { VariantSelector } from "@/components/product/VariantSelector";
+import { ProductHeroCTA } from "@/components/product/ProductHeroCTA";
 import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
 import { IngredientsAccordion } from "@/components/product/IngredientsAccordion";
@@ -88,44 +88,43 @@ export default async function ProductoPage({ params }: ProductPageProps) {
     <OrderSheetProvider product={product}>
       <main className="flex flex-col pb-28">
         {/* 1. Prueba social urgente */}
-        <div className="px-6 pt-4 md:px-10">
+        <div className="px-6 pt-3 md:px-10">
           <LiveActivityBar />
         </div>
 
-        <div className="grid md:grid-cols-2 md:gap-8 px-6 pt-4 md:px-10">
-          {/* 2. Galeria */}
+        <div className="grid md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10">
+          {/* 2. Galeria — cuadrada y acotada en movil, no full-bleed */}
           <div className="md:sticky md:top-6 md:self-start">
             <ProductGallery images={product.images} />
           </div>
 
-          <div className="flex flex-col gap-6 pt-6 md:pt-0">
+          <div className="flex flex-col gap-4 pt-4 md:pt-0">
             {/* 3. Rating bar + badges de confianza */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <RatingBar />
               <TrustBadges />
             </div>
 
             {/* 4. Nombre + linea dorada + tagline */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <p className="text-[11px] text-ceniza uppercase tracking-wide">
                 Colección Epoch® · Nu Skin
               </p>
-              <h1 className="font-display text-[32px] text-carbon leading-tight">{product.title}</h1>
+              <h1 className="font-display text-[26px] md:text-[32px] text-carbon leading-tight">
+                {product.title}
+              </h1>
               <div className="linea-dorada w-12" />
               <p className="text-sm text-carbon-suave">
                 Sabiduría indígena. Mineralización profunda. Piel transformada.
               </p>
             </div>
 
-            {/* 5. Selector de 4 opciones */}
-            <VariantSelector />
+            {/* 5-6. Precio con ancla + CTA principal (elegir pack se resuelve en el sheet) */}
+            <ProductHeroCTA />
 
             <OrderBottomSheet />
           </div>
         </div>
-
-        {/* 6. CTA 2 */}
-        <SocialCTABand tone="outline-morado" buttonLabel="Quiero este ritual →" />
 
         {/* 7. Historia del ingrediente */}
         <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">

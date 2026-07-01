@@ -18,7 +18,7 @@ const MOCK_PRODUCTS: Product[] = [
     currencyCode: "COP",
     images: [{ url: "/mock/producto-1.jpg", altText: "Serum Luminoso 24H" }],
     variantId: "mock-variant-1",
-    variants: [{ id: "mock-variant-1", title: "1 unidad", price: "289000" }],
+    variants: [{ id: "mock-variant-1", title: "1 unidad", price: "289000", compareAtPrice: null }],
     metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
   },
   {
@@ -31,7 +31,7 @@ const MOCK_PRODUCTS: Product[] = [
     currencyCode: "COP",
     images: [{ url: "/mock/producto-2.jpg", altText: "Crema Ritual Nocturno" }],
     variantId: "mock-variant-2",
-    variants: [{ id: "mock-variant-2", title: "1 unidad", price: "319000" }],
+    variants: [{ id: "mock-variant-2", title: "1 unidad", price: "319000", compareAtPrice: null }],
     metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
   },
   {
@@ -44,7 +44,7 @@ const MOCK_PRODUCTS: Product[] = [
     currencyCode: "COP",
     images: [{ url: "/mock/producto-3.jpg", altText: "Contorno de Ojos Dorado" }],
     variantId: "mock-variant-3",
-    variants: [{ id: "mock-variant-3", title: "1 unidad", price: "199000" }],
+    variants: [{ id: "mock-variant-3", title: "1 unidad", price: "199000", compareAtPrice: null }],
     metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
   },
 ];
@@ -67,7 +67,7 @@ const PRODUCTS_QUERY = `
           description
           priceRange { minVariantPrice { amount currencyCode } }
           images(first: 3) { edges { node { url altText } } }
-          variants(first: 10) { edges { node { id title price { amount } } } }
+          variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
           metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
         }
       }
@@ -84,7 +84,7 @@ const PRODUCT_BY_HANDLE_QUERY = `
       description
       priceRange { minVariantPrice { amount currencyCode } }
       images(first: 6) { edges { node { url altText } } }
-      variants(first: 10) { edges { node { id title price { amount } } } }
+      variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
       metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
     }
   }
@@ -126,13 +126,18 @@ function mapNode(node: {
   description: string;
   priceRange: { minVariantPrice: { amount: string; currencyCode: string } };
   images: { edges: { node: { url: string; altText: string | null } }[] };
-  variants: { edges: { node: { id: string; title: string; price: { amount: string } } }[] };
+  variants: {
+    edges: {
+      node: { id: string; title: string; price: { amount: string }; compareAtPrice: { amount: string } | null };
+    }[];
+  };
   metafields: ({ key: string; value: string } | null)[];
 }): Product {
   const variants = node.variants.edges.map((e) => ({
     id: e.node.id,
     title: e.node.title,
     price: e.node.price.amount,
+    compareAtPrice: e.node.compareAtPrice?.amount ?? null,
   }));
 
   return {

@@ -135,8 +135,15 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
                   </span>
                   <span className="text-sm font-medium text-carbon">{variant.title}</span>
                 </div>
-                <span className={cx("font-display text-carbon", compact ? "text-base" : "text-lg")}>
-                  {formatCOP(variant.price)}
+                <span className="flex items-baseline gap-1.5">
+                  {variant.compareAtPrice && (
+                    <span className="text-xs text-ceniza line-through">
+                      {formatCOP(variant.compareAtPrice)}
+                    </span>
+                  )}
+                  <span className={cx("font-display text-carbon", compact ? "text-base" : "text-lg")}>
+                    {formatCOP(variant.price)}
+                  </span>
                 </span>
               </div>
               {subtitle && <div className="pl-8">{subtitle}</div>}

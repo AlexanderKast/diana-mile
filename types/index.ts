@@ -2,6 +2,7 @@ export type ProductVariant = {
   id: string;
   title: string;
   price: string;
+  compareAtPrice: string | null;
 };
 
 export type ProductMetafields = {
