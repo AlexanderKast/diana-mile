@@ -28,6 +28,11 @@ export default async function PedidoPage({ params }: PedidoPageProps) {
   }
 
   const imagen = product.images[0];
+  const selectedVariant = product.variants[0] ?? {
+    id: product.variantId,
+    title: "Presentacion unica",
+    price: product.price,
+  };
 
   return (
     <div id="pedido" className="mx-auto w-full max-w-5xl px-4 py-10 md:py-16">
@@ -60,7 +65,7 @@ export default async function PedidoPage({ params }: PedidoPageProps) {
         </div>
 
         <div>
-          <CODForm product={product} />
+          <CODForm product={product} selectedVariant={selectedVariant} />
         </div>
       </div>
     </div>

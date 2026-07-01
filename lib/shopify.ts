@@ -1,4 +1,4 @@
-import { Product } from "@/types";
+import { Product, ProductMetafields } from "@/types";
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const STOREFRONT_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
@@ -18,6 +18,8 @@ const MOCK_PRODUCTS: Product[] = [
     currencyCode: "COP",
     images: [{ url: "/mock/producto-1.jpg", altText: "Serum Luminoso 24H" }],
     variantId: "mock-variant-1",
+    variants: [{ id: "mock-variant-1", title: "1 unidad", price: "289000" }],
+    metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
   },
   {
     id: "mock-2",
@@ -29,6 +31,8 @@ const MOCK_PRODUCTS: Product[] = [
     currencyCode: "COP",
     images: [{ url: "/mock/producto-2.jpg", altText: "Crema Ritual Nocturno" }],
     variantId: "mock-variant-2",
+    variants: [{ id: "mock-variant-2", title: "1 unidad", price: "319000" }],
+    metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
   },
   {
     id: "mock-3",
@@ -40,8 +44,17 @@ const MOCK_PRODUCTS: Product[] = [
     currencyCode: "COP",
     images: [{ url: "/mock/producto-3.jpg", altText: "Contorno de Ojos Dorado" }],
     variantId: "mock-variant-3",
+    variants: [{ id: "mock-variant-3", title: "1 unidad", price: "199000" }],
+    metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
   },
 ];
+
+const METAFIELD_IDENTIFIERS_GQL = `[
+  {namespace: "diana_mile", key: "nuskin_direct_url"},
+  {namespace: "diana_mile", key: "nuskin_direct_precio"},
+  {namespace: "diana_mile", key: "ahorro_pack2"},
+  {namespace: "diana_mile", key: "ahorro_pack3"}
+]`;
 
 const PRODUCTS_QUERY = `
   query Products($first: Int!) {
@@ -54,7 +67,8 @@ const PRODUCTS_QUERY = `
           description
           priceRange { minVariantPrice { amount currencyCode } }
           images(first: 3) { edges { node { url altText } } }
-          variants(first: 1) { edges { node { id } } }
+          variants(first: 10) { edges { node { id title price { amount } } } }
+          metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
         }
       }
     }
@@ -69,8 +83,9 @@ const PRODUCT_BY_HANDLE_QUERY = `
       title
       description
       priceRange { minVariantPrice { amount currencyCode } }
-      images(first: 5) { edges { node { url altText } } }
-      variants(first: 1) { edges { node { id } } }
+      images(first: 6) { edges { node { url altText } } }
+      variants(first: 10) { edges { node { id title price { amount } } } }
+      metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
     }
   }
 `;
@@ -94,6 +109,16 @@ async function storefrontFetch<T>(query: string, variables: Record<string, unkno
   return json.data as T;
 }
 
+function mapMetafields(metafields: { key: string; value: string }[] | null | undefined): ProductMetafields {
+  const byKey = new Map((metafields ?? []).filter(Boolean).map((m) => [m.key, m.value]));
+  return {
+    nuskinDirectUrl: byKey.get("nuskin_direct_url") ?? null,
+    nuskinDirectPrecio: byKey.get("nuskin_direct_precio") ?? null,
+    ahorroPack2: byKey.get("ahorro_pack2") ?? null,
+    ahorroPack3: byKey.get("ahorro_pack3") ?? null,
+  };
+}
+
 function mapNode(node: {
   id: string;
   handle: string;
@@ -101,8 +126,15 @@ function mapNode(node: {
   description: string;
   priceRange: { minVariantPrice: { amount: string; currencyCode: string } };
   images: { edges: { node: { url: string; altText: string | null } }[] };
-  variants: { edges: { node: { id: string } }[] };
+  variants: { edges: { node: { id: string; title: string; price: { amount: string } } }[] };
+  metafields: ({ key: string; value: string } | null)[];
 }): Product {
+  const variants = node.variants.edges.map((e) => ({
+    id: e.node.id,
+    title: e.node.title,
+    price: e.node.price.amount,
+  }));
+
   return {
     id: node.id,
     handle: node.handle,
@@ -111,7 +143,9 @@ function mapNode(node: {
     price: node.priceRange.minVariantPrice.amount,
     currencyCode: node.priceRange.minVariantPrice.currencyCode,
     images: node.images.edges.map((e) => e.node),
-    variantId: node.variants.edges[0]?.node.id ?? "",
+    variantId: variants[0]?.id ?? "",
+    variants,
+    metafields: mapMetafields(node.metafields.filter((m): m is { key: string; value: string } => m !== null)),
   };
 }
 

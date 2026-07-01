@@ -1,13 +1,16 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Product } from "@/types";
+import { Product, ProductVariant } from "@/types";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 
+type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
+
 type CODFormProps = {
   product: Product;
+  selectedVariant: SelectedVariant;
 };
 
 type SuccessState = {
@@ -15,7 +18,7 @@ type SuccessState = {
   telefono: string;
 };
 
-export function CODForm({ product }: CODFormProps) {
+export function CODForm({ product, selectedVariant }: CODFormProps) {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ciudad, setCiudad] = useState("");
@@ -36,19 +39,23 @@ export function CODForm({ product }: CODFormProps) {
 
     setLoading(true);
 
+    const telefonoCompleto = `+57${telefono.trim()}`;
+
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre,
-          telefono,
+          telefono: telefonoCompleto,
           ciudad,
           direccion,
           notas,
-          productSlug: product.handle,
-          variantId: product.variantId,
-          cantidad: 1,
+          variantId: selectedVariant.id,
+          variantTitle: selectedVariant.title,
+          precio: selectedVariant.price,
+          productoNombre: product.title,
+          slug: product.handle,
         }),
       });
 
@@ -68,12 +75,30 @@ export function CODForm({ product }: CODFormProps) {
 
   if (success) {
     const whatsappNumero = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
-    const mensaje = `Hola, acabo de confirmar mi pedido ${success.orderNumber} de ${product.title}.`;
+    const mensaje = `Hola, acabo de confirmar mi pedido ${success.orderNumber} de ${product.title} (${selectedVariant.title}).`;
     const whatsappUrl = `https://wa.me/${whatsappNumero}?text=${encodeURIComponent(mensaje)}`;
 
     return (
       <div className="animate-fade-in-up flex flex-col items-start gap-4 rounded-[4px] border border-arena bg-crema p-6">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full border border-dorado text-dorado">
+        <style>{`
+          @keyframes codform-check-circle {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+          @keyframes codform-check-mark {
+            from { stroke-dashoffset: 24; }
+            to { stroke-dashoffset: 0; }
+          }
+          .codform-check-circle {
+            animation: codform-check-circle 300ms ease-out both;
+          }
+          .codform-check-mark {
+            stroke-dasharray: 24;
+            stroke-dashoffset: 24;
+            animation: codform-check-mark 400ms 200ms ease-out forwards;
+          }
+        `}</style>
+        <span className="codform-check-circle flex h-11 w-11 items-center justify-center rounded-full border border-dorado text-dorado">
           <svg
             width="20"
             height="20"
@@ -84,23 +109,27 @@ export function CODForm({ product }: CODFormProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M20 6L9 17l-5-5" />
+            <path className="codform-check-mark" d="M20 6L9 17l-5-5" />
           </svg>
         </span>
         <div className="flex flex-col gap-1">
-          <h3 className="font-display text-2xl text-carbon">Pedido recibido</h3>
+          <h3 className="font-display text-2xl text-carbon">Pedido confirmado</h3>
           <p className="text-sm text-ceniza">Numero de pedido: {success.orderNumber}</p>
         </div>
         <p className="text-sm text-carbon-suave">
-          Te contactaremos en menos de 24 horas al {success.telefono} para confirmar la entrega.
+          Te contactaremos en maximo 24 horas al {success.telefono}.
         </p>
-        <Button
-          variant="secondary"
-          type="button"
-          onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}
-        >
-          Ir a WhatsApp
-        </Button>
+        {whatsappNumero ? (
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}
+          >
+            Escribenos por WhatsApp
+          </Button>
+        ) : (
+          <p className="text-sm text-ceniza">Te contactaremos pronto.</p>
+        )}
       </div>
     );
   }
@@ -166,11 +195,11 @@ export function CODForm({ product }: CODFormProps) {
         </p>
       )}
 
-      <Button variant="primary" type="submit" disabled={loading}>
+      <Button variant="primary" type="submit" disabled={loading} className="w-full">
         {loading ? (
           <>
             <Spinner className="text-blanco" />
-            Procesando...
+            Procesando tu pedido...
           </>
         ) : (
           "Confirmar pedido — Contraentrega"

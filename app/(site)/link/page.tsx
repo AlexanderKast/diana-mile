@@ -69,12 +69,12 @@ export default async function LinkPage() {
     <div className="min-h-screen flex flex-col bg-blanco">
       <div className="w-full max-w-[480px] mx-auto flex flex-col flex-1 px-6 pt-14 pb-6">
         <div className="flex flex-col items-center animate-fade-in-up">
-          <div className="relative w-20 h-20 rounded-full overflow-hidden border border-dorado bg-crema">
+          <div className="relative w-[88px] h-[88px] rounded-full overflow-hidden border-[1.5px] border-dorado bg-crema">
             <Image
-              src="/mock/diana-mile-perfil.jpg"
+              src="/images/diana-profile.jpg"
               alt={titulo}
               fill
-              sizes="80px"
+              sizes="88px"
               className="object-cover"
             />
           </div>

@@ -1,3 +1,16 @@
+export type ProductVariant = {
+  id: string;
+  title: string;
+  price: string;
+};
+
+export type ProductMetafields = {
+  nuskinDirectUrl: string | null;
+  nuskinDirectPrecio: string | null;
+  ahorroPack2: string | null;
+  ahorroPack3: string | null;
+};
+
 export type Product = {
   id: string;
   handle: string;
@@ -7,6 +20,8 @@ export type Product = {
   currencyCode: string;
   images: { url: string; altText: string | null }[];
   variantId: string;
+  variants: ProductVariant[];
+  metafields: ProductMetafields;
 };
 
 export type LinktreeLink = {
@@ -61,13 +76,4 @@ export type ConfigRow = {
   tipo: "texto" | "json" | "booleano" | "imagen";
   descripcion: string | null;
   updated_at: string;
-};
-
-export type CODFormData = {
-  nombre: string;
-  telefono: string;
-  ciudad: string;
-  direccion: string;
-  notas: string;
-  productSlug: string;
 };

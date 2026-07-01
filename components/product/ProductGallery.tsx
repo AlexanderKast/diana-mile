@@ -1,58 +1,56 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { cx } from "@/lib/utils";
 
 type GalleryImage = { url: string; altText: string | null };
 
+const FALLBACK_IMAGE: GalleryImage = {
+  url: "/images/product-epoch-hero.jpg",
+  altText: "Epoch Polishing Bar",
+};
+
 export function ProductGallery({ images }: { images: GalleryImage[] }) {
+  const gallery = images.length > 0 ? images : [FALLBACK_IMAGE];
   const [activeIndex, setActiveIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  function handleScroll() {
-    const container = containerRef.current;
-    if (!container) return;
-    const index = Math.round(container.scrollLeft / container.clientWidth);
-    setActiveIndex(index);
-  }
-
-  if (images.length === 0) {
-    return <div className="relative aspect-square w-full bg-arena rounded-[2px]" />;
-  }
+  const activeImage = gallery[activeIndex];
 
   return (
     <div className="flex flex-col gap-3">
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="flex w-full aspect-square overflow-x-auto snap-x snap-mandatory scroll-smooth"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {images.map((image, index) => (
-          <div key={index} className="relative min-w-full snap-center">
-            <Image
-              src={image.url}
-              alt={image.altText ?? `Imagen ${index + 1}`}
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority={index === 0}
-            />
-          </div>
-        ))}
+      <div className="relative w-full aspect-[4/5] rounded-[4px] overflow-hidden bg-crema">
+        <Image
+          key={activeIndex}
+          src={activeImage.url}
+          alt={activeImage.altText ?? "Imagen del producto"}
+          fill
+          className="object-cover transition-opacity duration-200 ease-out"
+          sizes="(min-width: 768px) 50vw, 100vw"
+          priority={activeIndex === 0}
+        />
       </div>
 
-      {images.length > 1 ? (
-        <div className="flex items-center justify-center gap-2">
-          {images.map((_, index) => (
-            <span
+      {gallery.length > 1 ? (
+        <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          {gallery.map((image, index) => (
+            <button
               key={index}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Ver imagen ${index + 1}`}
               className={cx(
-                "h-1.5 w-1.5 rounded-full transition-colors",
-                index === activeIndex ? "bg-dorado" : "bg-arena"
+                "relative shrink-0 w-16 h-16 rounded-[2px] overflow-hidden border transition-colors duration-200",
+                index === activeIndex ? "border-dorado" : "border-arena"
               )}
-            />
+            >
+              <Image
+                src={image.url}
+                alt={image.altText ?? `Miniatura ${index + 1}`}
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
+            </button>
           ))}
         </div>
       ) : null}

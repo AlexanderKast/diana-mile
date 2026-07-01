@@ -17,7 +17,7 @@ export default async function ProductosPage() {
       {products.length === 0 ? (
         <p className="text-center text-sm text-ceniza px-6">Pronto nuevos productos.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
           {products.map((product, index) => (
             <div
               key={product.id}
