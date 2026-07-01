@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createShopifyOrder } from "@/lib/shopify";
+import { createShopifyOrder, getProductByHandle } from "@/lib/shopify";
 import { createAdminSupabaseClient } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      nombre,
-      telefono,
-      ciudad,
-      direccion,
-      notas,
-      variantId,
-      variantTitle,
-      precio,
-      productoNombre,
-      slug,
-    } = body ?? {};
+    const { nombre, telefono, ciudad, direccion, notas, variantId, slug } = body ?? {};
 
-    if (!nombre || !telefono || !ciudad || !direccion || !variantId || !precio) {
+    if (!nombre || !telefono || !ciudad || !direccion || !variantId || !slug) {
       return NextResponse.json(
         { mensaje: "Faltan campos requeridos para procesar el pedido." },
+        { status: 400 }
+      );
+    }
+
+    // precio y nombre del producto se derivan del catalogo real, nunca del
+    // body del cliente — evita que alguien manipule el POST y pague menos.
+    const product = await getProductByHandle(slug);
+    const variant = product?.variants.find((v) => v.id === variantId);
+
+    if (!product || !variant) {
+      return NextResponse.json(
+        { mensaje: "El producto o la variante seleccionada ya no existe." },
         { status: 400 }
       );
     }
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const supabase = createAdminSupabaseClient();
-      const nombreProducto = variantTitle ? `${productoNombre} — ${variantTitle}` : productoNombre;
+      const nombreProducto = `${product.title} — ${variant.title}`;
 
       const { error: insertError } = await supabase.from("pedidos").insert({
         shopify_order_id: orderId,
@@ -45,10 +46,10 @@ export async function POST(request: NextRequest) {
         direccion,
         ciudad,
         producto_nombre: nombreProducto,
-        producto_sku: slug ?? null,
+        producto_sku: slug,
         variant_id: variantId,
         cantidad: 1,
-        precio_total: parseFloat(precio),
+        precio_total: parseFloat(variant.price),
         estado: "pendiente",
         notas: notas || null,
       });

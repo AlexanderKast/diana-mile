@@ -52,9 +52,6 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           direccion,
           notas,
           variantId: selectedVariant.id,
-          variantTitle: selectedVariant.title,
-          precio: selectedVariant.price,
-          productoNombre: product.title,
           slug: product.handle,
         }),
       });
