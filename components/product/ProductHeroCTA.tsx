@@ -38,14 +38,16 @@ export function ProductHeroCTA() {
   return (
     <div className="flex flex-col gap-3">
       {variant && (
-        <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="font-display text-4xl font-semibold text-dorado-oscuro">
+            {formatCOP(variant.price)}
+          </span>
           {variant.compareAtPrice && (
-            <span className="text-sm text-ceniza line-through">{formatCOP(variant.compareAtPrice)}</span>
+            <span className="text-base text-ceniza line-through">{formatCOP(variant.compareAtPrice)}</span>
           )}
-          <span className="font-display text-2xl text-carbon">{formatCOP(variant.price)}</span>
           {discountPct !== null && discountPct > 0 && (
-            <span className="rounded-[2px] bg-morado px-2 py-0.5 text-[10px] font-medium text-blanco">
-              -{discountPct}%
+            <span className="rounded-[3px] bg-morado px-2.5 py-1 text-xs font-bold text-blanco">
+              -{discountPct}% OFF
             </span>
           )}
         </div>
@@ -54,7 +56,7 @@ export function ProductHeroCTA() {
       <button
         type="button"
         onClick={() => openOrderSheet()}
-        className="btn-shine min-h-[44px] w-full rounded-[2px] bg-dorado-oscuro text-blanco text-sm font-medium tracking-wide transition-all duration-200 hover:bg-dorado hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(168,136,94,0.4)] active:scale-[0.97]"
+        className="btn-shine min-h-[44px] w-full rounded-[2px] bg-dorado-oscuro text-blanco text-base font-semibold tracking-wide shadow-[0_4px_14px_rgba(168,136,94,0.35)] transition-all duration-200 hover:bg-dorado hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(168,136,94,0.5)] active:scale-[0.97]"
       >
         Pedir ahora · Contraentrega
       </button>

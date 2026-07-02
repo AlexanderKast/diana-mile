@@ -40,7 +40,7 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
 
       <h3 className="font-display text-lg text-carbon">{product.title}</h3>
-      <p className="font-display text-xl text-dorado-oscuro">Desde {formatCOP(minPrice)}</p>
+      <p className="font-display text-xl font-semibold text-dorado-oscuro">Desde {formatCOP(minPrice)}</p>
 
       <span
         className={cx(
