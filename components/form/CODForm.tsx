@@ -6,7 +6,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { normalizeColombianMobile } from "@/lib/phone";
-import { DEPARTAMENTOS_COLOMBIA, CIUDADES_POR_DEPARTAMENTO } from "@/lib/colombia";
+import { DEPARTAMENTOS_COLOMBIA, CIUDADES_POR_DEPARTAMENTO, getBarriosSugeridos } from "@/lib/colombia";
 
 type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
 
@@ -38,6 +38,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   );
 
   const ciudadesSugeridas = departamento ? CIUDADES_POR_DEPARTAMENTO[departamento] ?? [] : [];
+  const barriosSugeridos = getBarriosSugeridos(ciudad);
 
   function capturarUbicacion() {
     if (!navigator.geolocation) {
@@ -258,11 +259,17 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         label="Barrio o sector"
         type="text"
         autoComplete="address-line2"
+        list="barrios-sugeridos"
         required
         value={barrio}
         onChange={(e) => setBarrio(e.target.value)}
         placeholder="Ej. Chapinero, El Poblado..."
       />
+      <datalist id="barrios-sugeridos">
+        {barriosSugeridos.map((b) => (
+          <option key={b} value={b} />
+        ))}
+      </datalist>
 
       <Textarea
         label="Direccion completa"

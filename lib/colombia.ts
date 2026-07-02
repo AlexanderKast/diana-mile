@@ -89,3 +89,47 @@ export const CIUDADES_POR_DEPARTAMENTO: Record<string, string[]> = {
   Vaupés: ["Mitú"],
   Vichada: ["Puerto Carreño"],
 };
+
+/**
+ * Barrios/comunas conocidos, SOLO para las ciudades mas grandes. No es
+ * exhaustivo (Bogota sola tiene ~1900 barrios oficiales) — es una lista
+ * curada de los mas reconocibles para acelerar el llenado. Todas las demas
+ * ciudades y cualquier barrio fuera de esta lista se escriben libres,
+ * el campo nunca bloquea texto que no este aca.
+ */
+export const BARRIOS_POR_CIUDAD: Record<string, string[]> = {
+  bogota: [
+    "Chapinero", "Usaquén", "Suba", "Kennedy", "Engativá", "Teusaquillo", "Fontibón",
+    "Santa Fe", "La Candelaria", "San Cristóbal", "Bosa", "Ciudad Bolívar",
+    "Rafael Uribe Uribe", "Puente Aranda", "Barrios Unidos", "Tunjuelito",
+    "Antonio Nariño", "Los Mártires", "Usme", "Chicó", "Cedritos", "Salitre",
+    "Modelia", "Restrepo", "Niza", "Rosales", "La Macarena", "Galerías",
+  ],
+  medellin: [
+    "El Poblado", "Laureles", "Belén", "Robledo", "Manrique", "Buenos Aires",
+    "Castilla", "Aranjuez", "Guayabal", "Santa Cruz", "Doce de Octubre",
+    "La Candelaria", "Floresta", "San Javier", "La América", "Simón Bolívar", "Prado",
+  ],
+  cali: [
+    "San Fernando", "Granada", "El Peñón", "Ciudad Jardín", "Tequendama",
+    "Champagnat", "Miraflores", "San Antonio", "El Ingenio", "Pance", "Menga",
+    "Chipichape", "Versalles", "Santa Mónica",
+  ],
+  barranquilla: [
+    "El Prado", "Alto Prado", "Riomar", "Boston", "Ciudad Jardín", "Villa Country",
+    "El Golf", "La Concepción", "Miramar", "Bellavista", "Los Nogales", "Modelo",
+    "San Vicente",
+  ],
+};
+
+function normalizarCiudad(valor: string): string {
+  return valor
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+export function getBarriosSugeridos(ciudad: string): string[] {
+  return BARRIOS_POR_CIUDAD[normalizarCiudad(ciudad)] ?? [];
+}
