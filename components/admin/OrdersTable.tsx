@@ -177,8 +177,20 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
                               <p className="text-xs text-ceniza uppercase mb-1">Direccion</p>
                               <p className="text-carbon">
                                 {pedido.direccion}
+                                {pedido.barrio ? `, ${pedido.barrio}` : ""}
                                 {pedido.departamento ? `, ${pedido.departamento}` : ""}
                               </p>
+                              {pedido.latitud && pedido.longitud && (
+                                <a
+                                  href={`https://maps.google.com/?q=${pedido.latitud},${pedido.longitud}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-morado underline underline-offset-2"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Ver ubicación GPS ↗
+                                </a>
+                              )}
                             </div>
                             <div>
                               <p className="text-xs text-ceniza uppercase mb-1">Notas</p>

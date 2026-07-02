@@ -188,7 +188,10 @@ export type CreateOrderInput = {
   email?: string;
   departamento: string;
   direccion: string;
+  barrio?: string;
   ciudad: string;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 /**
@@ -216,12 +219,18 @@ export async function createShopifyOrder(
     first_name: firstName,
     last_name: lastName,
     address1: input.direccion,
+    address2: input.barrio || undefined,
     city: input.ciudad,
     province: input.departamento,
     country: "Colombia",
     country_code: "CO",
     phone: input.telefono,
   };
+
+  const notePartes = ["Pedido COD — Contraentrega"];
+  if (typeof input.lat === "number" && typeof input.lng === "number") {
+    notePartes.push(`Ubicación GPS del cliente: https://maps.google.com/?q=${input.lat},${input.lng}`);
+  }
 
   const res = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders.json`, {
     method: "POST",
@@ -242,7 +251,7 @@ export async function createShopifyOrder(
         billing_address: address,
         financial_status: "pending",
         fulfillment_status: null,
-        note: "Pedido COD — Contraentrega",
+        note: notePartes.join("\n"),
         tags: "COD, milito-life-shop",
         send_receipt: false,
         send_fulfillment_receipt: false,

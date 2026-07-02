@@ -57,8 +57,11 @@ export type Pedido = {
   nombre: string;
   telefono: string;
   direccion: string;
+  barrio: string | null;
   ciudad: string;
   departamento: string | null;
+  latitud: number | null;
+  longitud: number | null;
   producto_nombre: string;
   producto_sku: string | null;
   variant_id: string | null;

@@ -26,19 +26,47 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   const [email, setEmail] = useState("");
   const [departamento, setDepartamento] = useState("");
   const [ciudad, setCiudad] = useState("");
+  const [barrio, setBarrio] = useState("");
   const [direccion, setDireccion] = useState("");
   const [notas, setNotas] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SuccessState | null>(null);
+  const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
+  const [ubicacionEstado, setUbicacionEstado] = useState<"idle" | "cargando" | "lista" | "error">(
+    "idle"
+  );
 
   const ciudadesSugeridas = departamento ? CIUDADES_POR_DEPARTAMENTO[departamento] ?? [] : [];
+
+  function capturarUbicacion() {
+    if (!navigator.geolocation) {
+      setUbicacionEstado("error");
+      return;
+    }
+    setUbicacionEstado("cargando");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUbicacion({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setUbicacionEstado("lista");
+      },
+      () => setUbicacionEstado("error"),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
-    if (!nombre.trim() || !telefono.trim() || !departamento || !ciudad.trim() || !direccion.trim()) {
+    if (
+      !nombre.trim() ||
+      !telefono.trim() ||
+      !departamento ||
+      !ciudad.trim() ||
+      !barrio.trim() ||
+      !direccion.trim()
+    ) {
       setError("Por favor completa todos los campos requeridos.");
       return;
     }
@@ -61,8 +89,10 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           email: email.trim() || undefined,
           departamento,
           ciudad,
+          barrio: barrio.trim() || undefined,
           direccion,
           notas,
+          ubicacion,
           variantId: selectedVariant.id,
           slug: product.handle,
         }),
@@ -224,6 +254,16 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         ))}
       </datalist>
 
+      <Input
+        label="Barrio o sector"
+        type="text"
+        autoComplete="address-line2"
+        required
+        value={barrio}
+        onChange={(e) => setBarrio(e.target.value)}
+        placeholder="Ej. Chapinero, El Poblado..."
+      />
+
       <Textarea
         label="Direccion completa"
         rows={3}
@@ -231,8 +271,28 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         required
         value={direccion}
         onChange={(e) => setDireccion(e.target.value)}
-        placeholder="Calle, numero, barrio, apto..."
+        placeholder="Calle, numero, apto..."
       />
+
+      <div className="flex flex-col gap-1.5">
+        <button
+          type="button"
+          onClick={capturarUbicacion}
+          disabled={ubicacionEstado === "cargando" || ubicacionEstado === "lista"}
+          className="flex min-h-[44px] items-center justify-center gap-2 rounded-[2px] border border-arena text-sm text-carbon-suave transition-colors hover:bg-crema disabled:opacity-70"
+        >
+          {ubicacionEstado === "cargando" && <Spinner className="text-carbon-suave" />}
+          {ubicacionEstado === "lista"
+            ? "Ubicación compartida ✓"
+            : "Compartir mi ubicación (opcional, ayuda a la entrega)"}
+        </button>
+        {ubicacionEstado === "error" && (
+          <p className="text-xs text-ceniza">
+            No pudimos obtener tu ubicación. No pasa nada, tu pedido igual se procesa con la
+            dirección que escribiste.
+          </p>
+        )}
+      </div>
 
       <Textarea
         label="Notas adicionales"

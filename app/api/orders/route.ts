@@ -6,15 +6,44 @@ import { normalizeColombianMobile } from "@/lib/phone";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nombre, telefono, email, departamento, ciudad, direccion, notas, variantId, slug } =
-      body ?? {};
+    const {
+      nombre,
+      telefono,
+      email,
+      departamento,
+      ciudad,
+      barrio,
+      direccion,
+      notas,
+      ubicacion,
+      variantId,
+      slug,
+    } = body ?? {};
 
-    if (!nombre || !telefono || !departamento || !ciudad || !direccion || !variantId || !slug) {
+    if (
+      !nombre ||
+      !telefono ||
+      !departamento ||
+      !ciudad ||
+      !barrio ||
+      !direccion ||
+      !variantId ||
+      !slug
+    ) {
       return NextResponse.json(
         { mensaje: "Faltan campos requeridos para procesar el pedido." },
         { status: 400 }
       );
     }
+
+    const lat =
+      ubicacion && typeof ubicacion.lat === "number" && Number.isFinite(ubicacion.lat)
+        ? ubicacion.lat
+        : null;
+    const lng =
+      ubicacion && typeof ubicacion.lng === "number" && Number.isFinite(ubicacion.lng)
+        ? ubicacion.lng
+        : null;
 
     const telefonoNormalizado = normalizeColombianMobile(String(telefono));
     if (!telefonoNormalizado) {
@@ -44,7 +73,10 @@ export async function POST(request: NextRequest) {
       email: email || undefined,
       departamento,
       direccion,
+      barrio,
       ciudad,
+      lat,
+      lng,
     });
 
     try {
@@ -56,8 +88,11 @@ export async function POST(request: NextRequest) {
         nombre,
         telefono: telefonoNormalizado.e164,
         direccion,
+        barrio,
         ciudad,
         departamento,
+        latitud: lat,
+        longitud: lng,
         producto_nombre: nombreProducto,
         producto_sku: slug,
         variant_id: variantId,
