@@ -171,24 +171,22 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         <UGCSection />
 
         {/* 12. Modo de uso */}
-        <section className="seccion-joya text-carbon py-12 px-6 flex flex-col gap-8">
+        <section className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8">
           <h2 className="font-display text-2xl text-center">Tu ritual en 3 pasos</h2>
           <div
-            className="flex gap-6 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible"
+            className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible"
             style={{ scrollbarWidth: "none" }}
           >
             {PASOS_RITUAL.map((paso) => (
               <div
                 key={paso.numero}
-                className="relative shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-2 pt-2"
+                className="shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-3 rounded-[4px] border border-arena bg-blanco p-5 shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
               >
-                <span className="absolute -top-2 left-0 font-display text-[64px] text-dorado-oscuro opacity-30 leading-none select-none">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-dorado-oscuro font-display text-lg text-blanco">
                   {paso.numero}
                 </span>
-                <div className="relative flex flex-col gap-1 pl-1 pt-10">
-                  <h3 className="font-display text-xl text-carbon">{paso.titulo}</h3>
-                  <p className="text-sm text-carbon-suave">{paso.descripcion}</p>
-                </div>
+                <h3 className="font-display text-xl text-carbon">{paso.titulo}</h3>
+                <p className="text-sm text-carbon-suave">{paso.descripcion}</p>
               </div>
             ))}
           </div>
