@@ -133,12 +133,14 @@ function mapNode(node: {
   };
   metafields: ({ key: string; value: string } | null)[];
 }): Product {
-  const variants = node.variants.edges.map((e) => ({
-    id: e.node.id,
-    title: e.node.title,
-    price: e.node.price.amount,
-    compareAtPrice: e.node.compareAtPrice?.amount ?? null,
-  }));
+  const variants = node.variants.edges
+    .map((e) => ({
+      id: e.node.id,
+      title: e.node.title,
+      price: e.node.price.amount,
+      compareAtPrice: e.node.compareAtPrice?.amount ?? null,
+    }))
+    .sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
   return {
     id: node.id,
