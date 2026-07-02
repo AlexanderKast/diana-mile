@@ -39,6 +39,7 @@ function OrderSummary() {
             alt={product.images[0].altText ?? product.title}
             fill
             className="object-cover"
+            sizes="52px"
           />
         )}
       </div>

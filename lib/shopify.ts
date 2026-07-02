@@ -188,6 +188,16 @@ export type CreateOrderInput = {
   ciudad: string;
 };
 
+/**
+ * La Storefront API (GraphQL) entrega los IDs de variante como
+ * "gid://shopify/ProductVariant/123". La Admin API REST (usada aca para
+ * crear la orden) necesita el numero plano, si no responde 400.
+ */
+function toRestVariantId(id: string): string {
+  const match = id.match(/(\d+)$/);
+  return match ? match[1] : id;
+}
+
 export async function createShopifyOrder(
   input: CreateOrderInput
 ): Promise<{ orderId: string; orderNumber: string }> {
@@ -203,7 +213,7 @@ export async function createShopifyOrder(
     },
     body: JSON.stringify({
       order: {
-        line_items: [{ variant_id: input.variantId, quantity: input.quantity }],
+        line_items: [{ variant_id: toRestVariantId(input.variantId), quantity: input.quantity }],
         customer: { first_name: input.nombre, phone: input.telefono },
         shipping_address: {
           first_name: input.nombre,
@@ -223,7 +233,8 @@ export async function createShopifyOrder(
   });
 
   if (!res.ok) {
-    throw new Error(`Shopify Admin API error: ${res.status}`);
+    const errorBody = await res.text();
+    throw new Error(`Shopify Admin API error: ${res.status} — ${errorBody}`);
   }
 
   const json = await res.json();

@@ -53,6 +53,7 @@ export default async function PedidoPage({ params, searchParams }: PedidoPagePro
                     alt={imagen.altText ?? product.title}
                     fill
                     className="object-cover"
+                    sizes="60px"
                   />
                 )}
               </div>
