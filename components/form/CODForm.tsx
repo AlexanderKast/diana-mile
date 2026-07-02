@@ -6,6 +6,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { normalizeColombianMobile } from "@/lib/phone";
+import { DEPARTAMENTOS_COLOMBIA } from "@/lib/colombia";
 
 type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
 
@@ -22,6 +23,8 @@ type SuccessState = {
 export function CODForm({ product, selectedVariant }: CODFormProps) {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [email, setEmail] = useState("");
+  const [departamento, setDepartamento] = useState("");
   const [ciudad, setCiudad] = useState("");
   const [direccion, setDireccion] = useState("");
   const [notas, setNotas] = useState("");
@@ -33,7 +36,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
     e.preventDefault();
     setError(null);
 
-    if (!nombre.trim() || !telefono.trim() || !ciudad.trim() || !direccion.trim()) {
+    if (!nombre.trim() || !telefono.trim() || !departamento || !ciudad.trim() || !direccion.trim()) {
       setError("Por favor completa todos los campos requeridos.");
       return;
     }
@@ -53,6 +56,8 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         body: JSON.stringify({
           nombre,
           telefono: telefonoNormalizado.e164,
+          email: email.trim() || undefined,
+          departamento,
           ciudad,
           direccion,
           notas,
@@ -141,6 +146,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       <Input
         label="Nombre completo"
         type="text"
+        autoComplete="name"
         required
         value={nombre}
         onChange={(e) => setNombre(e.target.value)}
@@ -169,8 +175,41 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       </div>
 
       <Input
+        label="Correo (opcional)"
+        type="email"
+        autoComplete="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="tucorreo@ejemplo.com"
+      />
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="departamento" className="text-xs text-ceniza font-medium">
+          Departamento
+        </label>
+        <select
+          id="departamento"
+          autoComplete="address-level1"
+          required
+          value={departamento}
+          onChange={(e) => setDepartamento(e.target.value)}
+          className="min-h-[44px] rounded-[2px] border border-arena bg-blanco px-4 py-2.5 text-base text-carbon focus:outline-none focus:border-dorado transition-colors"
+        >
+          <option value="" disabled>
+            Selecciona tu departamento
+          </option>
+          {DEPARTAMENTOS_COLOMBIA.map((dep) => (
+            <option key={dep} value={dep}>
+              {dep}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <Input
         label="Ciudad"
         type="text"
+        autoComplete="address-level2"
         required
         value={ciudad}
         onChange={(e) => setCiudad(e.target.value)}
@@ -180,6 +219,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       <Textarea
         label="Direccion completa"
         rows={3}
+        autoComplete="street-address"
         required
         value={direccion}
         onChange={(e) => setDireccion(e.target.value)}

@@ -1,4 +1,5 @@
 import { Product, ProductMetafields } from "@/types";
+import { splitFullName } from "@/lib/utils";
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const STOREFRONT_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
@@ -184,6 +185,8 @@ export type CreateOrderInput = {
   quantity: number;
   nombre: string;
   telefono: string;
+  email?: string;
+  departamento: string;
   direccion: string;
   ciudad: string;
 };
@@ -205,6 +208,21 @@ export async function createShopifyOrder(
     return { orderId: `MOCK-${Date.now()}`, orderNumber: `#DM${Math.floor(1000 + Math.random() * 9000)}` };
   }
 
+  const { firstName, lastName } = splitFullName(input.nombre);
+
+  // Shopify descarta shipping_address/customer ENTERO y sin error si
+  // faltan last_name, province o country_code — asi se rompio antes.
+  const address = {
+    first_name: firstName,
+    last_name: lastName,
+    address1: input.direccion,
+    city: input.ciudad,
+    province: input.departamento,
+    country: "Colombia",
+    country_code: "CO",
+    phone: input.telefono,
+  };
+
   const res = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders.json`, {
     method: "POST",
     headers: {
@@ -214,14 +232,14 @@ export async function createShopifyOrder(
     body: JSON.stringify({
       order: {
         line_items: [{ variant_id: toRestVariantId(input.variantId), quantity: input.quantity }],
-        customer: { first_name: input.nombre, phone: input.telefono },
-        shipping_address: {
-          first_name: input.nombre,
-          address1: input.direccion,
-          city: input.ciudad,
-          country: "Colombia",
+        customer: {
+          first_name: firstName,
+          last_name: lastName,
           phone: input.telefono,
+          ...(input.email ? { email: input.email } : {}),
         },
+        shipping_address: address,
+        billing_address: address,
         financial_status: "pending",
         fulfillment_status: null,
         note: "Pedido COD — Contraentrega",
