@@ -91,22 +91,22 @@ export function TestimonialsSection() {
   return (
     <section id="testimonios">
       {/* CAPA A — Stats de prueba social */}
-      <div className="seccion-joya text-blanco py-8 px-6 text-center">
+      <div className="seccion-joya text-carbon py-8 px-6 text-center">
         <p className="font-display text-2xl">+ 2.400 mujeres ya transformaron su piel</p>
-        <p className="mt-1 text-[13px] text-blanco/70">Colombia · Ecuador · Venezuela · Perú</p>
+        <p className="mt-1 text-[13px] text-carbon-suave">Colombia · Ecuador · Venezuela · Perú</p>
 
         <div className="mt-6 grid grid-cols-3 gap-4">
           <div>
-            <p className="font-display text-4xl text-blanco">98%</p>
-            <p className="text-[11px] text-blanco/70">Volvería a pedir</p>
+            <p className="font-display text-4xl text-morado-oscuro">98%</p>
+            <p className="text-[11px] text-carbon-suave">Volvería a pedir</p>
           </div>
           <div>
-            <p className="font-display text-4xl text-blanco">4.9★</p>
-            <p className="text-[11px] text-blanco/70">Promedio reseñas</p>
+            <p className="font-display text-4xl text-morado-oscuro">4.9★</p>
+            <p className="text-[11px] text-carbon-suave">Promedio reseñas</p>
           </div>
           <div>
-            <p className="font-display text-4xl text-blanco">+2.4K</p>
-            <p className="text-[11px] text-blanco/70">Pedidos este mes</p>
+            <p className="font-display text-4xl text-morado-oscuro">+2.4K</p>
+            <p className="text-[11px] text-carbon-suave">Pedidos este mes</p>
           </div>
         </div>
       </div>

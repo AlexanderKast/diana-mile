@@ -6,7 +6,7 @@ import { cx } from "@/lib/utils";
 type SocialCTABandProps = {
   title?: string;
   buttonLabel: string;
-  tone: "outline-morado" | "lila-band" | "morado-band" | "white-button";
+  tone: "outline-morado" | "lila-band" | "morado-band" | "gold-solid";
   variantId?: string;
 };
 
@@ -20,7 +20,7 @@ export function SocialCTABand({ title, buttonLabel, tone, variantId }: SocialCTA
         <button
           type="button"
           onClick={() => openOrderSheet(variantId)}
-          className="inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] border-[1.5px] border-morado text-morado text-sm font-medium tracking-wide transition-all duration-200 hover:bg-lila-suave hover:scale-[1.02] active:scale-[0.97]"
+          className="inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] border-2 border-morado text-morado text-base font-semibold tracking-wide transition-all duration-200 hover:bg-lila-suave hover:scale-[1.03] active:scale-[0.97]"
         >
           {buttonLabel}
         </button>
@@ -28,12 +28,12 @@ export function SocialCTABand({ title, buttonLabel, tone, variantId }: SocialCTA
     );
   }
 
-  if (tone === "white-button") {
+  if (tone === "gold-solid") {
     return (
       <button
         type="button"
         onClick={() => openOrderSheet(variantId)}
-        className="btn-shine inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] bg-blanco text-carbon text-sm font-medium tracking-wide transition-all duration-200 hover:bg-crema hover:scale-[1.02] active:scale-[0.97]"
+        className="btn-shine inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] bg-dorado-oscuro text-blanco text-base font-semibold tracking-wide shadow-[0_4px_14px_rgba(168,136,94,0.35)] transition-all duration-200 hover:bg-dorado hover:scale-[1.03] hover:shadow-[0_8px_24px_rgba(168,136,94,0.5)] active:scale-[0.97]"
       >
         {buttonLabel}
       </button>
@@ -58,10 +58,10 @@ export function SocialCTABand({ title, buttonLabel, tone, variantId }: SocialCTA
         type="button"
         onClick={() => openOrderSheet(variantId)}
         className={cx(
-          "btn-shine inline-flex items-center justify-center min-h-[44px] w-full max-w-sm px-6 rounded-[2px] text-sm font-medium tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]",
+          "btn-shine inline-flex items-center justify-center min-h-[44px] w-full max-w-sm px-6 rounded-[2px] text-base font-semibold tracking-wide transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]",
           isMorado
-            ? "bg-blanco text-morado hover:bg-lila-suave"
-            : "bg-dorado-oscuro text-blanco hover:bg-dorado hover:shadow-[0_6px_20px_rgba(168,136,94,0.4)]"
+            ? "bg-blanco text-morado shadow-[0_4px_14px_rgba(0,0,0,0.12)] hover:bg-lila-suave"
+            : "bg-dorado-oscuro text-blanco shadow-[0_4px_14px_rgba(168,136,94,0.35)] hover:bg-dorado hover:shadow-[0_8px_24px_rgba(168,136,94,0.5)]"
         )}
       >
         {buttonLabel}

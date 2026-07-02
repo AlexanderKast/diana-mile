@@ -74,10 +74,11 @@ body {
   border: none;
 }
 
-/* Gradiente "joya" para secciones de cierre — reemplaza los bloques
-   negros por un tono premium coherente con dorado + lila de marca. */
+/* Pastel solido para secciones de cierre — reemplaza los bloques negros.
+   Fondo claro a proposito: el texto va en carbon/morado-oscuro encima,
+   nunca blanco, para que el contraste sea siempre alto. */
 .seccion-joya {
-  background: linear-gradient(135deg, var(--dorado-oscuro), var(--morado-oscuro));
+  background: var(--lila-suave);
 }
 
 /* Barrido de brillo en botones — se activa en hover, sutil, una sola pasada. */
