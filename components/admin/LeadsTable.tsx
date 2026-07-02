@@ -1,11 +1,24 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { cx } from "@/lib/utils";
 import type { Lead } from "@/types";
 
 type LeadsTableProps = {
   leads: Lead[];
 };
+
+const FUENTE_LABELS: Record<string, string> = {
+  checkout_abandonado: "Carrito abandonado",
+  linktree: "Linktree",
+  home: "Home",
+};
+
+function fuenteLabel(fuente: string | null): string {
+  if (!fuente) return "-";
+  return FUENTE_LABELS[fuente] ?? fuente;
+}
 
 function formatFecha(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO");
@@ -23,7 +36,15 @@ function csvEscape(value: string | null | undefined): string {
 }
 
 function exportarCSV(leads: Lead[]) {
-  const encabezados = ["Fecha", "Nombre", "Telefono", "Ciudad", "Producto de interes", "Fuente"];
+  const encabezados = [
+    "Fecha",
+    "Nombre",
+    "Telefono",
+    "Ciudad",
+    "Producto de interes",
+    "Fuente",
+    "Convertido",
+  ];
   const filas = leads.map((lead) =>
     [
       formatFecha(lead.created_at),
@@ -31,7 +52,8 @@ function exportarCSV(leads: Lead[]) {
       lead.telefono,
       lead.ciudad ?? "",
       lead.producto_interes ?? "",
-      lead.fuente ?? "",
+      fuenteLabel(lead.fuente),
+      lead.convertido ? "Si" : "No",
     ]
       .map(csvEscape)
       .join(",")
@@ -51,15 +73,33 @@ function exportarCSV(leads: Lead[]) {
 }
 
 export default function LeadsTable({ leads }: LeadsTableProps) {
+  const [soloCarritosPendientes, setSoloCarritosPendientes] = useState(false);
+
+  const leadsFiltrados = useMemo(() => {
+    if (!soloCarritosPendientes) return leads;
+    return leads.filter((lead) => lead.fuente === "checkout_abandonado" && !lead.convertido);
+  }, [leads, soloCarritosPendientes]);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <span className="text-xs text-ceniza">
-          {leads.length} lead{leads.length === 1 ? "" : "s"}
-        </span>
-        <Button variant="secondary" onClick={() => exportarCSV(leads)}>
-          Exportar CSV
-        </Button>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <label className="flex items-center gap-2 text-sm text-carbon-suave">
+          <input
+            type="checkbox"
+            checked={soloCarritosPendientes}
+            onChange={(e) => setSoloCarritosPendientes(e.target.checked)}
+            className="h-4 w-4 accent-morado"
+          />
+          Solo carritos abandonados sin convertir
+        </label>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-ceniza">
+            {leadsFiltrados.length} lead{leadsFiltrados.length === 1 ? "" : "s"}
+          </span>
+          <Button variant="secondary" onClick={() => exportarCSV(leadsFiltrados)}>
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto bg-blanco border border-arena rounded-[4px]">
@@ -72,17 +112,18 @@ export default function LeadsTable({ leads }: LeadsTableProps) {
               <th className="text-left py-3 px-4">Ciudad</th>
               <th className="text-left py-3 px-4">Producto de interes</th>
               <th className="text-left py-3 px-4">Fuente</th>
+              <th className="text-left py-3 px-4">Estado</th>
             </tr>
           </thead>
           <tbody>
-            {leads.length === 0 ? (
+            {leadsFiltrados.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-6 text-center text-ceniza">
+                <td colSpan={7} className="py-6 text-center text-ceniza">
                   Sin leads todavia.
                 </td>
               </tr>
             ) : (
-              leads.map((lead) => (
+              leadsFiltrados.map((lead) => (
                 <tr key={lead.id} className="border-b border-arena/50">
                   <td className="py-3 px-4 text-carbon-suave whitespace-nowrap">
                     {formatFecha(lead.created_at)}
@@ -93,7 +134,21 @@ export default function LeadsTable({ leads }: LeadsTableProps) {
                   <td className="py-3 px-4 text-carbon-suave">
                     {lead.producto_interes ?? "-"}
                   </td>
-                  <td className="py-3 px-4 text-carbon-suave">{lead.fuente ?? "-"}</td>
+                  <td className="py-3 px-4 text-carbon-suave">{fuenteLabel(lead.fuente)}</td>
+                  <td className="py-3 px-4">
+                    {lead.fuente === "checkout_abandonado" ? (
+                      <span
+                        className={cx(
+                          "inline-block px-2.5 py-1 rounded-[2px] text-xs font-medium",
+                          lead.convertido ? "bg-dorado/20 text-dorado-oscuro" : "bg-morado/15 text-morado"
+                        )}
+                      >
+                        {lead.convertido ? "Convertido" : "Pendiente"}
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                 </tr>
               ))
             )}

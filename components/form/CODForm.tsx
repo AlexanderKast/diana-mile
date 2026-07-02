@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Product, ProductVariant } from "@/types";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -39,6 +39,34 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
 
   const ciudadesSugeridas = departamento ? CIUDADES_POR_DEPARTAMENTO[departamento] ?? [] : [];
   const barriosSugeridos = getBarriosSugeridos(ciudad);
+
+  // Carrito abandonado: en cuanto nombre + telefono son validos, se
+  // registra para remarketing (con debounce, no en cada tecla). Si el
+  // pedido se termina completando, /api/orders lo marca como convertido.
+  useEffect(() => {
+    if (success) return;
+
+    const telefonoValido = normalizeColombianMobile(telefono);
+    if (!nombre.trim() || !telefonoValido) return;
+
+    const timeout = setTimeout(() => {
+      fetch("/api/leads/carrito", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre,
+          telefono: telefonoValido.e164,
+          ciudad: ciudad || null,
+          producto_interes: `${product.title} — ${selectedVariant.title}`,
+        }),
+      }).catch(() => {
+        // Best-effort, nunca debe interrumpir el flujo de compra.
+      });
+    }, 1500);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nombre, telefono, ciudad, success]);
 
   function capturarUbicacion() {
     if (!navigator.geolocation) {

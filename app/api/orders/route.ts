@@ -105,6 +105,15 @@ export async function POST(request: NextRequest) {
       if (insertError) {
         console.error("Error al guardar el pedido en Supabase:", insertError.message);
       }
+
+      // El pedido se completo: si habia quedado un carrito abandonado con
+      // este telefono, ya no aplica para remarketing.
+      await supabase
+        .from("leads")
+        .update({ convertido: true })
+        .eq("telefono", telefonoNormalizado.e164)
+        .eq("fuente", "checkout_abandonado")
+        .eq("convertido", false);
     } catch (syncError) {
       console.error("Error al sincronizar el pedido con Supabase:", syncError);
     }

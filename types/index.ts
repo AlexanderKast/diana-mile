@@ -41,6 +41,7 @@ export type Lead = {
   fuente: string | null;
   utm_source: string | null;
   utm_campaign: string | null;
+  convertido: boolean;
   created_at: string;
 };
 

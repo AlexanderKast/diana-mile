@@ -1,4 +1,6 @@
--- Leads capturados (personas que dieron datos sin comprar)
+-- Leads capturados (personas que dieron datos sin comprar).
+-- fuente = 'checkout_abandonado' cuando el nombre+telefono se capturan
+-- desde el formulario COD sin completar el pedido (remarketing).
 CREATE TABLE IF NOT EXISTS leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre TEXT NOT NULL,
@@ -9,6 +11,7 @@ CREATE TABLE IF NOT EXISTS leads (
   fuente TEXT,
   utm_source TEXT,
   utm_campaign TEXT,
+  convertido BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
