@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Diana Mile",
+  title: "Milito Life Shop",
   description: "Bienestar · Anti-edad · Rituales de piel",
 };
 

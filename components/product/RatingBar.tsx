@@ -1,42 +1,35 @@
 "use client";
 
-function IconStar() {
+function ShieldIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 20 20"
-      fill="var(--dorado)"
-      aria-hidden="true"
-    >
-      <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L10 1.5z" />
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <path d="M10 2l6.5 2.5v5c0 4.5-2.9 7.4-6.5 8.5-3.6-1.1-6.5-4-6.5-8.5v-5L10 2z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 10l2 2 4-4.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function RatingBar() {
-  function handleVerResenasClick(e: React.MouseEvent<HTMLAnchorElement>) {
+  function handleDetailsClick(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
     document.getElementById("testimonios")?.scrollIntoView({ behavior: "smooth" });
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-[13px]">
-      <span className="flex items-center gap-0.5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <IconStar key={i} />
-        ))}
+      <span className="flex items-center gap-1.5 font-medium text-carbon">
+        <ShieldIcon />
+        Compra contraentrega
       </span>
-      <span className="font-medium text-carbon">4.9</span>
       <span className="text-ceniza">·</span>
-      <span className="text-ceniza">127 reseñas</span>
+      <span className="text-ceniza">Soporte por WhatsApp</span>
       <span className="text-ceniza">·</span>
       <a
         href="#testimonios"
-        onClick={handleVerResenasClick}
+        onClick={handleDetailsClick}
         className="text-morado underline underline-offset-2 cursor-pointer"
       >
-        Ver reseñas ↓
+        Ver detalles
       </a>
     </div>
   );

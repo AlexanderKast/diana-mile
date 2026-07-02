@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { TouchEvent, useEffect, useRef, useState } from "react";
-import { formatCOP, cx } from "@/lib/utils";
+import { KeyboardEvent, TouchEvent, useEffect, useRef, useState } from "react";
+import { formatCOP } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { CODForm } from "@/components/form/CODForm";
 import { VariantSelector } from "@/components/product/VariantSelector";
@@ -109,17 +109,53 @@ function SheetContent({ compact }: { compact: boolean }) {
 export function OrderBottomSheet() {
   const { isOpen, closeOrderSheet } = useOrderSheet();
   const touchStartY = useRef<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const [dragY, setDragY] = useState(0);
 
   useEffect(() => {
-    if (isOpen) {
-      const previousOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = previousOverflow;
-      };
+    if (!isOpen) return;
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(e: globalThis.KeyboardEvent) {
+      if (e.key === "Escape") {
+        closeOrderSheet();
+      }
     }
-  }, [isOpen]);
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [isOpen, closeOrderSheet]);
+
+  function handleDialogKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Tab") return;
+
+    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable || focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 
   function handleTouchStart(e: TouchEvent<HTMLDivElement>) {
     touchStartY.current = e.touches[0].clientY;
@@ -141,55 +177,56 @@ export function OrderBottomSheet() {
 
   return (
     <>
-      {/* Backdrop movil */}
-      <div
-        className={cx(
-          "fixed inset-0 z-[60] bg-carbon/60 transition-opacity duration-300 md:hidden",
-          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        )}
-        onClick={closeOrderSheet}
-        aria-hidden="true"
-      />
-
-      {/* Bandeja movil */}
-      <div
-        className={cx(
-          "fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-[16px] bg-blanco transition-transform duration-300 ease-out md:hidden",
-          isOpen ? "translate-y-0" : "translate-y-full"
-        )}
-        style={{
-          paddingBottom: "max(16px, env(safe-area-inset-bottom))",
-          transform: isOpen && dragY > 0 ? `translateY(${dragY}px)` : undefined,
-        }}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Completa tu pedido"
-      >
-        <div
-          className="flex items-center justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div className="h-1 w-10 rounded-full bg-arena" />
-        </div>
-
-        <div className="flex items-center justify-between px-5 pb-2">
-          <span className="font-display text-lg text-carbon">Completa tu pedido</span>
-          <button
-            type="button"
+      {isOpen && (
+        <>
+          {/* Backdrop movil */}
+          <div
+            className="fixed inset-0 z-[60] bg-carbon/60 transition-opacity duration-300 md:hidden"
             onClick={closeOrderSheet}
-            aria-label="Cerrar"
-            className="flex h-11 w-11 items-center justify-center text-carbon-suave"
-          >
-            <CloseIcon />
-          </button>
-        </div>
+            aria-hidden="true"
+          />
 
-        <div className="px-5 pb-6">
-          <SheetContent compact />
-        </div>
-      </div>
+          {/* Bandeja movil */}
+          <div
+            ref={dialogRef}
+            className="fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-[16px] bg-blanco transition-transform duration-300 ease-out md:hidden"
+            style={{
+              paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+              transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Completa tu pedido"
+            onKeyDown={handleDialogKeyDown}
+          >
+            <div
+              className="flex items-center justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div className="h-1 w-10 rounded-full bg-arena" />
+            </div>
+
+            <div className="flex items-center justify-between px-5 pb-2">
+              <span className="font-display text-lg text-carbon">Completa tu pedido</span>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={closeOrderSheet}
+                aria-label="Cerrar"
+                className="flex h-11 w-11 items-center justify-center text-carbon-suave"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="px-5 pb-6">
+              <SheetContent compact />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Panel sticky desktop */}
       <div

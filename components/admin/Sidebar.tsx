@@ -71,7 +71,7 @@ export default function Sidebar() {
 
       {/* Sidebar desktop */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-56 bg-carbon text-blanco flex-col p-6">
-        <span className="font-display text-2xl mb-10">Diana Mile</span>
+        <span className="font-display text-2xl mb-10">Milito Life Shop</span>
         <NavLinks pathname={pathname} />
         <button
           type="button"
@@ -92,7 +92,7 @@ export default function Sidebar() {
           />
           <aside className="fixed left-0 top-0 h-screen w-56 bg-carbon text-blanco flex flex-col p-6 animate-fade-in-up">
             <div className="flex items-center justify-between mb-10">
-              <span className="font-display text-2xl">Diana Mile</span>
+              <span className="font-display text-2xl">Milito Life Shop</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

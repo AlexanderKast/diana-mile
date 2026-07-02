@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { normalizeColombianMobile } from "@/lib/phone";
 
 type LeadCaptureFormProps = {
   fuente?: string;
@@ -27,6 +28,12 @@ export function LeadCaptureForm({ fuente = "linktree", productoInteres }: LeadCa
       return;
     }
 
+    const telefonoNormalizado = normalizeColombianMobile(telefono);
+    if (!telefonoNormalizado) {
+      setError("Ingresa un celular colombiano valido de 10 digitos, por ejemplo 300 123 4567.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -35,7 +42,7 @@ export function LeadCaptureForm({ fuente = "linktree", productoInteres }: LeadCa
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre,
-          telefono,
+          telefono: telefonoNormalizado.e164,
           ciudad: ciudad || undefined,
           producto_interes: productoInteres,
           fuente,
@@ -78,9 +85,12 @@ export function LeadCaptureForm({ fuente = "linktree", productoInteres }: LeadCa
       <Input
         label="Telefono celular"
         type="tel"
+        inputMode="numeric"
+        autoComplete="tel-national"
+        maxLength={13}
         required
         value={telefono}
-        onChange={(e) => setTelefono(e.target.value)}
+        onChange={(e) => setTelefono(e.target.value.replace(/[^\d\s]/g, ""))}
         placeholder="300 123 4567"
       />
 

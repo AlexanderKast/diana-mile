@@ -2,8 +2,15 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getProductByHandle } from "@/lib/shopify";
+import {
+  getIngredientStory,
+  getPrimaryProductBenefits,
+  getProductEyebrow,
+  getProductTagline,
+  isEpochProduct,
+} from "@/lib/product-content";
 import { ProductGallery } from "@/components/product/ProductGallery";
-import { ProductBenefits, Benefit } from "@/components/product/ProductBenefits";
+import { ProductBenefits } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
 import { ProductHeroCTA } from "@/components/product/ProductHeroCTA";
 import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
@@ -18,39 +25,6 @@ import { GuaranteeSection } from "@/components/product/GuaranteeSection";
 import { FAQAccordion } from "@/components/product/FAQAccordion";
 import { NuskinSection } from "@/components/product/NuskinSection";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
-
-const BENEFICIOS: Benefit[] = [
-  {
-    icon: "gota",
-    title: "Limpieza profunda sin jabón",
-    description: "No reseca ni altera el pH natural. Tu piel limpia sin sentirse tirante.",
-  },
-  {
-    icon: "mineral",
-    title: "Más de 50 minerales marinos",
-    description: "Zinc, Cobre, Magnesio y Plata — cada uso nutre mientras limpia.",
-  },
-  {
-    icon: "hoja",
-    title: "Exfoliación suave natural",
-    description: "Polvo de corteza Tsuga Heterophylla exfolia sin irritar.",
-  },
-  {
-    icon: "sol",
-    title: "Piel radiante desde el primer uso",
-    description: "Textura visiblemente más suave después de la primera aplicación.",
-  },
-  {
-    icon: "escudo",
-    title: "Probado dermatológicamente",
-    description: "Seguro para piel sensible. Uso diario recomendado.",
-  },
-  {
-    icon: "planeta",
-    title: "Empaque 100% reciclado",
-    description: "Caja de papel reciclado. Compromiso con la tierra y contigo.",
-  },
-];
 
 const PASOS_RITUAL = [
   { numero: "1", titulo: "Humedece", descripcion: "Aplica agua tibia sobre la piel" },
@@ -67,12 +41,25 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const product = await getProductByHandle(slug);
 
   if (!product) {
-    return { title: "Producto no encontrado — Diana Mile" };
+    return { title: "Producto no encontrado - Milito Life Shop" };
   }
 
+  const image = product.images[0];
+
   return {
-    title: `${product.title} — Diana Mile`,
+    title: `${product.title} - Milito Life Shop`,
     description: product.description,
+    openGraph: {
+      title: `${product.title} - Milito Life Shop`,
+      description: product.description,
+      images: image ? [{ url: image.url, alt: image.altText ?? product.title }] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.title} - Milito Life Shop`,
+      description: product.description,
+      images: image ? [image.url] : [],
+    },
   };
 }
 
@@ -84,93 +71,84 @@ export default async function ProductoPage({ params }: ProductPageProps) {
     notFound();
   }
 
+  const benefits = getPrimaryProductBenefits(product);
+  const ingredientStory = getIngredientStory(product);
+  const isEpoch = isEpochProduct(product);
+
   return (
     <OrderSheetProvider product={product}>
       <main className="flex flex-col pb-28">
-        {/* 1. Prueba social urgente */}
         <div className="px-6 pt-3 md:px-10">
           <LiveActivityBar />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10 min-w-0">
-          {/* 2. Galeria — cuadrada y acotada en movil, no full-bleed */}
-          <div className="md:sticky md:top-6 md:self-start min-w-0">
+          <div className="md:sticky md:top-24 md:self-start min-w-0">
             <ProductGallery images={product.images} />
           </div>
 
           <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
-            {/* 3. Rating bar + badges de confianza */}
             <div className="flex flex-col gap-2">
               <RatingBar />
               <TrustBadges />
             </div>
 
-            {/* 4. Nombre + linea dorada + tagline */}
             <div className="flex flex-col gap-2">
               <p className="text-[11px] text-ceniza uppercase tracking-wide">
-                Colección Epoch® · Nu Skin
+                {getProductEyebrow(product)}
               </p>
               <h1 className="font-display text-[26px] md:text-[32px] text-carbon leading-tight">
                 {product.title}
               </h1>
               <div className="linea-dorada w-12" />
               <p className="text-sm text-carbon-suave">
-                Sabiduría indígena. Mineralización profunda. Piel transformada.
+                {getProductTagline(product)}
               </p>
             </div>
 
-            {/* 5-6. Precio con ancla + CTA principal (elegir pack se resuelve en el sheet) */}
             <ProductHeroCTA />
 
             <OrderBottomSheet />
           </div>
         </div>
 
-        {/* 7. Historia del ingrediente */}
-        <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">
-          <h2 className="font-display text-[28px] text-carbon max-w-md">
-            El secreto que la naturaleza guardó por siglos
-          </h2>
-          <p className="text-sm text-carbon-suave leading-relaxed max-w-md">
-            La leyenda cuenta que los pueblos indígenas del Noroeste del Pacífico intentaron
-            fabricar cerámica con la arcilla marina glacial de la Columbia Británica — y al
-            retirarla de sus manos, descubrieron algo inesperado: su piel quedaba
-            extraordinariamente suave e hidratada. Ese descubrimiento ancestral es el corazón de
-            cada Epoch® Polishing Bar.
-          </p>
-          <div className="relative w-full aspect-[4/5] rounded-[2px] overflow-hidden max-w-md">
-            <Image
-              src="/images/lifestyle-ritual.jpg"
-              alt="El Ritual Epoch"
-              fill
-              className="object-cover"
-              sizes="(min-width: 768px) 448px, 100vw"
-            />
-          </div>
-        </section>
+        {ingredientStory && (
+          <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">
+            <h2 className="font-display text-[28px] text-carbon max-w-md">
+              {ingredientStory.title}
+            </h2>
+            <p className="text-sm text-carbon-suave leading-relaxed max-w-md">
+              {ingredientStory.body}
+            </p>
+            <div className="relative w-full aspect-[4/5] rounded-[2px] overflow-hidden max-w-md">
+              <Image
+                src="/images/lifestyle-ritual.jpg"
+                alt={`Ritual ${product.title}`}
+                fill
+                className="object-cover"
+                sizes="(min-width: 768px) 448px, 100vw"
+              />
+            </div>
+          </section>
+        )}
 
-        {/* 8. CTA 3 */}
-        <SocialCTABand tone="outline-morado" buttonLabel="Probar el Epoch® Polishing Bar" />
+        <SocialCTABand tone="outline-morado" buttonLabel={`Probar ${product.title}`} />
 
-        {/* 9. Beneficios */}
         <section className="py-12 px-6 flex flex-col gap-6">
           <h2 className="font-display text-2xl text-carbon text-center">
             Lo que hace por tu piel
           </h2>
-          <ProductBenefits benefits={BENEFICIOS} />
+          <ProductBenefits benefits={benefits} />
         </section>
 
-        {/* 10. CTA 4 */}
         <SocialCTABand
           tone="lila-band"
-          title="¿Lista para transformar tu ritual de limpieza?"
-          buttonLabel="Pedirlo ahora · Contraentrega"
+          title="Lista para transformar tu ritual de cuidado?"
+          buttonLabel="Pedirlo ahora - Contraentrega"
         />
 
-        {/* 11. Asi lo estan usando */}
-        <UGCSection />
+        {isEpoch && <UGCSection />}
 
-        {/* 12. Modo de uso */}
         <section className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8">
           <h2 className="font-display text-2xl text-center">Tu ritual en 3 pasos</h2>
           <div
@@ -192,28 +170,25 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </div>
         </section>
 
-        {/* 13-15. Stats + testimonios estilo Instagram + CTA5 (todo dentro de TestimonialsSection) */}
-        <TestimonialsSection />
+        <TestimonialsSection productName={product.title} showUsageStats={isEpoch} />
 
-        {/* 16. Garantia y confianza */}
         <GuaranteeSection />
 
-        {/* 17. FAQ */}
         <section className="px-6 py-12">
           <FAQAccordion />
         </section>
 
-        <section className="px-6 pb-4">
-          <IngredientsAccordion />
-        </section>
+        {isEpoch && (
+          <section className="px-6 pb-4">
+            <IngredientsAccordion />
+          </section>
+        )}
 
-        {/* 18. Compra directa Nu Skin */}
         <NuskinSection />
 
-        {/* 19. CTA 6 — banner final */}
         <section className="seccion-joya text-carbon py-12 px-6 text-center flex flex-col items-center gap-4">
           <h2 className="font-display text-[28px]">Tu piel te lo va a agradecer</h2>
-          <p className="text-sm text-carbon-suave">Envío contraentrega · Pagas al recibir</p>
+          <p className="text-sm text-carbon-suave">Envio contraentrega - Pagas al recibir</p>
           <SocialCTABand tone="gold-solid" buttonLabel="Empezar mi ritual" />
         </section>
 

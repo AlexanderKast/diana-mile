@@ -3,7 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase-server";
 import type { Pedido } from "@/types";
 
 export const metadata = {
-  title: "Pedidos | Diana Mile Admin",
+  title: "Pedidos | Milito Life Shop Admin",
 };
 
 export default async function PedidosPage() {

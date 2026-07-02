@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createShopifyOrder, getProductByHandle } from "@/lib/shopify";
 import { createAdminSupabaseClient } from "@/lib/supabase-server";
+import { normalizeColombianMobile } from "@/lib/phone";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +11,14 @@ export async function POST(request: NextRequest) {
     if (!nombre || !telefono || !ciudad || !direccion || !variantId || !slug) {
       return NextResponse.json(
         { mensaje: "Faltan campos requeridos para procesar el pedido." },
+        { status: 400 }
+      );
+    }
+
+    const telefonoNormalizado = normalizeColombianMobile(String(telefono));
+    if (!telefonoNormalizado) {
+      return NextResponse.json(
+        { mensaje: "Ingresa un celular colombiano valido de 10 digitos." },
         { status: 400 }
       );
     }
@@ -30,7 +39,7 @@ export async function POST(request: NextRequest) {
       variantId,
       quantity: 1,
       nombre,
-      telefono,
+      telefono: telefonoNormalizado.e164,
       direccion,
       ciudad,
     });
@@ -42,7 +51,7 @@ export async function POST(request: NextRequest) {
       const { error: insertError } = await supabase.from("pedidos").insert({
         shopify_order_id: orderId,
         nombre,
-        telefono,
+        telefono: telefonoNormalizado.e164,
         direccion,
         ciudad,
         producto_nombre: nombreProducto,
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest) {
       console.error("Error al sincronizar el pedido con Supabase:", syncError);
     }
 
-    return NextResponse.json({ orderNumber, telefono });
+    return NextResponse.json({ orderNumber, telefono: telefonoNormalizado.display });
   } catch (error) {
     console.error("Error al procesar el pedido:", error);
     return NextResponse.json(

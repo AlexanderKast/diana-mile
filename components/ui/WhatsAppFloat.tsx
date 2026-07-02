@@ -2,7 +2,9 @@
 
 export function WhatsAppFloat() {
   const numero = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
-  const mensaje = "Hola, me interesa conocer mas sobre Diana Mile";
+  const mensaje = "Hola, me interesa conocer mas sobre Milito Life Shop";
+
+  if (!numero) return null;
 
   function handleClick() {
     window.open(

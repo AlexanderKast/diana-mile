@@ -5,18 +5,15 @@ import { useEffect, useState } from "react";
 const MIN_VIEWERS = 18;
 const MAX_VIEWERS = 31;
 const UPDATE_INTERVAL_MS = 45000;
-const DEFAULT_VIEWERS = 24;
 
 function randomViewers(): number {
   return Math.floor(Math.random() * (MAX_VIEWERS - MIN_VIEWERS + 1)) + MIN_VIEWERS;
 }
 
 export function LiveActivityBar() {
-  const [viewers, setViewers] = useState(DEFAULT_VIEWERS);
+  const [viewers, setViewers] = useState(() => randomViewers());
 
   useEffect(() => {
-    setViewers(randomViewers());
-
     const interval = setInterval(() => {
       setViewers(randomViewers());
     }, UPDATE_INTERVAL_MS);

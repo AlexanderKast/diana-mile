@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-server";
+import { normalizeColombianMobile } from "@/lib/phone";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,10 +14,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const telefonoNormalizado = normalizeColombianMobile(String(telefono));
+    if (!telefonoNormalizado) {
+      return NextResponse.json(
+        { mensaje: "Ingresa un celular colombiano valido de 10 digitos." },
+        { status: 400 }
+      );
+    }
+
     const supabase = createAdminSupabaseClient();
     const { error } = await supabase.from("leads").insert({
       nombre,
-      telefono,
+      telefono: telefonoNormalizado.e164,
       ciudad: ciudad || null,
       producto_interes: producto_interes || null,
       fuente: fuente || null,

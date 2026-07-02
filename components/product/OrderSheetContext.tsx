@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { Product, ProductVariant } from "@/types";
 
 type OrderSheetContextValue = {
@@ -30,16 +30,16 @@ export function OrderSheetProvider({
 
   const selectedVariant = product.variants.find((v) => v.id === selectedVariantId) ?? product.variants[0];
 
-  function selectVariant(variantId: string) {
+  const selectVariant = useCallback((variantId: string) => {
     setSelectedVariantId(variantId);
     setSelectedIsNuskin(false);
-  }
+  }, []);
 
-  function selectNuskin() {
+  const selectNuskin = useCallback(() => {
     setSelectedIsNuskin(true);
-  }
+  }, []);
 
-  function openOrderSheet(variantId?: string) {
+  const openOrderSheet = useCallback((variantId?: string) => {
     if (variantId) selectVariant(variantId);
     setIsOpen(true);
 
@@ -49,11 +49,11 @@ export function OrderSheetProvider({
         block: "start",
       });
     }
-  }
+  }, [selectVariant]);
 
-  function closeOrderSheet() {
+  const closeOrderSheet = useCallback(() => {
     setIsOpen(false);
-  }
+  }, []);
 
   const value = useMemo<OrderSheetContextValue>(
     () => ({
@@ -67,8 +67,17 @@ export function OrderSheetProvider({
       selectVariant,
       selectNuskin,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [product, isOpen, selectedVariantId, selectedIsNuskin, selectedVariant]
+    [
+      product,
+      isOpen,
+      selectedVariantId,
+      selectedIsNuskin,
+      selectedVariant,
+      openOrderSheet,
+      closeOrderSheet,
+      selectVariant,
+      selectNuskin,
+    ]
   );
 
   return <OrderSheetContext.Provider value={value}>{children}</OrderSheetContext.Provider>;

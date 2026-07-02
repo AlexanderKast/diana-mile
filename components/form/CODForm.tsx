@@ -5,6 +5,7 @@ import { Product, ProductVariant } from "@/types";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { normalizeColombianMobile } from "@/lib/phone";
 
 type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
 
@@ -37,9 +38,13 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       return;
     }
 
-    setLoading(true);
+    const telefonoNormalizado = normalizeColombianMobile(telefono);
+    if (!telefonoNormalizado) {
+      setError("Ingresa un celular colombiano valido de 10 digitos, por ejemplo 300 123 4567.");
+      return;
+    }
 
-    const telefonoCompleto = `+57${telefono.trim()}`;
+    setLoading(true);
 
     try {
       const res = await fetch("/api/orders", {
@@ -47,7 +52,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre,
-          telefono: telefonoCompleto,
+          telefono: telefonoNormalizado.e164,
           ciudad,
           direccion,
           notas,
@@ -151,9 +156,12 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           <input
             id="telefono"
             type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            maxLength={13}
             required
             value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
+            onChange={(e) => setTelefono(e.target.value.replace(/[^\d\s]/g, ""))}
             placeholder="300 123 4567"
             className="flex-1 min-h-[44px] bg-transparent px-4 py-2.5 text-base text-carbon placeholder:text-ceniza focus:outline-none"
           />

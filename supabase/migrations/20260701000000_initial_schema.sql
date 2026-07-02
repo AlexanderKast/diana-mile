@@ -53,8 +53,8 @@ CREATE TABLE IF NOT EXISTS admins (
 );
 
 INSERT INTO config (clave, valor, tipo, descripcion) VALUES
-('linktree_links', '[{"label":"Tienda","url":"/productos","icon":"bag"},{"label":"WhatsApp","url":"https://wa.me/57XXXXXXXXXX","icon":"whatsapp"},{"label":"Instagram","url":"https://instagram.com/dianamile","icon":"instagram"},{"label":"TikTok","url":"https://tiktok.com/@dianamile","icon":"tiktok"}]', 'json', 'Links del linktree'),
-('linktree_titulo', 'Diana Mile', 'texto', 'Titulo del linktree'),
+('linktree_links', '[{"label":"Tienda","url":"/productos","icon":"bag"},{"label":"WhatsApp","url":"https://wa.me/57XXXXXXXXXX","icon":"whatsapp"},{"label":"Instagram","url":"https://instagram.com/militolifeshop","icon":"instagram"},{"label":"TikTok","url":"https://tiktok.com/@militolifeshop","icon":"tiktok"}]', 'json', 'Links del linktree'),
+('linktree_titulo', 'Milito Life Shop', 'texto', 'Titulo del linktree'),
 ('linktree_subtitulo', 'Bienestar · Anti-edad · Rituales de piel', 'texto', 'Subtitulo del linktree'),
 ('whatsapp_numero', '57XXXXXXXXXX', 'texto', 'Numero de WhatsApp para pedidos')
 ON CONFLICT (clave) DO NOTHING;

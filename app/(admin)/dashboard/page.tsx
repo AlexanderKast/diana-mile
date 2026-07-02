@@ -3,7 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase-server";
 import type { Lead, Pedido } from "@/types";
 
 export const metadata = {
-  title: "Dashboard | Diana Mile Admin",
+  title: "Dashboard | Milito Life Shop Admin",
 };
 
 function inicioDelDia(): string {

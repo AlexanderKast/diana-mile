@@ -5,19 +5,19 @@ import { LinkCard } from "@/components/linktree/LinkCard";
 import type { LinktreeLink } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Diana Mile — Link in bio",
+  title: "Milito Life Shop — Link in bio",
   description:
-    "Todos los enlaces de Diana Mile: tienda, WhatsApp, Instagram y TikTok en un solo lugar.",
+    "Todos los enlaces de Milito Life Shop: tienda, WhatsApp, Instagram y TikTok en un solo lugar.",
 };
 
 const DEFAULTS = {
-  titulo: "Diana Mile",
+  titulo: "Milito Life Shop",
   subtitulo: "Bienestar · Anti-edad · Rituales de piel",
   links: [
     { label: "Tienda", url: "/productos", icon: "bag" },
     { label: "WhatsApp", url: "https://wa.me/57XXXXXXXXXX", icon: "whatsapp" },
-    { label: "Instagram", url: "https://instagram.com/dianamile", icon: "instagram" },
-    { label: "TikTok", url: "https://tiktok.com/@dianamile", icon: "tiktok" },
+    { label: "Instagram", url: "https://instagram.com/militolifeshop", icon: "instagram" },
+    { label: "TikTok", url: "https://tiktok.com/@militolifeshop", icon: "tiktok" },
   ] as LinktreeLink[],
 };
 
@@ -96,7 +96,7 @@ export default async function LinkPage() {
         </div>
 
         <footer className="mt-auto pt-8 pb-6 text-center text-[11px] text-ceniza">
-          © Diana Mile
+          © Milito Life Shop
         </footer>
       </div>
     </div>

@@ -7,9 +7,9 @@ import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
 import { ProductCard } from "@/components/product/ProductCard";
 
 export const metadata: Metadata = {
-  title: "Diana Mile — Bienestar y Anti-edad",
+  title: "Milito Life Shop — Bienestar y Anti-edad",
   description:
-    "Rituales de piel con sabiduria indigena y minerales del oceano. Descubre los productos Diana Mile para una piel mas luminosa y firme.",
+    "Rituales de piel con sabiduria indigena y minerales del oceano. Descubre los productos Milito Life Shop para una piel mas luminosa y firme.",
 };
 
 const PILARES = [
@@ -78,9 +78,9 @@ const PILARES = [
 ];
 
 const STATS = [
-  { numero: "+2.000", texto: "Personas que ya transformaron su piel" },
-  { numero: "100%", texto: "Testado dermatologicamente" },
-  { numero: "50+", texto: "Minerales marinos activos" },
+  { numero: "COD", texto: "Pago contraentrega en Colombia" },
+  { numero: "WA", texto: "Acompanamiento por WhatsApp" },
+  { numero: "24-72h", texto: "Despacho estimado en ciudades principales" },
 ];
 
 export default async function HomePage() {
@@ -95,7 +95,7 @@ export default async function HomePage() {
           <div className="relative aspect-[4/5] w-full rounded-[4px] overflow-hidden order-1 md:order-2 animate-fade-in-up">
             <Image
               src="/images/hero-home.jpg"
-              alt="Ritual Diana Mile con hojas tropicales"
+              alt="Ritual Milito Life Shop con hojas tropicales"
               fill
               priority
               className="object-cover"
@@ -118,11 +118,11 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Por que Diana Mile */}
+      {/* Por que Milito Life Shop */}
       <section className="bg-blanco">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <h2 className="font-display text-3xl md:text-4xl text-carbon mb-8">
-            Por que Diana Mile
+            Por que Milito Life Shop
           </h2>
           <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible">
             {PILARES.map((pilar, i) => (

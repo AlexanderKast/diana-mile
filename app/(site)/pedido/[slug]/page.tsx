@@ -7,6 +7,7 @@ import { CODForm } from "@/components/form/CODForm";
 
 type PedidoPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ variant?: string }>;
 };
 
 export async function generateMetadata({ params }: PedidoPageProps): Promise<Metadata> {
@@ -14,13 +15,14 @@ export async function generateMetadata({ params }: PedidoPageProps): Promise<Met
   const product = await getProductByHandle(slug);
 
   return {
-    title: `Completa tu pedido — ${product?.title ?? "Diana Mile"}`,
+    title: `Completa tu pedido — ${product?.title ?? "Milito Life Shop"}`,
     description: product?.description,
   };
 }
 
-export default async function PedidoPage({ params }: PedidoPageProps) {
+export default async function PedidoPage({ params, searchParams }: PedidoPageProps) {
   const { slug } = await params;
+  const selectedVariantId = (await searchParams)?.variant;
   const product = await getProductByHandle(slug);
 
   if (!product) {
@@ -28,7 +30,7 @@ export default async function PedidoPage({ params }: PedidoPageProps) {
   }
 
   const imagen = product.images[0];
-  const selectedVariant = product.variants[0] ?? {
+  const selectedVariant = product.variants.find((variant) => variant.id === selectedVariantId) ?? product.variants[0] ?? {
     id: product.variantId,
     title: "Presentacion unica",
     price: product.price,

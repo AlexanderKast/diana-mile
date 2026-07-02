@@ -43,7 +43,7 @@ function exportarCSV(leads: Lead[]) {
   const enlace = document.createElement("a");
   const fecha = new Date().toISOString().slice(0, 10);
   enlace.href = url;
-  enlace.download = `leads-diana-mile-${fecha}.csv`;
+  enlace.download = `leads-milito-life-shop-${fecha}.csv`;
   document.body.appendChild(enlace);
   enlace.click();
   document.body.removeChild(enlace);

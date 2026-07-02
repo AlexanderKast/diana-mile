@@ -3,8 +3,8 @@ import { getProducts } from "@/lib/shopify";
 import { ProductCard } from "@/components/product/ProductCard";
 
 export const metadata: Metadata = {
-  title: "Productos — Diana Mile",
-  description: "Descubre la coleccion de bienestar y anti-edad de Diana Mile, disponible contraentrega en toda Colombia.",
+  title: "Productos — Milito Life Shop",
+  description: "Descubre la coleccion de bienestar y anti-edad de Milito Life Shop, disponible contraentrega en toda Colombia.",
 };
 
 export default async function ProductosPage() {

@@ -39,7 +39,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-crema px-6">
       <div className="w-full max-w-sm animate-fade-in-up">
         <p className="text-center font-display text-3xl text-carbon mb-8">
-          Diana Mile
+          Milito Life Shop
         </p>
         <div className="bg-blanco border border-arena rounded-[4px] p-8 shadow-[0_1px_3px_rgba(26,23,20,0.08)]">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
