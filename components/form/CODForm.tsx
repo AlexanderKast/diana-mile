@@ -6,7 +6,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { normalizeColombianMobile } from "@/lib/phone";
-import { DEPARTAMENTOS_COLOMBIA } from "@/lib/colombia";
+import { DEPARTAMENTOS_COLOMBIA, CIUDADES_POR_DEPARTAMENTO } from "@/lib/colombia";
 
 type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
 
@@ -31,6 +31,8 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SuccessState | null>(null);
+
+  const ciudadesSugeridas = departamento ? CIUDADES_POR_DEPARTAMENTO[departamento] ?? [] : [];
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -210,11 +212,17 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         label="Ciudad"
         type="text"
         autoComplete="address-level2"
+        list="ciudades-sugeridas"
         required
         value={ciudad}
         onChange={(e) => setCiudad(e.target.value)}
-        placeholder="Bogota, Medellin..."
+        placeholder={departamento ? "Escribe o elige tu ciudad" : "Bogota, Medellin..."}
       />
+      <datalist id="ciudades-sugeridas">
+        {ciudadesSugeridas.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
 
       <Textarea
         label="Direccion completa"
