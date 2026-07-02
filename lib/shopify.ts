@@ -204,6 +204,24 @@ function toRestVariantId(id: string): string {
   return match ? match[1] : id;
 }
 
+/**
+ * Shopify rechaza la orden ENTERA con 422 "phone_number has already been
+ * taken" si mandas un objeto customer nuevo con un telefono que ya
+ * pertenece a otro cliente (ej. alguien que pide por segunda vez). Hay que
+ * buscarlo primero y reusar su id en vez de intentar crear uno duplicado.
+ */
+async function findExistingCustomerId(phone: string): Promise<string | null> {
+  const res = await fetch(
+    `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/customers/search.json?query=${encodeURIComponent(`phone:${phone}`)}`,
+    { headers: { "X-Shopify-Access-Token": ADMIN_TOKEN! } }
+  );
+
+  if (!res.ok) return null;
+
+  const json = await res.json();
+  return json.customers?.[0]?.id ? String(json.customers[0].id) : null;
+}
+
 export async function createShopifyOrder(
   input: CreateOrderInput
 ): Promise<{ orderId: string; orderNumber: string }> {
@@ -212,6 +230,7 @@ export async function createShopifyOrder(
   }
 
   const { firstName, lastName } = splitFullName(input.nombre);
+  const existingCustomerId = await findExistingCustomerId(input.telefono);
 
   // Shopify descarta shipping_address/customer ENTERO y sin error si
   // faltan last_name, province o country_code — asi se rompio antes.
@@ -241,12 +260,14 @@ export async function createShopifyOrder(
     body: JSON.stringify({
       order: {
         line_items: [{ variant_id: toRestVariantId(input.variantId), quantity: input.quantity }],
-        customer: {
-          first_name: firstName,
-          last_name: lastName,
-          phone: input.telefono,
-          ...(input.email ? { email: input.email } : {}),
-        },
+        customer: existingCustomerId
+          ? { id: existingCustomerId }
+          : {
+              first_name: firstName,
+              last_name: lastName,
+              phone: input.telefono,
+              ...(input.email ? { email: input.email } : {}),
+            },
         shipping_address: address,
         billing_address: address,
         financial_status: "pending",
