@@ -92,13 +92,13 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           <LiveActivityBar />
         </div>
 
-        <div className="grid md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10 min-w-0">
           {/* 2. Galeria — cuadrada y acotada en movil, no full-bleed */}
-          <div className="md:sticky md:top-6 md:self-start">
+          <div className="md:sticky md:top-6 md:self-start min-w-0">
             <ProductGallery images={product.images} />
           </div>
 
-          <div className="flex flex-col gap-4 pt-4 md:pt-0">
+          <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
             {/* 3. Rating bar + badges de confianza */}
             <div className="flex flex-col gap-2">
               <RatingBar />

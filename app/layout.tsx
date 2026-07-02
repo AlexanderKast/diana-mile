@@ -30,7 +30,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${cormorant.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-blanco text-carbon">{children}</body>
+      <body className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden">{children}</body>
     </html>
   );
 }
