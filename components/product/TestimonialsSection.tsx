@@ -91,22 +91,22 @@ export function TestimonialsSection() {
   return (
     <section id="testimonios">
       {/* CAPA A — Stats de prueba social */}
-      <div className="bg-carbon text-blanco py-8 px-6 text-center">
+      <div className="seccion-joya text-blanco py-8 px-6 text-center">
         <p className="font-display text-2xl">+ 2.400 mujeres ya transformaron su piel</p>
-        <p className="mt-1 text-[13px] text-ceniza">Colombia · Ecuador · Venezuela · Perú</p>
+        <p className="mt-1 text-[13px] text-blanco/70">Colombia · Ecuador · Venezuela · Perú</p>
 
         <div className="mt-6 grid grid-cols-3 gap-4">
           <div>
-            <p className="font-display text-4xl text-dorado">98%</p>
-            <p className="text-[11px] text-ceniza">Volvería a pedir</p>
+            <p className="font-display text-4xl text-blanco">98%</p>
+            <p className="text-[11px] text-blanco/70">Volvería a pedir</p>
           </div>
           <div>
-            <p className="font-display text-4xl text-dorado">4.9★</p>
-            <p className="text-[11px] text-ceniza">Promedio reseñas</p>
+            <p className="font-display text-4xl text-blanco">4.9★</p>
+            <p className="text-[11px] text-blanco/70">Promedio reseñas</p>
           </div>
           <div>
-            <p className="font-display text-4xl text-dorado">+2.4K</p>
-            <p className="text-[11px] text-ceniza">Pedidos este mes</p>
+            <p className="font-display text-4xl text-blanco">+2.4K</p>
+            <p className="text-[11px] text-blanco/70">Pedidos este mes</p>
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@ export function TestimonialsSection() {
         <button
           type="button"
           onClick={() => openOrderSheet()}
-          className="mx-auto flex min-h-[44px] w-full max-w-sm items-center justify-center rounded-[2px] bg-morado px-6 text-blanco"
+          className="btn-shine mx-auto flex min-h-[44px] w-full max-w-sm items-center justify-center rounded-[2px] bg-morado px-6 text-blanco text-sm font-medium tracking-wide transition-all duration-200 hover:bg-morado-oscuro hover:scale-[1.02] active:scale-[0.97]"
         >
           Pedir mi Epoch® Polishing Bar →
         </button>

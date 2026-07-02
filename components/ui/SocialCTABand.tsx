@@ -20,7 +20,7 @@ export function SocialCTABand({ title, buttonLabel, tone, variantId }: SocialCTA
         <button
           type="button"
           onClick={() => openOrderSheet(variantId)}
-          className="inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] border-[1.5px] border-morado text-morado text-sm font-medium tracking-wide hover:bg-lila-suave transition-colors"
+          className="inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] border-[1.5px] border-morado text-morado text-sm font-medium tracking-wide transition-all duration-200 hover:bg-lila-suave hover:scale-[1.02] active:scale-[0.97]"
         >
           {buttonLabel}
         </button>
@@ -33,7 +33,7 @@ export function SocialCTABand({ title, buttonLabel, tone, variantId }: SocialCTA
       <button
         type="button"
         onClick={() => openOrderSheet(variantId)}
-        className="inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] bg-blanco text-carbon text-sm font-medium tracking-wide hover:bg-crema transition-colors"
+        className="btn-shine inline-flex items-center justify-center min-h-[44px] px-8 rounded-[2px] bg-blanco text-carbon text-sm font-medium tracking-wide transition-all duration-200 hover:bg-crema hover:scale-[1.02] active:scale-[0.97]"
       >
         {buttonLabel}
       </button>
@@ -58,8 +58,10 @@ export function SocialCTABand({ title, buttonLabel, tone, variantId }: SocialCTA
         type="button"
         onClick={() => openOrderSheet(variantId)}
         className={cx(
-          "inline-flex items-center justify-center min-h-[44px] w-full max-w-sm px-6 rounded-[2px] text-sm font-medium tracking-wide transition-colors",
-          isMorado ? "bg-blanco text-morado hover:bg-lila-suave" : "bg-carbon text-blanco hover:bg-carbon-suave"
+          "btn-shine inline-flex items-center justify-center min-h-[44px] w-full max-w-sm px-6 rounded-[2px] text-sm font-medium tracking-wide transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]",
+          isMorado
+            ? "bg-blanco text-morado hover:bg-lila-suave"
+            : "bg-dorado-oscuro text-blanco hover:bg-dorado hover:shadow-[0_6px_20px_rgba(168,136,94,0.4)]"
         )}
       >
         {buttonLabel}

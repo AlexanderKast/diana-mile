@@ -54,7 +54,7 @@ export function ProductHeroCTA() {
       <button
         type="button"
         onClick={() => openOrderSheet()}
-        className="min-h-[44px] w-full rounded-[2px] bg-carbon text-blanco text-sm font-medium tracking-wide hover:bg-carbon-suave transition-colors"
+        className="btn-shine min-h-[44px] w-full rounded-[2px] bg-dorado-oscuro text-blanco text-sm font-medium tracking-wide transition-all duration-200 hover:bg-dorado hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(168,136,94,0.4)] active:scale-[0.97]"
       >
         Pedir ahora · Contraentrega
       </button>

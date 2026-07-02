@@ -179,13 +179,13 @@ export default async function HomePage() {
       </section>
 
       {/* CTA final */}
-      <section className="bg-carbon text-blanco py-12 px-6 text-center">
+      <section className="seccion-joya text-blanco py-12 px-6 text-center">
         <h2 className="font-display text-2xl">Empieza tu ritual hoy</h2>
         <div className="mt-6">
           <Link href="/productos">
             <Button
               variant="primary"
-              className="bg-blanco text-carbon hover:bg-crema"
+              className="btn-shine bg-blanco! text-carbon! hover:bg-crema! hover:scale-[1.02] shadow-none!"
             >
               Ver productos
             </Button>

@@ -171,7 +171,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         <UGCSection />
 
         {/* 12. Modo de uso */}
-        <section className="bg-carbon text-blanco py-12 px-6 flex flex-col gap-8">
+        <section className="seccion-joya text-blanco py-12 px-6 flex flex-col gap-8">
           <h2 className="font-display text-2xl text-center">Tu ritual en 3 pasos</h2>
           <div
             className="flex gap-6 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible"
@@ -182,7 +182,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
                 key={paso.numero}
                 className="relative shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-2 pt-2"
               >
-                <span className="absolute -top-2 left-0 font-display text-[64px] text-dorado opacity-30 leading-none select-none">
+                <span className="absolute -top-2 left-0 font-display text-[64px] text-blanco opacity-25 leading-none select-none">
                   {paso.numero}
                 </span>
                 <div className="relative flex flex-col gap-1 pl-1 pt-10">
@@ -213,9 +213,9 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         <NuskinSection />
 
         {/* 19. CTA 6 — banner final */}
-        <section className="bg-carbon text-blanco py-12 px-6 text-center flex flex-col items-center gap-4">
+        <section className="seccion-joya text-blanco py-12 px-6 text-center flex flex-col items-center gap-4">
           <h2 className="font-display text-[28px]">Tu piel te lo va a agradecer</h2>
-          <p className="text-sm text-ceniza">Envío contraentrega · Pagas al recibir</p>
+          <p className="text-sm text-blanco/70">Envío contraentrega · Pagas al recibir</p>
           <SocialCTABand tone="white-button" buttonLabel="Empezar mi ritual" />
         </section>
 

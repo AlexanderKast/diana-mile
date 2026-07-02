@@ -73,3 +73,62 @@ body {
   background: linear-gradient(90deg, var(--dorado), var(--lila));
   border: none;
 }
+
+/* Gradiente "joya" para secciones de cierre — reemplaza los bloques
+   negros por un tono premium coherente con dorado + lila de marca. */
+.seccion-joya {
+  background: linear-gradient(135deg, var(--dorado-oscuro), var(--morado-oscuro));
+}
+
+/* Barrido de brillo en botones — se activa en hover, sutil, una sola pasada. */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+
+.btn-shine:hover::after {
+  animation: btn-shine-sweep 900ms ease-out;
+}
+
+@keyframes btn-shine-sweep {
+  from {
+    left: -75%;
+  }
+  to {
+    left: 130%;
+  }
+}
+
+/* Pulso de foco para el CTA sticky — atrae el ojo sin ser agresivo. */
+@keyframes cta-pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(196, 168, 130, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(196, 168, 130, 0);
+  }
+}
+
+.cta-pulse {
+  animation: cta-pulse-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-shine::after,
+  .cta-pulse {
+    animation: none;
+  }
+}

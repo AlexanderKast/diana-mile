@@ -21,7 +21,7 @@ export function ProductPurchaseFlow() {
   return (
     <>
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 flex h-14 w-full items-center justify-center bg-carbon text-blanco md:hidden"
+        className="cta-pulse fixed bottom-0 left-0 right-0 z-50 flex h-14 w-full items-center justify-center bg-dorado-oscuro text-blanco md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {selectedIsNuskin ? (
@@ -36,7 +36,7 @@ export function ProductPurchaseFlow() {
           <button
             type="button"
             onClick={() => openOrderSheet()}
-            className="flex h-full w-full items-center justify-center text-sm font-medium tracking-wide"
+            className="btn-shine flex h-full w-full items-center justify-center text-sm font-medium tracking-wide"
           >
             Pedir ahora ·{" "}
             <span className="font-display">{formatCOP(selectedVariant?.price ?? product.price)}</span>
