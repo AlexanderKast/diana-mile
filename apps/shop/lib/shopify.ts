@@ -222,6 +222,42 @@ async function findExistingCustomerId(phone: string): Promise<string | null> {
   return json.customers?.[0]?.id ? String(json.customers[0].id) : null;
 }
 
+/**
+ * A diferencia de orders.json, draft_orders.json NO crea un customer
+ * inline a partir de {first_name, phone} — solo acepta {id: existente}.
+ * Si no hay uno ya, hay que crearlo primero via /customers.json.
+ */
+async function findOrCreateCustomerId(
+  phone: string,
+  firstName: string,
+  lastName: string
+): Promise<string | null> {
+  const existing = await findExistingCustomerId(phone);
+  if (existing) return existing;
+
+  try {
+    const res = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/customers.json`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": ADMIN_TOKEN!,
+      },
+      body: JSON.stringify({ customer: { first_name: firstName, last_name: lastName, phone } }),
+    });
+
+    if (!res.ok) {
+      console.error("Error al crear customer para carrito abandonado:", res.status, await res.text());
+      return null;
+    }
+
+    const json = await res.json();
+    return json.customer?.id ? String(json.customer.id) : null;
+  } catch (error) {
+    console.error("Error al crear customer para carrito abandonado:", error);
+    return null;
+  }
+}
+
 export async function createShopifyOrder(
   input: CreateOrderInput
 ): Promise<{ orderId: string; orderNumber: string }> {
@@ -311,15 +347,13 @@ export async function upsertAbandonedDraftOrder(
 
   try {
     const { firstName, lastName } = splitFullName(input.nombre);
-    const existingCustomerId = await findExistingCustomerId(input.telefono);
+    const customerId = await findOrCreateCustomerId(input.telefono, firstName, lastName);
 
     const payload = {
       draft_order: {
         line_items: [{ variant_id: toRestVariantId(input.variantId), quantity: 1 }],
-        customer: existingCustomerId
-          ? { id: existingCustomerId }
-          : { first_name: firstName, last_name: lastName, phone: input.telefono },
-        note: `Carrito abandonado — checkout no completado${input.ciudad ? ` (${input.ciudad})` : ""}`,
+        ...(customerId ? { customer: { id: customerId } } : {}),
+        note: `Carrito abandonado — checkout no completado${input.ciudad ? ` (${input.ciudad})` : ""}\nNombre: ${input.nombre} · Tel: ${input.telefono}`,
         tags: "carrito-abandonado",
         use_customer_default_address: false,
       },

@@ -42,6 +42,7 @@ export type Lead = {
   utm_source: string | null;
   utm_campaign: string | null;
   convertido: boolean;
+  shopify_draft_order_id: string | null;
   created_at: string;
 };
 
