@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createShopifyOrder, deleteDraftOrder, getProductByHandle } from "@/lib/shopify";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { normalizeColombianMobile } from "@/lib/phone";
+import { DISCOUNT_PERCENT, ENVIO_PRIORITARIO_PRECIO } from "@/lib/pricing";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest) {
       ubicacion,
       variantId,
       slug,
+      descuentoAplicado,
+      envioPrioritario,
     } = body ?? {};
 
     if (
@@ -77,11 +80,19 @@ export async function POST(request: NextRequest) {
       ciudad,
       lat,
       lng,
+      discountPercent: descuentoAplicado ? DISCOUNT_PERCENT : undefined,
+      envioPrioritario: Boolean(envioPrioritario),
     });
 
     try {
       const supabase = createAdminSupabaseClient();
       const nombreProducto = `${product.title} — ${variant.title}`;
+
+      const precioBase = parseFloat(variant.price);
+      const precioConDescuento = descuentoAplicado
+        ? precioBase * (1 - DISCOUNT_PERCENT / 100)
+        : precioBase;
+      const precioTotal = precioConDescuento + (envioPrioritario ? parseFloat(ENVIO_PRIORITARIO_PRECIO) : 0);
 
       const { error: insertError } = await supabase.from("pedidos").insert({
         shopify_order_id: orderId,
@@ -97,7 +108,7 @@ export async function POST(request: NextRequest) {
         producto_sku: slug,
         variant_id: variantId,
         cantidad: 1,
-        precio_total: parseFloat(variant.price),
+        precio_total: precioTotal,
         estado: "pendiente",
         notas: notas || null,
       });

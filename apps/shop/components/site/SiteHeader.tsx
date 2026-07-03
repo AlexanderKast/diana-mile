@@ -1,5 +1,16 @@
 import Link from "next/link";
 
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="none" className={className}>
+      <path
+        fill="currentColor"
+        d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.76.46 3.48 1.34 5L2 22l5.14-1.35a10 10 0 0 0 4.9 1.25h.01c5.52 0 10-4.48 10-10s-4.48-9.9-10.01-9.9Zm0 18.1h-.01a8.3 8.3 0 0 1-4.23-1.16l-.3-.18-3.05.8.82-2.97-.2-.3a8.26 8.26 0 0 1-1.27-4.4c0-4.58 3.73-8.3 8.31-8.3 2.22 0 4.3.87 5.87 2.44a8.24 8.24 0 0 1 2.43 5.87c0 4.58-3.73 8.3-8.3 8.3Zm4.55-6.22c-.25-.13-1.47-.72-1.7-.8-.23-.08-.4-.13-.56.13-.17.25-.65.8-.8.97-.14.17-.29.19-.54.06-.25-.13-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.38-.43.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.08 0 1.23.89 2.42 1.02 2.58.13.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.16-.48-.29Z"
+      />
+    </svg>
+  );
+}
+
 const WHATSAPP_NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
 const whatsappHref = WHATSAPP_NUMERO
   ? `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent("Hola, quiero conocer los productos Milito Life Shop")}`
@@ -15,10 +26,10 @@ export function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-1 text-sm text-carbon-suave">
-          <Link href="/productos" className="rounded-[2px] px-3 py-2 transition-colors hover:bg-crema hover:text-carbon">
+          <Link href="/productos" className="rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon">
             Productos
           </Link>
-          <Link href={LINKTREE_URL} className="hidden rounded-[2px] px-3 py-2 transition-colors hover:bg-crema hover:text-carbon sm:inline-flex">
+          <Link href={LINKTREE_URL} className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon sm:inline-flex">
             Redes
           </Link>
           {whatsappHref && (
@@ -26,8 +37,9 @@ export function SiteHeader() {
               href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-[2px] bg-carbon px-3 py-2 text-blanco transition-colors hover:bg-carbon-suave"
+              className="flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-blanco transition-colors hover:bg-[#1EBE5A]"
             >
+              <WhatsAppIcon />
               WhatsApp
             </a>
           )}

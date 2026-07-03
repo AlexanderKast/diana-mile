@@ -3,6 +3,15 @@
 import { formatCOP } from "@diana-mile/shared/utils";
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 
+function BagIcon({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
+      <path d="M5.5 6.5h9l.7 9.5a1.5 1.5 0 0 1-1.5 1.6H6.3a1.5 1.5 0 0 1-1.5-1.6l.7-9.5z" strokeLinejoin="round" />
+      <path d="M7.3 6.5V5a2.7 2.7 0 0 1 5.4 0v1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /**
  * CTA sticky movil (CTA 1). El selector de variantes y el formulario COD
  * viven en components/product/VariantSelector.tsx y
@@ -28,7 +37,7 @@ export function ProductPurchaseFlow() {
           <button
             type="button"
             onClick={openNuskin}
-            className="flex h-full w-full items-center justify-center text-lg font-bold tracking-wide"
+            className="cta-pulse-morado flex h-full w-full items-center justify-center text-lg font-bold tracking-wide"
           >
             Comprar en Nu Skin ↗
           </button>
@@ -38,6 +47,7 @@ export function ProductPurchaseFlow() {
             onClick={() => openOrderSheet()}
             className="btn-shine flex h-full w-full items-center justify-center gap-1.5 text-lg font-bold tracking-wide"
           >
+            <BagIcon />
             Pedir ahora ·{" "}
             <span className="font-display text-xl">{formatCOP(selectedVariant?.price ?? product.price)}</span>
           </button>

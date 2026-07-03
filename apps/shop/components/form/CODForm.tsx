@@ -5,8 +5,11 @@ import { Product, ProductVariant } from "@diana-mile/shared/types";
 import { Input, Textarea } from "@diana-mile/shared/ui/Input";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { Spinner } from "@diana-mile/shared/ui/Spinner";
+import { formatCOP, cx } from "@diana-mile/shared/utils";
 import { normalizeColombianMobile } from "@/lib/phone";
 import { DEPARTAMENTOS_COLOMBIA, CIUDADES_POR_DEPARTAMENTO, getBarriosSugeridos } from "@/lib/colombia";
+import { DISCOUNT_PERCENT, ENVIO_PRIORITARIO_LABEL, ENVIO_PRIORITARIO_PRECIO } from "@/lib/pricing";
+import { useOrderSheet } from "@/components/product/OrderSheetContext";
 
 type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
 
@@ -20,7 +23,53 @@ type SuccessState = {
   telefono: string;
 };
 
+function IconPagoMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="5" width="16" height="10.5" rx="1.5" strokeLinejoin="round" />
+      <circle cx="10" cy="10.25" r="2.5" />
+    </svg>
+  );
+}
+
+function IconEnvioMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M2 5.5h9v8.5H2v-8.5zM11 8.5h4l3 3v2.5h-7v-5.5z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="6" cy="15.5" r="1.7" />
+      <circle cx="14.5" cy="15.5" r="1.7" />
+    </svg>
+  );
+}
+
+function IconSatisfaccionMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M10 2l6.5 2.5v5c0 4.5-2.9 7.4-6.5 8.5-3.6-1.1-6.5-4-6.5-8.5v-5L10 2z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 10l2 2 4-4.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" className={className}>
+      <path
+        fill="currentColor"
+        d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.76.46 3.48 1.34 5L2 22l5.14-1.35a10 10 0 0 0 4.9 1.25h.01c5.52 0 10-4.48 10-10s-4.48-9.9-10.01-9.9Zm0 18.1h-.01a8.3 8.3 0 0 1-4.23-1.16l-.3-.18-3.05.8.82-2.97-.2-.3a8.26 8.26 0 0 1-1.27-4.4c0-4.58 3.73-8.3 8.31-8.3 2.22 0 4.3.87 5.87 2.44a8.24 8.24 0 0 1 2.43 5.87c0 4.58-3.73 8.3-8.3 8.3Zm4.55-6.22c-.25-.13-1.47-.72-1.7-.8-.23-.08-.4-.13-.56.13-.17.25-.65.8-.8.97-.14.17-.29.19-.54.06-.25-.13-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.38-.43.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.08 0 1.23.89 2.42 1.02 2.58.13.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.16-.48-.29Z"
+      />
+    </svg>
+  );
+}
+
+const MINI_BADGES = [
+  { icon: IconPagoMini, label: "Paga al recibir" },
+  { icon: IconEnvioMini, label: "Envío gratis" },
+  { icon: IconSatisfaccionMini, label: "Satisfacción garantizada" },
+];
+
 export function CODForm({ product, selectedVariant }: CODFormProps) {
+  const { discountApplied } = useOrderSheet();
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
@@ -29,6 +78,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   const [barrio, setBarrio] = useState("");
   const [direccion, setDireccion] = useState("");
   const [notas, setNotas] = useState("");
+  const [envioPrioritario, setEnvioPrioritario] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SuccessState | null>(null);
@@ -36,6 +86,10 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   const [ubicacionEstado, setUbicacionEstado] = useState<"idle" | "cargando" | "lista" | "error">(
     "idle"
   );
+
+  const precioBase = parseFloat(selectedVariant.price);
+  const precioConDescuento = discountApplied ? precioBase * (1 - DISCOUNT_PERCENT / 100) : precioBase;
+  const precioTotal = precioConDescuento + (envioPrioritario ? parseFloat(ENVIO_PRIORITARIO_PRECIO) : 0);
 
   const ciudadesSugeridas = departamento ? CIUDADES_POR_DEPARTAMENTO[departamento] ?? [] : [];
   const barriosSugeridos = getBarriosSugeridos(ciudad);
@@ -125,6 +179,8 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           ubicacion,
           variantId: selectedVariant.id,
           slug: product.handle,
+          descuentoAplicado: discountApplied,
+          envioPrioritario,
         }),
       });
 
@@ -148,7 +204,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
     const whatsappUrl = `https://wa.me/${whatsappNumero}?text=${encodeURIComponent(mensaje)}`;
 
     return (
-      <div className="animate-fade-in-up flex flex-col items-start gap-4 rounded-[4px] border border-arena bg-crema p-6">
+      <div className="animate-fade-in-up flex flex-col items-start gap-4 rounded-2xl border border-arena bg-crema p-6">
         <style>{`
           @keyframes codform-check-circle {
             from { transform: scale(0); opacity: 0; }
@@ -189,13 +245,14 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           Te contactaremos en maximo 24 horas al {success.telefono}.
         </p>
         {whatsappNumero ? (
-          <Button
-            variant="secondary"
+          <button
             type="button"
             onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-[#25D366] px-6 text-sm font-semibold tracking-wide text-blanco transition-transform duration-200 hover:scale-[1.02] active:scale-[0.97]"
           >
-            Escribenos por WhatsApp
-          </Button>
+            <WhatsAppIcon />
+            Escríbenos por WhatsApp
+          </button>
         ) : (
           <p className="text-sm text-ceniza">Te contactaremos pronto.</p>
         )}
@@ -219,7 +276,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         <label htmlFor="telefono" className="text-xs text-ceniza font-medium">
           Telefono celular
         </label>
-        <div className="flex min-h-[44px] overflow-hidden rounded-[2px] border border-arena bg-blanco focus-within:border-dorado transition-colors">
+        <div className="flex min-h-[44px] overflow-hidden rounded-lg border border-arena bg-blanco focus-within:border-dorado transition-colors">
           <span className="flex items-center px-4 text-base text-ceniza border-r border-arena">+57</span>
           <input
             id="telefono"
@@ -255,7 +312,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           required
           value={departamento}
           onChange={(e) => setDepartamento(e.target.value)}
-          className="min-h-[44px] rounded-[2px] border border-arena bg-blanco px-4 py-2.5 text-base text-carbon focus:outline-none focus:border-dorado transition-colors"
+          className="min-h-[44px] rounded-lg border border-arena bg-blanco px-4 py-2.5 text-base text-carbon focus:outline-none focus:border-dorado transition-colors"
         >
           <option value="" disabled>
             Selecciona tu departamento
@@ -315,7 +372,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           type="button"
           onClick={capturarUbicacion}
           disabled={ubicacionEstado === "cargando" || ubicacionEstado === "lista"}
-          className="flex min-h-[44px] items-center justify-center gap-2 rounded-[2px] border border-arena text-sm text-carbon-suave transition-colors hover:bg-crema disabled:opacity-70"
+          className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-arena text-sm text-carbon-suave transition-colors hover:bg-crema disabled:opacity-70"
         >
           {ubicacionEstado === "cargando" && <Spinner className="text-carbon-suave" />}
           {ubicacionEstado === "lista"
@@ -338,20 +395,62 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         placeholder="Referencias de entrega (opcional)"
       />
 
+      {discountApplied && (
+        <p className="rounded-2xl bg-lila-suave px-4 py-2.5 text-sm font-medium text-morado-oscuro text-center">
+          10% de descuento aplicado a tu pedido ✓
+        </p>
+      )}
+
+      <label
+        className={cx(
+          "flex items-start gap-3 rounded-2xl border-[1.5px] bg-crema p-3.5 cursor-pointer transition-colors",
+          envioPrioritario ? "border-dorado-oscuro" : "border-dorado/40 cta-pulse"
+        )}
+      >
+        <input
+          type="checkbox"
+          checked={envioPrioritario}
+          onChange={(e) => setEnvioPrioritario(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-dorado-oscuro"
+        />
+        <span className="flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5">
+            <span className="rounded-lg bg-dorado-oscuro px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-blanco">
+              Recomendado
+            </span>
+          </span>
+          <span className="text-sm font-medium text-carbon">
+            Agrega {ENVIO_PRIORITARIO_LABEL} por solo {formatCOP(ENVIO_PRIORITARIO_PRECIO)}
+          </span>
+          <span className="text-xs text-carbon-suave">Tu pedido se envía más rápido que los demás.</span>
+        </span>
+      </label>
+
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+        {MINI_BADGES.map(({ icon: Icon, label }) => (
+          <span key={label} className="flex items-center gap-1.5 text-[11px] text-carbon-suave">
+            <span className="text-dorado-oscuro">
+              <Icon />
+            </span>
+            {label}
+          </span>
+        ))}
+      </div>
+
       {error && (
         <p className="text-sm text-error" role="alert">
           {error}
         </p>
       )}
 
-      <Button variant="primary" type="submit" disabled={loading} className="w-full">
+      <Button variant="primary" type="submit" disabled={loading} className="cta-pulse w-full">
         {loading ? (
           <>
             <Spinner className="text-blanco" />
             Procesando tu pedido...
           </>
         ) : (
-          "Confirmar pedido — Contraentrega"
+          `Confirmar pedido — ${formatCOP(precioTotal)}`
         )}
       </Button>
     </form>

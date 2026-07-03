@@ -31,8 +31,8 @@ function OrderSummary() {
   if (!selectedVariant) return null;
 
   return (
-    <div className="flex items-center gap-3 rounded-[4px] border border-arena bg-crema p-3">
-      <div className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[2px] bg-arena">
+    <div className="flex items-center gap-3 rounded-2xl border border-arena bg-crema p-3">
+      <div className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-lg bg-arena">
         {product.images[0] && (
           <Image
             src={product.images[0].url}
@@ -62,7 +62,7 @@ function NuskinPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[4px] border border-arena bg-crema p-4">
+    <div className="flex flex-col gap-3 rounded-2xl border border-arena bg-crema p-4">
       <h3 className="font-display text-lg text-carbon">¿Eres distribuidora Nu Skin?</h3>
       <p className="text-sm text-carbon-suave">
         Compra a precio de distribuidora directamente en la plataforma oficial de Nu Skin y
@@ -72,7 +72,7 @@ function NuskinPanel() {
         variant="secondary"
         type="button"
         onClick={openNuskin}
-        className="border-morado! text-morado! hover:bg-lila-suave!"
+        className="cta-pulse-morado border-morado! text-morado! hover:bg-lila-suave!"
       >
         Comprar en Nu Skin ↗
       </Button>
@@ -232,7 +232,7 @@ export function OrderBottomSheet() {
       {/* Panel sticky desktop */}
       <div
         id="order-form-desktop"
-        className="hidden md:block md:sticky md:top-[120px] rounded-[4px] border border-arena bg-blanco p-5"
+        className="hidden md:block md:sticky md:top-[120px] rounded-2xl border border-arena bg-blanco p-5"
       >
         <SheetContent compact={false} />
       </div>

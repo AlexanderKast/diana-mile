@@ -127,9 +127,42 @@ body {
   animation: cta-pulse-glow 2.4s ease-in-out infinite;
 }
 
+/* Misma idea, tono morado — para CTAs sobre fondo lila o con borde morado. */
+@keyframes cta-pulse-glow-morado {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(107, 78, 140, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(107, 78, 140, 0);
+  }
+}
+
+.cta-pulse-morado {
+  animation: cta-pulse-glow-morado 2.4s ease-in-out infinite;
+}
+
+/* Respiracion sutil de escala — para botones sobre fondo solido donde el
+   glow de sombra no se nota (ej. boton blanco sobre banda morada). */
+@keyframes pulse-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+.animate-pulse-scale {
+  animation: pulse-scale 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn-shine::after,
-  .cta-pulse {
+  .cta-pulse,
+  .cta-pulse-morado,
+  .animate-pulse-scale {
     animation: none;
   }
 }

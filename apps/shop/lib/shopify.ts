@@ -1,5 +1,6 @@
 import { Product, ProductMetafields } from "@diana-mile/shared/types";
 import { splitFullName } from "@diana-mile/shared/utils";
+import { ENVIO_PRIORITARIO_VARIANT_ID } from "@/lib/pricing";
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const STOREFRONT_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
@@ -192,6 +193,8 @@ export type CreateOrderInput = {
   ciudad: string;
   lat?: number | null;
   lng?: number | null;
+  discountPercent?: number;
+  envioPrioritario?: boolean;
 };
 
 /**
@@ -287,6 +290,17 @@ export async function createShopifyOrder(
     notePartes.push(`Ubicación GPS del cliente: https://maps.google.com/?q=${input.lat},${input.lng}`);
   }
 
+  const lineItems: Record<string, unknown>[] = [
+    { variant_id: toRestVariantId(input.variantId), quantity: input.quantity },
+  ];
+  if (input.envioPrioritario) {
+    lineItems.push({ variant_id: ENVIO_PRIORITARIO_VARIANT_ID, quantity: 1 });
+  }
+
+  if (input.discountPercent) {
+    notePartes.push(`Descuento popup exit-intent aplicado: ${input.discountPercent}%`);
+  }
+
   const res = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders.json`, {
     method: "POST",
     headers: {
@@ -295,7 +309,7 @@ export async function createShopifyOrder(
     },
     body: JSON.stringify({
       order: {
-        line_items: [{ variant_id: toRestVariantId(input.variantId), quantity: input.quantity }],
+        line_items: lineItems,
         customer: existingCustomerId
           ? { id: existingCustomerId }
           : {
@@ -312,6 +326,13 @@ export async function createShopifyOrder(
         tags: "COD, milito-life-shop",
         send_receipt: false,
         send_fulfillment_receipt: false,
+        ...(input.discountPercent
+          ? {
+              discount_codes: [
+                { code: "OFERTA5MIN", amount: String(input.discountPercent), type: "percentage" },
+              ],
+            }
+          : {}),
       },
     }),
   });
