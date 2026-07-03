@@ -11,9 +11,11 @@ function randomViewers(): number {
 }
 
 export function LiveActivityBar() {
-  const [viewers, setViewers] = useState(() => randomViewers());
+  const [viewers, setViewers] = useState(MIN_VIEWERS);
 
   useEffect(() => {
+    setViewers(randomViewers());
+
     const interval = setInterval(() => {
       setViewers(randomViewers());
     }, UPDATE_INTERVAL_MS);
