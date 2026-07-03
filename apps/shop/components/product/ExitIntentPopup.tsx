@@ -18,27 +18,35 @@ function CloseIcon({ className }: { className?: string }) {
 }
 
 export function ExitIntentPopup() {
-  const { isOpen: sheetOpen, applyDiscount, openOrderSheet } = useOrderSheet();
+  const { isOpen: sheetOpen, orderCompleted, applyDiscount, openOrderSheet } = useOrderSheet();
   const [visible, setVisible] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
   const triggeredRef = useRef(false);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sheetOpenRef = useRef(sheetOpen);
+  const wasSheetOpenRef = useRef(sheetOpen);
+
+  const show = useRef(() => {
+    if (triggeredRef.current) return;
+    if (sessionStorage.getItem(POPUP_SHOWN_KEY)) return;
+    if (sheetOpenRef.current) return;
+    triggeredRef.current = true;
+    sessionStorage.setItem(POPUP_SHOWN_KEY, "1");
+    setVisible(true);
+  }).current;
 
   useEffect(() => {
     sheetOpenRef.current = sheetOpen;
-  }, [sheetOpen]);
+
+    // El formulario se cerro sin completar el pedido: es la senal de
+    // abandono mas directa que tenemos, mas confiable que el mouseout.
+    if (wasSheetOpenRef.current && !sheetOpen && !orderCompleted) {
+      show();
+    }
+    wasSheetOpenRef.current = sheetOpen;
+  }, [sheetOpen, orderCompleted, show]);
 
   useEffect(() => {
-    function show() {
-      if (triggeredRef.current) return;
-      if (sessionStorage.getItem(POPUP_SHOWN_KEY)) return;
-      if (sheetOpenRef.current) return;
-      triggeredRef.current = true;
-      sessionStorage.setItem(POPUP_SHOWN_KEY, "1");
-      setVisible(true);
-    }
-
     function handleMouseOut(e: MouseEvent) {
       if (e.clientY <= 0) show();
     }
@@ -59,7 +67,7 @@ export function ExitIntentPopup() {
       window.removeEventListener("scroll", resetInactivity);
       if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     };
-  }, []);
+  }, [show]);
 
   useEffect(() => {
     if (!visible) return;

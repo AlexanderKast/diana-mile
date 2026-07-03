@@ -69,7 +69,7 @@ const MINI_BADGES = [
 ];
 
 export function CODForm({ product, selectedVariant }: CODFormProps) {
-  const { discountApplied } = useOrderSheet();
+  const { discountApplied, markOrderCompleted } = useOrderSheet();
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
@@ -191,6 +191,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       }
 
       setSuccess({ orderNumber: data.orderNumber, telefono: data.telefono });
+      markOrderCompleted();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No pudimos procesar tu pedido. Intenta de nuevo.");
     } finally {

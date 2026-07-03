@@ -20,6 +20,8 @@ type OrderSheetContextValue = {
   closeOrderSheet: () => void;
   selectVariant: (variantId: string) => void;
   selectNuskin: () => void;
+  orderCompleted: boolean;
+  markOrderCompleted: () => void;
 };
 
 const OrderSheetContext = createContext<OrderSheetContextValue | null>(null);
@@ -35,6 +37,7 @@ export function OrderSheetProvider({
   const [selectedVariantId, setSelectedVariantId] = useState(product.variants[0]?.id ?? "");
   const [selectedIsNuskin, setSelectedIsNuskin] = useState(false);
   const [discountApplied, setDiscountApplied] = useState(false);
+  const [orderCompleted, setOrderCompleted] = useState(false);
   const discountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restaura el descuento del popup exit-intent si la persona sigue dentro
@@ -92,6 +95,10 @@ export function OrderSheetProvider({
     setIsOpen(false);
   }, []);
 
+  const markOrderCompleted = useCallback(() => {
+    setOrderCompleted(true);
+  }, []);
+
   const value = useMemo<OrderSheetContextValue>(
     () => ({
       product,
@@ -105,6 +112,8 @@ export function OrderSheetProvider({
       closeOrderSheet,
       selectVariant,
       selectNuskin,
+      orderCompleted,
+      markOrderCompleted,
     }),
     [
       product,
@@ -118,6 +127,8 @@ export function OrderSheetProvider({
       closeOrderSheet,
       selectVariant,
       selectNuskin,
+      orderCompleted,
+      markOrderCompleted,
     ]
   );
 
