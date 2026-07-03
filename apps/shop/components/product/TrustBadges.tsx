@@ -45,6 +45,16 @@ function IconCandado() {
   );
 }
 
+function IconSello() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="10" cy="8.5" r="5.5" strokeLinejoin="round" />
+      <path d="M7 13.5 6 17.5l4-2 4 2-1-4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.5 8.5 9 10l3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 type TrustBadge = {
   icon: () => React.JSX.Element;
   label: string;
@@ -57,21 +67,22 @@ const badges: TrustBadge[] = [
   { icon: IconCandado, label: "Compra segura" },
 ];
 
-export default function TrustBadges() {
+export default function TrustBadges({ showAuthenticity = false }: { showAuthenticity?: boolean }) {
+  const items = showAuthenticity
+    ? [...badges, { icon: IconSello, label: "100% original Nu Skin" }]
+    : badges;
+
   return (
-    <div
-      className="flex gap-2 overflow-x-auto md:flex-wrap"
-      style={{ scrollbarWidth: "none" }}
-    >
-      {badges.map(({ icon: Icon, label }) => (
+    <div className="grid grid-cols-2 gap-1.5 md:flex md:flex-wrap md:gap-2">
+      {items.map(({ icon: Icon, label }) => (
         <div
           key={label}
-          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-arena px-3 py-1.5 text-[11px] font-sans text-carbon-suave"
+          className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-arena px-2.5 py-1.5 text-[10px] font-sans text-carbon-suave md:px-3 md:text-[11px]"
         >
-          <span className="text-ceniza">
+          <span className="shrink-0 text-ceniza">
             <Icon />
           </span>
-          {label}
+          <span className="truncate">{label}</span>
         </div>
       ))}
     </div>

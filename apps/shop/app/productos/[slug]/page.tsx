@@ -25,11 +25,28 @@ import { GuaranteeSection } from "@/components/product/GuaranteeSection";
 import { FAQAccordion } from "@/components/product/FAQAccordion";
 import { NuskinSection } from "@/components/product/NuskinSection";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
+import { ExitIntentPopup } from "@/components/product/ExitIntentPopup";
+import { ComparisonSection } from "@/components/product/ComparisonSection";
 
 const PASOS_RITUAL = [
-  { numero: "1", titulo: "Humedece", descripcion: "Aplica agua tibia sobre la piel" },
-  { numero: "2", titulo: "Masajea", descripcion: "Movimientos circulares suaves por 60 segundos" },
-  { numero: "3", titulo: "Enjuaga", descripcion: "Agua tibia. Siente la diferencia inmediata." },
+  {
+    numero: "1",
+    titulo: "Humedece",
+    descripcion: "Aplica agua tibia sobre la piel",
+    imagen: "/images/ritual-paso-1-humedece.jpg",
+  },
+  {
+    numero: "2",
+    titulo: "Masajea",
+    descripcion: "Movimientos circulares suaves por 60 segundos",
+    imagen: "/images/ritual-paso-2-masajea.jpg",
+  },
+  {
+    numero: "3",
+    titulo: "Enjuaga",
+    descripcion: "Agua tibia. Siente la diferencia inmediata.",
+    imagen: "/images/ritual-paso-3-enjuaga.jpg",
+  },
 ];
 
 type ProductPageProps = {
@@ -77,7 +94,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
   return (
     <OrderSheetProvider product={product}>
-      <main className="flex flex-col pb-28">
+      <ExitIntentPopup />
+      <main className="flex flex-col gap-3 pb-28">
         <div className="px-6 pt-3 md:px-10">
           <LiveActivityBar />
         </div>
@@ -90,7 +108,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
             <div className="flex flex-col gap-2">
               <RatingBar />
-              <TrustBadges />
+              <TrustBadges showAuthenticity={isEpoch} />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -149,6 +167,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
         {isEpoch && <UGCSection />}
 
+        <ComparisonSection productName={product.title} />
+
         <section className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8">
           <h2 className="font-display text-2xl text-center">Tu ritual en 3 pasos</h2>
           <div
@@ -158,13 +178,24 @@ export default async function ProductoPage({ params }: ProductPageProps) {
             {PASOS_RITUAL.map((paso) => (
               <div
                 key={paso.numero}
-                className="shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-3 rounded-[4px] border border-arena bg-blanco p-5 shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
+                className="shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-3 rounded-[4px] border border-arena bg-blanco overflow-hidden shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-dorado-oscuro font-display text-lg text-blanco">
-                  {paso.numero}
-                </span>
-                <h3 className="font-display text-xl text-carbon">{paso.titulo}</h3>
-                <p className="text-sm text-carbon-suave">{paso.descripcion}</p>
+                <div className="relative aspect-[4/5] w-full">
+                  <Image
+                    src={paso.imagen}
+                    alt={`Paso ${paso.numero}: ${paso.titulo}`}
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 768px) 33vw, 80vw"
+                  />
+                  <span className="absolute top-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-dorado-oscuro font-display text-base text-blanco">
+                    {paso.numero}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1.5 p-5 pt-2">
+                  <h3 className="font-display text-xl text-carbon">{paso.titulo}</h3>
+                  <p className="text-sm text-carbon-suave">{paso.descripcion}</p>
+                </div>
               </div>
             ))}
           </div>
