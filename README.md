@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Milito Life — monorepo
 
-## Getting Started
+Monorepo (npm workspaces) con las apps del ecosistema Milito Life, cada una pensada para vivir en su propio subdominio:
 
-First, run the development server:
+| App | Carpeta | Dominio |
+|---|---|---|
+| Landing | `apps/www` | `militolife.com` (pendiente de diseño) |
+| Linktree | `apps/linktree` | `link.militolife.com` |
+| Tienda | `apps/shop` | `shop.militolife.com` |
+| Admin | `apps/admin` | `admin.militolife.com` |
+| App | `apps/app` | `app.militolife.com` (pendiente de definir alcance) |
+
+Código compartido (tipos, cliente Supabase, utils, UI atoms) vive en `packages/shared` (`@diana-mile/shared`).
+
+## Desarrollo
+
+Cada app corre de forma independiente:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:shop       # http://localhost:3000
+npm run dev:linktree   # http://localhost:3001 (usar --port si hay conflicto)
+npm run dev:admin
+npm run dev:app
+npm run dev:www
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Cada app tiene su propio `.env.local` (ver `.env.local.example` en cada carpeta).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build   # build de todas las apps (workspaces)
+```
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cada app es un proyecto Vercel independiente dentro del mismo repo, con **Root Directory** apuntando a su carpeta (`apps/shop`, `apps/linktree`, etc.) y su propio dominio custom asignado en Settings → Domains.

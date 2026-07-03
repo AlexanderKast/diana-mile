@@ -2,18 +2,18 @@
   "name": "diana-mile",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.110.0",
-    "next": "16.2.9",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "dev:www": "npm run dev -w apps/www",
+    "dev:linktree": "npm run dev -w apps/linktree",
+    "dev:shop": "npm run dev -w apps/shop",
+    "dev:admin": "npm run dev -w apps/admin",
+    "dev:app": "npm run dev -w apps/app",
+    "build": "npm run build -ws --if-present",
+    "lint": "npm run lint -ws --if-present"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
