@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createShopifyOrder, deleteDraftOrder, getProductByHandle } from "@/lib/shopify";
+import { completeDraftOrder, deleteDraftOrder, getProductByHandle } from "@/lib/shopify";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { normalizeColombianMobile } from "@/lib/phone";
 import { DISCOUNT_PERCENT, ENVIO_PRIORITARIO_PRECIO } from "@/lib/pricing";
 
+/**
+ * Paso "Confirmar pedido": convierte el draft order (creado/actualizado en
+ * /api/orders/draft) en una orden real de Shopify. Requiere draftOrderId —
+ * el pedido no puede confirmarse sin haber pasado antes por "Realizar
+ * pedido".
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
+      draftOrderId,
       nombre,
       telefono,
-      email,
       departamento,
       ciudad,
       barrio,
@@ -23,30 +29,12 @@ export async function POST(request: NextRequest) {
       envioPrioritario,
     } = body ?? {};
 
-    if (
-      !nombre ||
-      !telefono ||
-      !departamento ||
-      !ciudad ||
-      !barrio ||
-      !direccion ||
-      !variantId ||
-      !slug
-    ) {
+    if (!draftOrderId || !nombre || !telefono || !variantId || !slug) {
       return NextResponse.json(
-        { mensaje: "Faltan campos requeridos para procesar el pedido." },
+        { mensaje: "Faltan datos para confirmar el pedido." },
         { status: 400 }
       );
     }
-
-    const lat =
-      ubicacion && typeof ubicacion.lat === "number" && Number.isFinite(ubicacion.lat)
-        ? ubicacion.lat
-        : null;
-    const lng =
-      ubicacion && typeof ubicacion.lng === "number" && Number.isFinite(ubicacion.lng)
-        ? ubicacion.lng
-        : null;
 
     const telefonoNormalizado = normalizeColombianMobile(String(telefono));
     if (!telefonoNormalizado) {
@@ -56,8 +44,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // precio y nombre del producto se derivan del catalogo real, nunca del
-    // body del cliente — evita que alguien manipule el POST y pague menos.
     const product = await getProductByHandle(slug);
     const variant = product?.variants.find((v) => v.id === variantId);
 
@@ -68,25 +54,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { orderId, orderNumber } = await createShopifyOrder({
-      variantId,
-      quantity: 1,
-      nombre,
-      telefono: telefonoNormalizado.e164,
-      email: email || undefined,
-      departamento,
-      direccion,
-      barrio,
-      ciudad,
-      lat,
-      lng,
-      discountPercent: descuentoAplicado ? DISCOUNT_PERCENT : undefined,
-      envioPrioritario: Boolean(envioPrioritario),
-    });
+    const { orderId, orderNumber } = await completeDraftOrder(draftOrderId);
 
     try {
       const supabase = createAdminSupabaseClient();
       const nombreProducto = `${product.title} — ${variant.title}`;
+
+      const lat =
+        ubicacion && typeof ubicacion.lat === "number" && Number.isFinite(ubicacion.lat)
+          ? ubicacion.lat
+          : null;
+      const lng =
+        ubicacion && typeof ubicacion.lng === "number" && Number.isFinite(ubicacion.lng)
+          ? ubicacion.lng
+          : null;
 
       const precioBase = parseFloat(variant.price);
       const precioConDescuento = descuentoAplicado
@@ -141,9 +122,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ orderNumber, telefono: telefonoNormalizado.display });
   } catch (error) {
-    console.error("Error al procesar el pedido:", error);
+    console.error("Error al confirmar el pedido:", error);
     return NextResponse.json(
-      { mensaje: "No pudimos procesar tu pedido. Intenta de nuevo." },
+      { mensaje: "No pudimos confirmar tu pedido. Intenta de nuevo." },
       { status: 500 }
     );
   }

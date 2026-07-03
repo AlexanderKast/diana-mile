@@ -11,7 +11,8 @@ const FUENTE = "checkout_abandonado";
  * complete. Se registra en Supabase (para el panel admin) Y como draft
  * order en Shopify (Orders > Drafts, para que el equipo lo vea directo ahi).
  * Si la persona nunca termina el pedido, ambos quedan para remarketing.
- * Si si lo completa, /api/orders marca convertido=true y borra el draft.
+ * Si si lo completa, /api/orders/complete marca convertido=true y borra
+ * el draft.
  */
 export async function POST(request: NextRequest) {
   try {

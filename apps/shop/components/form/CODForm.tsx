@@ -62,6 +62,24 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+function PhoneIcon({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
+      <path d="M5 3h3l1.5 4-2 1.5a9 9 0 0 0 4 4l1.5-2 4 1.5v3a2 2 0 0 1-2 2C9.5 17 3 10.5 3 5a2 2 0 0 1 2-2z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TruckIcon({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
+      <path d="M2 5.5h9v8.5H2v-8.5zM11 8.5h4l3 3v2.5h-7v-5.5z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="6" cy="15.5" r="1.7" />
+      <circle cx="14.5" cy="15.5" r="1.7" />
+    </svg>
+  );
+}
+
 const MINI_BADGES = [
   { icon: IconPagoMini, label: "Paga al recibir" },
   { icon: IconEnvioMini, label: "Envío gratis" },
@@ -70,6 +88,7 @@ const MINI_BADGES = [
 
 export function CODForm({ product, selectedVariant }: CODFormProps) {
   const { discountApplied, markOrderCompleted } = useOrderSheet();
+  const [step, setStep] = useState<1 | 2>(1);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
@@ -82,6 +101,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SuccessState | null>(null);
+  const [draftOrderId, setDraftOrderId] = useState<string | null>(null);
   const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [ubicacionEstado, setUbicacionEstado] = useState<"idle" | "cargando" | "lista" | "error">(
     "idle"
@@ -96,7 +116,8 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
 
   // Carrito abandonado: en cuanto nombre + telefono son validos, se
   // registra para remarketing (con debounce, no en cada tecla). Si el
-  // pedido se termina completando, /api/orders lo marca como convertido.
+  // pedido se termina completando, /api/orders/complete lo marca como
+  // convertido.
   useEffect(() => {
     if (success) return;
 
@@ -139,10 +160,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
     );
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-
+  function validatePaso1(): string | null {
     if (
       !nombre.trim() ||
       !telefono.trim() ||
@@ -151,7 +169,23 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       !barrio.trim() ||
       !direccion.trim()
     ) {
-      setError("Por favor completa todos los campos requeridos.");
+      return "Por favor completa todos los campos requeridos.";
+    }
+
+    if (!normalizeColombianMobile(telefono)) {
+      return "Ingresa un celular colombiano valido de 10 digitos, por ejemplo 300 123 4567.";
+    }
+
+    return null;
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    const errorPaso1 = validatePaso1();
+    if (errorPaso1) {
+      setError(errorPaso1);
       return;
     }
 
@@ -161,16 +195,61 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       return;
     }
 
+    if (step === 1) {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/orders/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nombre,
+            telefono: telefonoNormalizado.e164,
+            email: email.trim() || undefined,
+            departamento,
+            ciudad,
+            barrio: barrio.trim() || undefined,
+            direccion,
+            ubicacion,
+            variantId: selectedVariant.id,
+            slug: product.handle,
+            descuentoAplicado: discountApplied,
+            envioPrioritario,
+            draftOrderId,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.mensaje ?? "No pudimos guardar tu pedido. Intenta de nuevo.");
+        }
+
+        setDraftOrderId(data.draftOrderId);
+        setStep(2);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No pudimos guardar tu pedido. Intenta de nuevo.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (!draftOrderId) {
+      setError("Algo salio mal con tu pedido. Vuelve a ingresar tus datos.");
+      setStep(1);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/orders/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          draftOrderId,
           nombre,
           telefono: telefonoNormalizado.e164,
-          email: email.trim() || undefined,
           departamento,
           ciudad,
           barrio: barrio.trim() || undefined,
@@ -187,13 +266,13 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.mensaje ?? "No pudimos procesar tu pedido. Intenta de nuevo.");
+        throw new Error(data?.mensaje ?? "No pudimos confirmar tu pedido. Intenta de nuevo.");
       }
 
       setSuccess({ orderNumber: data.orderNumber, telefono: data.telefono });
       markOrderCompleted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pudimos procesar tu pedido. Intenta de nuevo.");
+      setError(err instanceof Error ? err.message : "No pudimos confirmar tu pedido. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -239,30 +318,64 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           </svg>
         </span>
         <div className="flex flex-col gap-1">
-          <h3 className="font-display text-2xl text-carbon">Pedido confirmado</h3>
+          <h3 className="font-display text-2xl text-carbon">¡Tu ritual está en camino!</h3>
           <p className="text-sm text-ceniza">Numero de pedido: {success.orderNumber}</p>
         </div>
+
         <p className="text-sm text-carbon-suave">
-          Te contactaremos en maximo 24 horas al {success.telefono}.
+          Tomaste una gran decisión. En los próximos días vas a notar la diferencia en tu piel — igual
+          que miles de mujeres que ya forman parte de la comunidad Milito Life Shop.
         </p>
+
+        <div className="flex flex-col gap-2.5 w-full">
+          <p className="flex items-center gap-2 text-sm text-carbon-suave">
+            <span className="shrink-0 text-dorado-oscuro"><PhoneIcon /></span>
+            Recibirás una llamada de confirmación en las próximas horas al {success.telefono}
+          </p>
+          <p className="flex items-center gap-2 text-sm text-carbon-suave">
+            <span className="shrink-0 text-dorado-oscuro"><TruckIcon /></span>
+            Tu pedido saldrá en 24-48 horas hábiles
+          </p>
+          <p className="flex items-center gap-2 text-sm text-carbon-suave">
+            <span className="shrink-0 text-dorado-oscuro"><WhatsAppIcon className="h-4 w-4" /></span>
+            ¿Tienes dudas? Escríbenos por WhatsApp
+          </p>
+        </div>
+
         {whatsappNumero ? (
           <button
             type="button"
             onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}
-            className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-[#25D366] px-6 text-sm font-semibold tracking-wide text-blanco transition-transform duration-200 hover:scale-[1.02] active:scale-[0.97]"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-6 text-sm font-semibold tracking-wide text-blanco transition-transform duration-200 hover:scale-[1.02] active:scale-[0.97]"
           >
             <WhatsAppIcon />
-            Escríbenos por WhatsApp
+            Chatear con Milito Life Shop →
           </button>
         ) : (
           <p className="text-sm text-ceniza">Te contactaremos pronto.</p>
         )}
+
+        <a
+          href="/productos"
+          className="self-center text-sm text-carbon-suave underline underline-offset-2"
+        >
+          Seguir explorando productos
+        </a>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex items-center justify-center gap-2" aria-hidden="true">
+        <span className="h-1.5 w-8 rounded-full bg-morado" />
+        <span className={cx("h-1.5 w-8 rounded-full", step >= 1 ? "bg-morado" : "bg-arena")} />
+        <span className={cx("h-1.5 w-8 rounded-full", step >= 2 ? "bg-morado" : "bg-arena")} />
+      </div>
+
+      {step === 1 && (
+      <div key="paso-1" className="animate-fade-in-up flex flex-col gap-4">
+      <h3 className="font-display text-lg text-carbon">¿A dónde lo enviamos?</h3>
       <Input
         label="Nombre completo"
         type="text"
@@ -405,7 +518,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
       <label
         className={cx(
           "flex items-start gap-3 rounded-2xl border-[1.5px] bg-crema p-3.5 cursor-pointer transition-colors",
-          envioPrioritario ? "border-dorado-oscuro" : "border-dorado/40 cta-pulse"
+          envioPrioritario ? "border-dorado-oscuro" : "border-dorado/40"
         )}
       >
         <input
@@ -437,6 +550,31 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           </span>
         ))}
       </div>
+      </div>
+      )}
+
+      {step === 2 && (
+        <div key="paso-2" className="animate-fade-in-up flex flex-col gap-4">
+          <h3 className="font-display text-lg text-carbon">Confirmación</h3>
+
+          <div className="flex flex-col gap-2 rounded-2xl border border-arena bg-crema p-4 text-sm text-carbon">
+            <p>✓ {product.title} — {selectedVariant.title}</p>
+            <p>✓ Total: <span className="font-semibold">{formatCOP(precioTotal)}</span></p>
+            <p>✓ Envío a {ciudad}, {departamento}</p>
+            {envioPrioritario && <p>✓ {ENVIO_PRIORITARIO_LABEL}</p>}
+            {discountApplied && <p>✓ 10% de descuento aplicado</p>}
+            <p>✓ Pago al recibir tu pedido</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="self-start text-sm text-carbon-suave underline underline-offset-2"
+          >
+            ← Editar mis datos
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="text-sm text-error" role="alert">
@@ -450,8 +588,10 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
             <Spinner className="text-blanco" />
             Procesando tu pedido...
           </>
+        ) : step === 1 ? (
+          "Continuar →"
         ) : (
-          `Confirmar pedido — ${formatCOP(precioTotal)}`
+          "Confirmar mi pedido — pago al recibir"
         )}
       </Button>
     </form>

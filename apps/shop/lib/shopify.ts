@@ -261,89 +261,142 @@ async function findOrCreateCustomerId(
   }
 }
 
-export async function createShopifyOrder(
-  input: CreateOrderInput
+/**
+ * Crea o actualiza (si se pasa existingDraftOrderId) el draft order que
+ * representa el pedido MIENTRAS la persona todavia puede volver atras y
+ * editar sus datos (pasos "Realizar pedido" <-> "Confirmar pedido"). A
+ * diferencia de una orden real, un draft order se puede modificar por
+ * completo via PUT — asi que editar y reenviar nunca duplica el pedido,
+ * solo actualiza el mismo draft.
+ */
+export async function upsertCheckoutDraftOrder(
+  input: CreateOrderInput,
+  existingDraftOrderId?: string | null
+): Promise<{ draftOrderId: string } | null> {
+  if (!STORE_DOMAIN || !ADMIN_TOKEN) {
+    return { draftOrderId: existingDraftOrderId ?? `MOCK-DRAFT-${Date.now()}` };
+  }
+
+  try {
+    const { firstName, lastName } = splitFullName(input.nombre);
+    const customerId = await findOrCreateCustomerId(input.telefono, firstName, lastName);
+
+    // Shopify descarta shipping_address/customer ENTERO y sin error si
+    // faltan last_name, province o country_code — asi se rompio antes.
+    const address = {
+      first_name: firstName,
+      last_name: lastName,
+      address1: input.direccion,
+      address2: input.barrio || undefined,
+      city: input.ciudad,
+      province: input.departamento,
+      country: "Colombia",
+      country_code: "CO",
+      phone: input.telefono,
+    };
+
+    const notePartes = ["Pedido COD — Contraentrega"];
+    if (typeof input.lat === "number" && typeof input.lng === "number") {
+      notePartes.push(`Ubicación GPS del cliente: https://maps.google.com/?q=${input.lat},${input.lng}`);
+    }
+    if (input.discountPercent) {
+      notePartes.push(`Descuento popup exit-intent aplicado: ${input.discountPercent}%`);
+    }
+
+    const lineItems: Record<string, unknown>[] = [
+      { variant_id: toRestVariantId(input.variantId), quantity: input.quantity },
+    ];
+    if (input.envioPrioritario) {
+      lineItems.push({ variant_id: ENVIO_PRIORITARIO_VARIANT_ID, quantity: 1 });
+    }
+
+    const payload = {
+      draft_order: {
+        line_items: lineItems,
+        ...(customerId ? { customer: { id: customerId } } : {}),
+        shipping_address: address,
+        billing_address: address,
+        note: notePartes.join("\n"),
+        tags: "COD, milito-life-shop, checkout-en-progreso",
+        use_customer_default_address: false,
+        ...(input.discountPercent
+          ? {
+              applied_discount: {
+                description: "Oferta exit-intent",
+                title: "Descuento",
+                value_type: "percentage",
+                value: String(input.discountPercent),
+              },
+            }
+          : {}),
+      },
+    };
+
+    const url = existingDraftOrderId
+      ? `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/draft_orders/${existingDraftOrderId}.json`
+      : `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/draft_orders.json`;
+
+    const res = await fetch(url, {
+      method: existingDraftOrderId ? "PUT" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": ADMIN_TOKEN,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      console.error("Error al crear/actualizar draft order de checkout:", res.status, await res.text());
+      return null;
+    }
+
+    const json = await res.json();
+    return { draftOrderId: String(json.draft_order.id) };
+  } catch (error) {
+    console.error("Error al registrar draft order de checkout:", error);
+    return null;
+  }
+}
+
+/**
+ * Convierte el draft order en una orden real de Shopify — el momento en
+ * que el pedido "nace" de verdad, con los datos tal como quedaron despues
+ * de cualquier edicion. payment_pending=true mantiene financial_status en
+ * "pending" (es contraentrega, no se cobra en el momento).
+ */
+export async function completeDraftOrder(
+  draftOrderId: string
 ): Promise<{ orderId: string; orderNumber: string }> {
   if (!STORE_DOMAIN || !ADMIN_TOKEN) {
     return { orderId: `MOCK-${Date.now()}`, orderNumber: `#DM${Math.floor(1000 + Math.random() * 9000)}` };
   }
 
-  const { firstName, lastName } = splitFullName(input.nombre);
-  const existingCustomerId = await findExistingCustomerId(input.telefono);
+  const completeRes = await fetch(
+    `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/draft_orders/${draftOrderId}/complete.json?payment_pending=true`,
+    {
+      method: "PUT",
+      headers: { "X-Shopify-Access-Token": ADMIN_TOKEN },
+    }
+  );
 
-  // Shopify descarta shipping_address/customer ENTERO y sin error si
-  // faltan last_name, province o country_code — asi se rompio antes.
-  const address = {
-    first_name: firstName,
-    last_name: lastName,
-    address1: input.direccion,
-    address2: input.barrio || undefined,
-    city: input.ciudad,
-    province: input.departamento,
-    country: "Colombia",
-    country_code: "CO",
-    phone: input.telefono,
-  };
-
-  const notePartes = ["Pedido COD — Contraentrega"];
-  if (typeof input.lat === "number" && typeof input.lng === "number") {
-    notePartes.push(`Ubicación GPS del cliente: https://maps.google.com/?q=${input.lat},${input.lng}`);
+  if (!completeRes.ok) {
+    const errorBody = await completeRes.text();
+    throw new Error(`Shopify Admin API error al completar el pedido: ${completeRes.status} — ${errorBody}`);
   }
 
-  const lineItems: Record<string, unknown>[] = [
-    { variant_id: toRestVariantId(input.variantId), quantity: input.quantity },
-  ];
-  if (input.envioPrioritario) {
-    lineItems.push({ variant_id: ENVIO_PRIORITARIO_VARIANT_ID, quantity: 1 });
-  }
+  const completeJson = await completeRes.json();
+  const orderId = String(completeJson.draft_order.order_id);
 
-  if (input.discountPercent) {
-    notePartes.push(`Descuento popup exit-intent aplicado: ${input.discountPercent}%`);
-  }
-
-  const res = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders.json`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": ADMIN_TOKEN,
-    },
-    body: JSON.stringify({
-      order: {
-        line_items: lineItems,
-        customer: existingCustomerId
-          ? { id: existingCustomerId }
-          : {
-              first_name: firstName,
-              last_name: lastName,
-              phone: input.telefono,
-              ...(input.email ? { email: input.email } : {}),
-            },
-        shipping_address: address,
-        billing_address: address,
-        financial_status: "pending",
-        fulfillment_status: null,
-        note: notePartes.join("\n"),
-        tags: "COD, milito-life-shop",
-        send_receipt: false,
-        send_fulfillment_receipt: false,
-        ...(input.discountPercent
-          ? {
-              discount_codes: [
-                { code: "OFERTA5MIN", amount: String(input.discountPercent), type: "percentage" },
-              ],
-            }
-          : {}),
-      },
-    }),
+  const orderRes = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders/${orderId}.json`, {
+    headers: { "X-Shopify-Access-Token": ADMIN_TOKEN },
   });
 
-  if (!res.ok) {
-    const errorBody = await res.text();
-    throw new Error(`Shopify Admin API error: ${res.status} — ${errorBody}`);
+  if (!orderRes.ok) {
+    throw new Error(`Shopify Admin API error al leer la orden confirmada: ${orderRes.status}`);
   }
 
-  const json = await res.json();
-  return { orderId: String(json.order.id), orderNumber: `#${json.order.order_number}` };
+  const orderJson = await orderRes.json();
+  return { orderId, orderNumber: `#${orderJson.order.order_number}` };
 }
 
 export type AbandonedCartInput = {
