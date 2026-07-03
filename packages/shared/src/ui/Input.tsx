@@ -15,7 +15,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cx(
-            "min-h-[44px] rounded-[2px] border border-arena bg-blanco px-4 py-2.5 text-base text-carbon placeholder:text-ceniza focus:outline-none focus:border-dorado transition-colors",
+            "min-h-[44px] rounded-lg border border-arena bg-blanco px-4 py-2.5 text-base text-carbon placeholder:text-ceniza focus:outline-none focus:border-dorado transition-colors",
             error && "border-error",
             className
           )}
@@ -42,7 +42,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={cx(
-            "rounded-[2px] border border-arena bg-blanco px-4 py-2.5 text-base text-carbon placeholder:text-ceniza focus:outline-none focus:border-dorado transition-colors resize-none",
+            "rounded-lg border border-arena bg-blanco px-4 py-2.5 text-base text-carbon placeholder:text-ceniza focus:outline-none focus:border-dorado transition-colors resize-none",
             error && "border-error",
             className
           )}

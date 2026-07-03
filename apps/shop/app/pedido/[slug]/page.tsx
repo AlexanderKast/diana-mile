@@ -44,9 +44,9 @@ export default async function PedidoPage({ params, searchParams }: PedidoPagePro
 
       <div className="md:grid md:grid-cols-[1fr_1.2fr] md:gap-8">
         <div className="mb-8 md:mb-0">
-          <div className="md:sticky md:top-8 flex flex-col gap-4 rounded-[4px] border border-arena bg-crema p-4">
+          <div className="md:sticky md:top-8 flex flex-col gap-4 rounded-2xl border border-arena bg-crema p-4">
             <div className="flex items-center gap-4">
-              <div className="relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-[4px] bg-arena">
+              <div className="relative h-[60px] w-[60px] shrink-0 overflow-hidden rounded-2xl bg-arena">
                 {imagen && (
                   <Image
                     src={imagen.url}

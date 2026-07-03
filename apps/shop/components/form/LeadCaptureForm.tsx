@@ -65,7 +65,7 @@ export function LeadCaptureForm({ fuente = "linktree", productoInteres }: LeadCa
 
   if (success) {
     return (
-      <div className="animate-fade-in-up rounded-[4px] border border-arena bg-crema p-6 text-center">
+      <div className="animate-fade-in-up rounded-2xl border border-arena bg-crema p-6 text-center">
         <p className="text-carbon">Gracias, te contactaremos pronto.</p>
       </div>
     );

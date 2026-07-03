@@ -18,7 +18,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative mx-auto aspect-square w-[62%] max-w-[280px] rounded-[4px] overflow-hidden bg-crema md:mx-0 md:aspect-[4/5] md:w-full md:max-w-none">
+      <div className="relative mx-auto aspect-square w-[62%] max-w-[280px] rounded-2xl overflow-hidden bg-crema md:mx-0 md:aspect-[4/5] md:w-full md:max-w-none">
         <Image
           key={activeIndex}
           src={activeImage.url}
@@ -39,7 +39,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
               onClick={() => setActiveIndex(index)}
               aria-label={`Ver imagen ${index + 1}`}
               className={cx(
-                "relative shrink-0 w-16 h-16 rounded-[2px] overflow-hidden border transition-colors duration-200",
+                "relative shrink-0 w-16 h-16 rounded-lg overflow-hidden border transition-colors duration-200",
                 index === activeIndex ? "border-dorado" : "border-arena"
               )}
             >

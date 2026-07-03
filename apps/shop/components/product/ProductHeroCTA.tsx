@@ -64,7 +64,7 @@ export function ProductHeroCTA() {
             <span className="text-base text-ceniza line-through">{formatCOP(variant.compareAtPrice)}</span>
           )}
           {discountPct !== null && discountPct > 0 && (
-            <span className="rounded-[3px] bg-morado px-2.5 py-1 text-xs font-bold text-blanco">
+            <span className="rounded-md bg-morado px-2.5 py-1 text-xs font-bold text-blanco">
               -{discountPct}% OFF
             </span>
           )}
@@ -74,7 +74,7 @@ export function ProductHeroCTA() {
       <button
         type="button"
         onClick={() => openOrderSheet()}
-        className="btn-shine cta-pulse flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[2px] bg-dorado-oscuro text-blanco text-base font-semibold tracking-wide shadow-[0_4px_14px_rgba(168,136,94,0.35)] transition-all duration-200 hover:bg-dorado hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(168,136,94,0.5)] active:scale-[0.97]"
+        className="btn-shine cta-pulse flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-dorado-oscuro text-blanco text-base font-semibold tracking-wide shadow-[0_4px_14px_rgba(168,136,94,0.35)] transition-all duration-200 hover:bg-dorado hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(168,136,94,0.5)] active:scale-[0.97]"
       >
         <BagIcon />
         Pedir ahora · Contraentrega

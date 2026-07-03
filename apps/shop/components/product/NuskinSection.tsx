@@ -15,7 +15,7 @@ export function NuskinSection() {
 
   return (
     <section className="px-6 py-10">
-      <div className="mx-auto max-w-md rounded-[4px] border border-arena bg-crema p-6 text-center">
+      <div className="mx-auto max-w-md rounded-2xl border border-arena bg-crema p-6 text-center">
         <h2 className="font-display text-xl text-carbon">¿Eres distribuidora Nu Skin?</h2>
         <p className="mt-2 text-sm text-carbon-suave">
           Compra a precio de distribuidora directamente en la plataforma oficial de Nu Skin y

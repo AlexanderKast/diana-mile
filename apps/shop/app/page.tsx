@@ -92,7 +92,7 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="bg-crema">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-24 grid gap-10 md:grid-cols-2 md:gap-8 md:items-center">
-          <div className="relative aspect-[4/5] w-full rounded-[4px] overflow-hidden order-1 md:order-2 animate-fade-in-up">
+          <div className="relative aspect-[4/5] w-full rounded-2xl overflow-hidden order-1 md:order-2 animate-fade-in-up">
             <Image
               src="/images/hero-home.jpg"
               alt="Ritual Milito Life Shop con hojas tropicales"
@@ -128,7 +128,7 @@ export default async function HomePage() {
             {PILARES.map((pilar, i) => (
               <div
                 key={pilar.titulo}
-                className="min-w-[80%] snap-center shrink-0 md:min-w-0 md:shrink bg-blanco border border-arena rounded-[4px] p-6 animate-fade-in-up"
+                className="min-w-[80%] snap-center shrink-0 md:min-w-0 md:shrink bg-blanco border border-arena rounded-2xl p-6 animate-fade-in-up"
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 <div className="text-dorado mb-3">{pilar.icon}</div>

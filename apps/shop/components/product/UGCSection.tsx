@@ -43,7 +43,7 @@ export function UGCSection() {
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         {POSTS.map((post) => (
-          <div key={post.title} className={`p-5 rounded-[4px] ${post.bg}`}>
+          <div key={post.title} className={`p-5 rounded-2xl ${post.bg}`}>
             <span className="text-3xl">{post.emoji}</span>
             <p className="font-sans text-[13px] font-semibold text-carbon mt-2">
               {post.title}

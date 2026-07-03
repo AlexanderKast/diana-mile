@@ -36,7 +36,7 @@ function getVariantSubtitle(variant: ProductVariant, product: Product) {
     return (
       <span className="flex items-center gap-2">
         <span className="text-xs text-ceniza">{product.metafields.ahorroPack2}</span>
-        <span className="rounded-[2px] bg-morado px-2 py-0.5 text-[10px] text-blanco">POPULAR</span>
+        <span className="rounded-lg bg-morado px-2 py-0.5 text-[10px] text-blanco">POPULAR</span>
       </span>
     );
   }
@@ -46,7 +46,7 @@ function getVariantSubtitle(variant: ProductVariant, product: Product) {
     return (
       <span className="flex items-center gap-2">
         <span className="text-xs text-ceniza">{product.metafields.ahorroPack3}</span>
-        <span className="rounded-[2px] bg-morado-oscuro px-2 py-0.5 text-[10px] text-blanco">
+        <span className="rounded-lg bg-morado-oscuro px-2 py-0.5 text-[10px] text-blanco">
           MEJOR VALOR
         </span>
       </span>
@@ -123,7 +123,7 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
               onClick={() => selectVariant(variant.id)}
               onKeyDown={(e) => handleCardKeyDown(e, variant.id, () => selectVariant(variant.id))}
               className={cx(
-                "flex cursor-pointer flex-col gap-1.5 rounded-[4px] border-[1.5px] border-arena transition-colors",
+                "flex cursor-pointer flex-col gap-1.5 rounded-2xl border-[1.5px] border-arena transition-colors",
                 cardPadding,
                 isSelected && "border-morado bg-crema"
               )}
@@ -168,7 +168,7 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
             onClick={selectNuskin}
             onKeyDown={(e) => handleCardKeyDown(e, "nuskin", selectNuskin)}
             className={cx(
-              "flex cursor-pointer flex-col gap-1.5 rounded-[4px] border-[1.5px] border-arena transition-colors",
+              "flex cursor-pointer flex-col gap-1.5 rounded-2xl border-[1.5px] border-arena transition-colors",
               cardPadding,
               selectedIsNuskin && "border-morado bg-crema"
             )}

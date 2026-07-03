@@ -24,6 +24,7 @@ import { TestimonialsSection } from "@/components/product/TestimonialsSection";
 import { GuaranteeSection } from "@/components/product/GuaranteeSection";
 import { FAQAccordion } from "@/components/product/FAQAccordion";
 import { NuskinSection } from "@/components/product/NuskinSection";
+import { ProductQuickNav } from "@/components/product/ProductQuickNav";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
 import { ExitIntentPopup } from "@/components/product/ExitIntentPopup";
 import { ComparisonSection } from "@/components/product/ComparisonSection";
@@ -130,6 +131,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </div>
         </div>
 
+        <ProductQuickNav showIngredientes={isEpoch} />
+
         {ingredientStory && (
           <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">
             <h2 className="font-display text-[28px] text-carbon max-w-md">
@@ -138,7 +141,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
             <p className="text-sm text-carbon-suave leading-relaxed max-w-md">
               {ingredientStory.body}
             </p>
-            <div className="relative w-full aspect-[4/5] rounded-[2px] overflow-hidden max-w-md">
+            <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden max-w-md">
               <Image
                 src="/images/lifestyle-ritual.jpg"
                 alt={`Ritual ${product.title}`}
@@ -152,7 +155,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
         <SocialCTABand tone="outline-morado" buttonLabel={`Probar ${product.title}`} />
 
-        <section className="py-12 px-6 flex flex-col gap-6">
+        <section id="beneficios" className="py-12 px-6 flex flex-col gap-6 scroll-mt-20">
           <h2 className="font-display text-2xl text-carbon text-center">
             Lo que hace por tu piel
           </h2>
@@ -169,7 +172,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
         <ComparisonSection productName={product.title} />
 
-        <section className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8">
+        <section id="como-usarlo" className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8 scroll-mt-20">
           <h2 className="font-display text-2xl text-center">Tu ritual en 3 pasos</h2>
           <div
             className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible"
@@ -178,7 +181,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
             {PASOS_RITUAL.map((paso) => (
               <div
                 key={paso.numero}
-                className="shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-3 rounded-[4px] border border-arena bg-blanco overflow-hidden shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
+                className="shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-3 rounded-2xl border border-arena bg-blanco overflow-hidden shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
               >
                 <div className="relative aspect-[4/5] w-full">
                   <Image
@@ -205,12 +208,12 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
         <GuaranteeSection />
 
-        <section className="px-6 py-12">
+        <section id="preguntas" className="px-6 py-12 scroll-mt-20">
           <FAQAccordion />
         </section>
 
         {isEpoch && (
-          <section className="px-6 pb-4">
+          <section id="ingredientes" className="px-6 pb-4 scroll-mt-20">
             <IngredientsAccordion />
           </section>
         )}

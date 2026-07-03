@@ -19,9 +19,9 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={`/productos/${product.handle}`}
-      className="group flex flex-col gap-3 border border-arena rounded-[4px] p-3 bg-blanco shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
+      className="group flex flex-col gap-3 border border-arena rounded-2xl p-3 bg-blanco shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
     >
-      <div className="relative aspect-square w-full overflow-hidden rounded-[2px] bg-arena">
+      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-arena">
         {image ? (
           <Image
             src={image.url}
@@ -33,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
         ) : null}
 
         {badgeLabel ? (
-          <span className="absolute top-2 left-2 bg-blanco/90 text-[10px] px-2 py-1 rounded-[2px] text-carbon">
+          <span className="absolute top-2 left-2 bg-blanco/90 text-[10px] px-2 py-1 rounded-lg text-carbon">
             {badgeLabel}
           </span>
         ) : null}
@@ -44,7 +44,7 @@ export function ProductCard({ product }: { product: Product }) {
 
       <span
         className={cx(
-          "inline-flex items-center justify-center gap-2 rounded-[2px] px-6 py-3.5 min-h-[44px]",
+          "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3.5 min-h-[44px]",
           "text-sm font-medium tracking-wide border border-carbon text-carbon transition-colors duration-200",
           "group-hover:bg-crema"
         )}

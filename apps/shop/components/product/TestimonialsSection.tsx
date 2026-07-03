@@ -80,7 +80,7 @@ export function TestimonialsSection({
           {EXPERIENCES.map((item) => (
             <div
               key={item.title}
-              className="min-w-[85%] snap-center flex flex-col gap-3 bg-blanco border border-arena rounded-[8px] p-5 md:min-w-0"
+              className="min-w-[85%] snap-center flex flex-col gap-3 bg-blanco border border-arena rounded-2xl p-5 md:min-w-0"
             >
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -99,7 +99,7 @@ export function TestimonialsSection({
         <button
           type="button"
           onClick={() => openOrderSheet()}
-          className="btn-shine mx-auto flex min-h-[44px] w-full max-w-sm items-center justify-center rounded-[2px] bg-morado px-6 text-blanco text-sm font-medium tracking-wide transition-all duration-200 hover:bg-morado-oscuro hover:scale-[1.02] active:scale-[0.97]"
+          className="btn-shine mx-auto flex min-h-[44px] w-full max-w-sm items-center justify-center rounded-lg bg-morado px-6 text-blanco text-sm font-medium tracking-wide transition-all duration-200 hover:bg-morado-oscuro hover:scale-[1.02] active:scale-[0.97]"
         >
           Pedir {productName}
         </button>
