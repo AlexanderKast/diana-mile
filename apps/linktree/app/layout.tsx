@@ -5,7 +5,7 @@ import "./globals.css";
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["300", "400", "500", "700"],
 });
 
 const inter = Inter({
@@ -14,9 +14,11 @@ const inter = Inter({
   weight: ["300", "400", "500"],
 });
 
-const TITULO = "Diana Mile | Wellness & Antiaging";
+const TITULO = "Diana Mile | Milito Life";
 const DESCRIPCION =
-  "Entrenadora deportiva, creadora de contenido UGC y la cara detrás de Diana Mile Wellness & Antiaging. Agenda tu entrenamiento, visita la tienda y conoce mis redes.";
+  "Entrenamientos personalizados 1:1, Milito Life Store y contenido UGC para marcas. Te cuidas porque lo mereces ✨";
+// TODO: reemplazar por foto real de Diana 1200x630
+const OG_IMAGE = "/og-image.png";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://link.militolife.com"),
@@ -25,9 +27,24 @@ export const metadata: Metadata = {
   openGraph: {
     title: TITULO,
     description: DESCRIPCION,
-    images: ["/images/diana-profile.jpg"],
-    locale: "es_CO",
+    url: "https://link.militolife.com",
+    siteName: "Milito Life",
     type: "website",
+    locale: "es_CO",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "Diana Mile — Milito Life",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITULO,
+    description: DESCRIPCION,
+    images: [OG_IMAGE],
   },
 };
 

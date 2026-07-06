@@ -83,7 +83,9 @@ async function getLinktreeData(): Promise<{
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="mt-4 flex flex-col items-center gap-2 animate-fade-in-up">
-      <span className="font-display text-base text-morado">{title}</span>
+      <span className="font-display text-base font-bold text-morado">
+        {title}
+      </span>
       <span className="linea-dorada w-8 opacity-70" />
     </div>
   );
