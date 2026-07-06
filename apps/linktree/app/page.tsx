@@ -13,6 +13,10 @@ const NOMBRE = "Diana Mile";
 const TAGLINE_DEFAULT = "Creadora UGC · Entrenadora deportiva · Empresaria";
 const FOTO_DEFAULT = "/images/diana-profile.jpg";
 
+// Sin esto la pagina se genera estatica en build time: los cambios hechos
+// desde el admin (Supabase) nunca se verian sin un redeploy.
+export const revalidate = 60;
+
 // El hero no lleva encabezado propio: la card ya se distingue por su estilo y badge.
 const SECTION_TITLES: Partial<Record<LinkSection, string>> = {
   store: "Tienda",
