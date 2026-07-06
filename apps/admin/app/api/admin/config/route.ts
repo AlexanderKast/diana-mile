@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminSupabaseClient, requireAdminSession } from "@diana-mile/shared/supabase/server";
+import {
+  createAdminSupabaseClient,
+  requireAdminSession,
+} from "@diana-mile/shared/supabase/server";
 
 type ConfigInput = { clave: string; valor: string };
 
@@ -7,6 +10,7 @@ const CLAVES_PERMITIDAS = new Set([
   "linktree_links",
   "linktree_titulo",
   "linktree_subtitulo",
+  "linktree_foto_url",
   "whatsapp_numero",
 ]);
 
@@ -25,8 +29,11 @@ export async function GET() {
 
     if (error) {
       return NextResponse.json(
-        { error: "No se pudo obtener la configuracion.", detalle: error.message },
-        { status: 500 }
+        {
+          error: "No se pudo obtener la configuracion.",
+          detalle: error.message,
+        },
+        { status: 500 },
       );
     }
 
@@ -37,7 +44,7 @@ export async function GET() {
         error: "Error inesperado al obtener la configuracion.",
         detalle: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -55,13 +62,13 @@ export async function POST(request: NextRequest) {
       if (!item?.clave || typeof item.valor !== "string") {
         return NextResponse.json(
           { error: "Cada elemento debe incluir 'clave' y 'valor' (string)." },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (!CLAVES_PERMITIDAS.has(item.clave)) {
         return NextResponse.json(
           { error: `Clave de configuracion no permitida: ${item.clave}` },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -77,14 +84,17 @@ export async function POST(request: NextRequest) {
           valor: item.valor,
           updated_at: now,
         })),
-        { onConflict: "clave" }
+        { onConflict: "clave" },
       )
       .select();
 
     if (error) {
       return NextResponse.json(
-        { error: "No se pudo guardar la configuracion.", detalle: error.message },
-        { status: 500 }
+        {
+          error: "No se pudo guardar la configuracion.",
+          detalle: error.message,
+        },
+        { status: 500 },
       );
     }
 
@@ -95,7 +105,7 @@ export async function POST(request: NextRequest) {
         error: "Error inesperado al guardar la configuracion.",
         detalle: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

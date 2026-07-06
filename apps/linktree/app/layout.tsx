@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 
@@ -14,10 +14,28 @@ const inter = Inter({
   weight: ["300", "400", "500"],
 });
 
+const TITULO = "Diana Mile | Wellness & Antiaging";
+const DESCRIPCION =
+  "Entrenadora deportiva, creadora de contenido UGC y la cara detrás de Diana Mile Wellness & Antiaging. Agenda tu entrenamiento, visita la tienda y conoce mis redes.";
+
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Link in bio",
-  description:
-    "Todos los enlaces de Milito Life Shop: tienda, WhatsApp, Instagram y TikTok en un solo lugar.",
+  metadataBase: new URL("https://link.militolife.com"),
+  title: TITULO,
+  description: DESCRIPCION,
+  openGraph: {
+    title: TITULO,
+    description: DESCRIPCION,
+    images: ["/images/diana-profile.jpg"],
+    locale: "es_CO",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#F2EDE6",
 };
 
 export default function RootLayout({
@@ -31,7 +49,9 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${cormorant.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-blanco text-carbon overflow-x-hidden">{children}</body>
+      <body className="min-h-full overflow-x-hidden bg-crema text-morado-oscuro">
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,99 +1,162 @@
 import Image from "next/image";
 import { createPublicClient } from "@diana-mile/shared/supabase/client";
+import {
+  links as DEFAULT_LINKS,
+  type LinkItem,
+  type LinkSection,
+} from "@/lib/links";
 import { LinkCard } from "@/components/linktree/LinkCard";
-import type { LinktreeLink } from "@diana-mile/shared/types";
+import { SocialCircleButton } from "@/components/linktree/SocialCircleButton";
+import { CheckIcon } from "@/components/linktree/SocialIcons";
 
-const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || "/";
+const NOMBRE = "Diana Mile";
+const TAGLINE_DEFAULT = "Creadora UGC · Entrenadora deportiva · Empresaria";
+const FOTO_DEFAULT = "/images/diana-profile.jpg";
 
-const DEFAULTS = {
-  titulo: "Milito Life Shop",
-  subtitulo: "Bienestar · Anti-edad · Rituales de piel",
-  links: [
-    { label: "Tienda", url: `${SHOP_URL}/productos`, icon: "bag" },
-    { label: "WhatsApp", url: "https://wa.me/57XXXXXXXXXX", icon: "whatsapp" },
-    { label: "Instagram", url: "https://instagram.com/militolifeshop", icon: "instagram" },
-    { label: "TikTok", url: "https://tiktok.com/@militolifeshop", icon: "tiktok" },
-  ] as LinktreeLink[],
+// El hero no lleva encabezado propio: la card ya se distingue por su estilo y badge.
+const SECTION_TITLES: Partial<Record<LinkSection, string>> = {
+  store: "Tienda",
+  collab_diana: "Colabora conmigo",
+  agency: "Agencia Kreoon by UGC Colombia",
+  social: "Redes",
 };
 
 async function getLinktreeData(): Promise<{
   titulo: string;
-  subtitulo: string;
-  links: LinktreeLink[];
+  tagline: string;
+  foto: string;
+  links: LinkItem[];
 }> {
+  const defaults = {
+    titulo: NOMBRE,
+    tagline: TAGLINE_DEFAULT,
+    foto: FOTO_DEFAULT,
+    links: DEFAULT_LINKS,
+  };
+
   try {
     const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("config")
       .select("clave, valor")
-      .in("clave", ["linktree_links", "linktree_titulo", "linktree_subtitulo"]);
+      .in("clave", [
+        "linktree_links",
+        "linktree_titulo",
+        "linktree_subtitulo",
+        "linktree_foto_url",
+      ]);
 
-    if (error || !data || data.length === 0) {
-      return DEFAULTS;
+    if (error || !data) {
+      return defaults;
     }
 
     const map = new Map(data.map((row) => [row.clave, row.valor]));
 
-    let links = DEFAULTS.links;
+    let links = DEFAULT_LINKS;
     const rawLinks = map.get("linktree_links");
     if (rawLinks) {
       try {
-        const parsed = JSON.parse(rawLinks) as LinktreeLink[];
+        const parsed = JSON.parse(rawLinks) as LinkItem[];
         if (Array.isArray(parsed) && parsed.length > 0) {
           links = parsed;
         }
       } catch {
-        links = DEFAULTS.links;
+        links = DEFAULT_LINKS;
       }
     }
 
     return {
-      titulo: map.get("linktree_titulo") || DEFAULTS.titulo,
-      subtitulo: map.get("linktree_subtitulo") || DEFAULTS.subtitulo,
+      titulo: map.get("linktree_titulo") || NOMBRE,
+      tagline: map.get("linktree_subtitulo") || TAGLINE_DEFAULT,
+      foto: map.get("linktree_foto_url") || FOTO_DEFAULT,
       links,
     };
   } catch {
-    return DEFAULTS;
+    return defaults;
   }
 }
 
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="mt-4 flex flex-col items-center gap-2 animate-fade-in-up">
+      <span className="font-display text-base text-morado">{title}</span>
+      <span className="linea-dorada w-8 opacity-70" />
+    </div>
+  );
+}
+
 export default async function LinkPage() {
-  const { titulo, subtitulo, links } = await getLinktreeData();
+  const { titulo, tagline, foto, links } = await getLinktreeData();
+  const year = new Date().getFullYear();
+  const activeLinks = links.filter((link) => link.active);
+  const socialLinks = activeLinks.filter((link) => link.section === "social");
+  const otherLinks = activeLinks.filter((link) => link.section !== "social");
 
   return (
-    <div className="min-h-screen flex flex-col bg-blanco">
-      <div className="w-full max-w-[480px] mx-auto flex flex-col flex-1 px-6 pt-14 pb-6">
-        <div className="flex flex-col items-center animate-fade-in-up">
-          <div className="w-[88px] h-[88px] rounded-full p-[1.5px] bg-gradient-to-br from-lila to-dorado">
-            <div className="relative w-full h-full rounded-full overflow-hidden bg-crema">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-blanco px-6 pb-safe pt-safe">
+      <section className="flex flex-col items-center animate-fade-in-up">
+        <div className="relative">
+          <div className="h-24 w-24 rounded-full bg-gradient-to-br from-morado to-dorado p-[2px]">
+            <div className="relative h-full w-full overflow-hidden rounded-full bg-crema">
               <Image
-                src="/images/diana-profile.jpg"
+                src={foto}
                 alt={titulo}
                 fill
-                sizes="88px"
+                sizes="96px"
                 className="object-cover"
+                unoptimized={foto.startsWith("http")}
+                priority
               />
             </div>
           </div>
-          <h1 className="mt-4 font-display text-[28px] leading-tight text-carbon text-center">
-            {titulo}
-          </h1>
-          <div className="linea-dorada-lila w-10 mt-3" />
-          <p className="mt-3 font-sans text-[13px] text-ceniza text-center">
-            {subtitulo}
-          </p>
+          <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-dorado text-blanco ring-2 ring-blanco">
+            <CheckIcon />
+          </span>
         </div>
 
-        <div className="flex flex-col gap-3 mt-8">
-          {links.map((link, index) => (
-            <LinkCard key={`${link.label}-${index}`} link={link} index={index} />
-          ))}
-        </div>
+        <h1 className="mt-4 text-center font-display text-[30px] leading-tight text-morado">
+          {titulo}
+        </h1>
+        <div className="mt-3 h-px w-10 bg-gradient-to-r from-dorado to-morado" />
+        <p className="mt-3 max-w-[280px] text-center text-[13px] text-ceniza">
+          {tagline}
+        </p>
+      </section>
 
-        <footer className="mt-auto pt-8 pb-6 text-center text-[11px] text-ceniza">
-          © Milito Life Shop
-        </footer>
-      </div>
-    </div>
+      <nav className="mt-8 flex flex-col gap-3">
+        {otherLinks.map((link, index) => {
+          const previousSection = otherLinks[index - 1]?.section;
+          const sectionTitle =
+            link.section && link.section !== previousSection
+              ? SECTION_TITLES[link.section]
+              : undefined;
+          return (
+            <div key={link.id} className="contents">
+              {sectionTitle && <SectionHeader title={sectionTitle} />}
+              <LinkCard link={link} index={index} />
+            </div>
+          );
+        })}
+
+        {socialLinks.length > 0 && SECTION_TITLES.social && (
+          <div className="contents">
+            <SectionHeader title={SECTION_TITLES.social} />
+            <div className="mt-1 flex items-center justify-center gap-4">
+              {socialLinks.map((link, index) => (
+                <SocialCircleButton
+                  key={link.id}
+                  link={link}
+                  index={otherLinks.length + index}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      <footer className="mt-auto pt-8 text-center text-[11px] text-ceniza">
+        © {titulo} {year}
+      </footer>
+    </main>
   );
 }

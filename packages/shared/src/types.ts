@@ -25,10 +25,23 @@ export type Product = {
   metafields: ProductMetafields;
 };
 
+export type LinktreeLinkSection =
+  | "hero"
+  | "store"
+  | "collab_diana"
+  | "agency"
+  | "social";
+
 export type LinktreeLink = {
+  id: string;
   label: string;
   url: string;
   icon: "bag" | "whatsapp" | "instagram" | "tiktok";
+  variant: "primary" | "secondary";
+  active: boolean;
+  section?: LinktreeLinkSection;
+  subtitle?: string;
+  badge?: string;
 };
 
 export type Lead = {
