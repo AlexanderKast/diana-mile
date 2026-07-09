@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* packages/shared vive fuera del arbol de apps/admin (hoisted en
+   node_modules via workspaces) — sin esto Tailwind nunca ve las clases
+   usadas solo dentro de Button/Input/Spinner y las descarta en silencio. */
+@source "../../../packages/shared/src";
+
 :root {
   --blanco: #FAFAF8;
   --crema: #F2EDE6;

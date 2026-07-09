@@ -24,36 +24,38 @@ function ExternalArrowIcon({ className }: { className?: string }) {
   );
 }
 
-function getVariantSubtitle(variant: ProductVariant, product: Product) {
-  const title = variant.title.toLowerCase();
+type PackSize = 1 | 2 | 3 | null;
 
-  if (title.includes("1 unidad")) {
+function getPackSize(title: string): PackSize {
+  const t = title.toLowerCase();
+  if (t.includes("3")) return 3;
+  if (t.includes("2")) return 2;
+  if (t.includes("1 unidad") || t.includes("1 und")) return 1;
+  return null;
+}
+
+function getVariantSubtitle(variant: ProductVariant, product: Product) {
+  const pack = getPackSize(variant.title);
+
+  if (pack === 1) {
     return <span className="text-xs text-ceniza">Empieza tu ritual</span>;
   }
 
-  if (title.includes("2")) {
-    if (!product.metafields.ahorroPack2) return null;
-    return (
-      <span className="flex items-center gap-2">
-        <span className="text-xs text-ceniza">{product.metafields.ahorroPack2}</span>
-        <span className="rounded-lg bg-morado px-2 py-0.5 text-[10px] text-blanco">POPULAR</span>
-      </span>
-    );
+  if (pack === 2 && product.metafields.ahorroPack2) {
+    return <span className="text-xs text-ceniza">{product.metafields.ahorroPack2}</span>;
   }
 
-  if (title.includes("3")) {
-    if (!product.metafields.ahorroPack3) return null;
-    return (
-      <span className="flex items-center gap-2">
-        <span className="text-xs text-ceniza">{product.metafields.ahorroPack3}</span>
-        <span className="rounded-lg bg-morado-oscuro px-2 py-0.5 text-[10px] text-blanco">
-          MEJOR VALOR
-        </span>
-      </span>
-    );
+  if (pack === 3 && product.metafields.ahorroPack3) {
+    return <span className="text-xs text-ceniza">{product.metafields.ahorroPack3}</span>;
   }
 
   return null;
+}
+
+function unitPriceLabel(variant: ProductVariant, pack: PackSize) {
+  if (!pack || pack === 1) return null;
+  const unit = parseFloat(variant.price) / pack;
+  return `${formatCOP(unit)} por unidad`;
 }
 
 type VariantSelectorProps = {
@@ -65,10 +67,18 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
 
   const hasNuskinDirect = Boolean(product.metafields.nuskinDirectUrl);
 
+  // Anclaje de precio: se muestra primero el pack de mayor valor (Pack 3),
+  // luego Pack 2, luego 1 unidad — asi los packs chicos parecen mas baratos
+  // en comparacion, en vez de ordenar por el ID/precio ascendente de Shopify.
+  const orderedVariants = useMemo(
+    () => [...product.variants].sort((a, b) => parseFloat(b.price) - parseFloat(a.price)),
+    [product.variants]
+  );
+
   const radioIds = useMemo(() => {
-    const ids = product.variants.map((v) => v.id);
+    const ids = orderedVariants.map((v) => v.id);
     return hasNuskinDirect ? [...ids, "nuskin"] : ids;
-  }, [product.variants, hasNuskinDirect]);
+  }, [orderedVariants, hasNuskinDirect]);
 
   const radioRefs = useRef(new Map<string, HTMLDivElement>());
   const currentRadioId = selectedIsNuskin ? "nuskin" : selectedVariantId;
@@ -106,9 +116,13 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
       {!compact && <h2 className="font-display text-lg text-carbon mb-3">Elige tu ritual</h2>}
 
       <div role="radiogroup" aria-label="Elige tu ritual" className={cx("flex flex-col", gap)}>
-        {product.variants.map((variant) => {
+        {orderedVariants.map((variant) => {
           const isSelected = !selectedIsNuskin && variant.id === selectedVariantId;
           const subtitle = !compact ? getVariantSubtitle(variant, product) : null;
+          const pack = getPackSize(variant.title);
+          const isMejorValor = pack === 3;
+          const isPopular = pack === 2;
+          const unitLabel = !compact ? unitPriceLabel(variant, pack) : null;
 
           return (
             <div
@@ -123,11 +137,29 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
               onClick={() => selectVariant(variant.id)}
               onKeyDown={(e) => handleCardKeyDown(e, variant.id, () => selectVariant(variant.id))}
               className={cx(
-                "flex cursor-pointer flex-col gap-1.5 rounded-2xl border-[1.5px] border-arena transition-colors",
+                "relative flex cursor-pointer flex-col gap-1.5 rounded-2xl border-[1.5px] transition-colors",
                 cardPadding,
-                isSelected && "border-morado bg-crema"
+                isMejorValor ? "border-morado" : "border-arena",
+                isSelected && (isMejorValor ? "bg-lila-suave" : "border-morado bg-crema")
               )}
             >
+              {isMejorValor && !compact && (
+                <span className="absolute -top-2.5 right-3 rounded-lg bg-morado px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blanco">
+                  Favorito
+                </span>
+              )}
+              {isPopular && !compact && (
+                <span className="absolute -top-2.5 right-3 rounded-lg bg-dorado px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-carbon">
+                  Más popular
+                </span>
+              )}
+
+              {isMejorValor && !compact && (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-morado">
+                  ★ Mejor valor
+                </span>
+              )}
+
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-arena">
@@ -151,7 +183,18 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
                   </span>
                 </span>
               </div>
+
+              {unitLabel && (
+                <div className="pl-8 text-xs text-ceniza">{unitLabel}</div>
+              )}
               {subtitle && <div className="pl-8">{subtitle}</div>}
+
+              {isMejorValor && !compact && (
+                <div className="pl-8 flex flex-col gap-0.5 text-xs text-carbon-suave">
+                  <span>✓ Ritual para 90 días</span>
+                  <span>✓ Ideal para regalar</span>
+                </div>
+              )}
             </div>
           );
         })}

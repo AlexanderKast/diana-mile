@@ -23,11 +23,11 @@ const FILAS = [
   "Garantía de reposición si llega mal",
 ];
 
-export function ComparisonSection({ productName }: { productName: string }) {
+export function ComparisonSection() {
   return (
     <section className="bg-crema py-12 px-6">
       <h2 className="font-display text-2xl text-carbon text-center mb-8">
-        Por qué elegir {productName}
+        Lo que las cremas no pueden hacer
       </h2>
 
       <div className="max-w-md mx-auto rounded-2xl border border-arena bg-blanco overflow-hidden">

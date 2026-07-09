@@ -4,6 +4,7 @@ export type ProductBenefit = {
   icon: "gota" | "mineral" | "hoja" | "sol" | "escudo" | "planeta";
   title: string;
   description: string;
+  ciencia?: string;
 };
 
 export function isEpochProduct(product: Product): boolean {
@@ -16,7 +17,7 @@ export function getProductEyebrow(product: Product): string {
 
 export function getProductTagline(product: Product): string {
   return isEpochProduct(product)
-    ? "Sabiduria indigena. Mineralizacion profunda. Piel transformada."
+    ? "La piel que se ve bien de cerca — sin maquillaje encima."
     : product.description || "Un ritual de cuidado elegido para tu piel.";
 }
 
@@ -26,17 +27,23 @@ export function getPrimaryProductBenefits(product: Product): ProductBenefit[] {
       {
         icon: "gota",
         title: "Limpieza profunda sin jabon",
-        description: "No reseca ni altera el pH natural. Tu piel limpia sin sentirse tirante.",
+        description: "Sin jabon que reseque. Piel suave desde el primer uso.",
+        ciencia:
+          "El intercambio ionico entre los minerales de la arcilla y las impurezas de la piel es el mismo mecanismo que usan los tratamientos dermatologicos de limpieza.",
       },
       {
         icon: "mineral",
         title: "Mas de 50 minerales marinos",
         description: "Zinc, Cobre, Magnesio y Plata: cada uso nutre mientras limpia.",
+        ciencia:
+          "El Zinc regula el sebo, el Cobre estimula el colageno, el Magnesio reduce la inflamacion. Tres activos que cuestan miles en suplementos, en tu barra de limpieza diaria.",
       },
       {
         icon: "hoja",
         title: "Exfoliacion suave natural",
         description: "Polvo de corteza Tsuga Heterophylla exfolia sin irritar.",
+        ciencia:
+          "La exfoliacion fisica de particula fina remueve celulas muertas sin los microdesgarros que causan los exfoliantes de grano grueso.",
       },
       {
         icon: "sol",

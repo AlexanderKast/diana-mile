@@ -20,18 +20,20 @@ export function ProductQuickNav({ showIngredientes }: { showIngredientes: boolea
   return (
     <nav
       aria-label="Navegación rápida del producto"
-      className="flex gap-2 overflow-x-auto px-6 py-1 md:px-10"
+      className="flex items-center gap-4 overflow-x-auto px-6 py-2 md:px-10"
       style={{ scrollbarWidth: "none" }}
     >
-      {items.map((item) => (
-        <button
-          key={item.targetId}
-          type="button"
-          onClick={() => scrollToSection(item.targetId)}
-          className="shrink-0 rounded-full border border-arena bg-blanco px-3.5 py-1.5 text-[11px] font-medium text-carbon-suave transition-colors hover:border-dorado hover:text-carbon"
-        >
-          {item.label}
-        </button>
+      {items.map((item, index) => (
+        <span key={item.targetId} className="flex shrink-0 items-center gap-4">
+          {index > 0 && <span className="text-arena">·</span>}
+          <button
+            type="button"
+            onClick={() => scrollToSection(item.targetId)}
+            className="text-[12px] font-medium text-carbon-suave underline-offset-4 transition-colors hover:text-dorado-oscuro hover:underline"
+          >
+            {item.label}
+          </button>
+        </span>
       ))}
     </nav>
   );

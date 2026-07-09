@@ -73,17 +73,17 @@ export default function TrustBadges({ showAuthenticity = false }: { showAuthenti
     : badges;
 
   return (
-    <div className="grid grid-cols-2 gap-1.5 md:flex md:flex-wrap md:gap-2">
-      {items.map(({ icon: Icon, label }) => (
-        <div
-          key={label}
-          className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-arena px-2.5 py-1.5 text-[10px] font-sans text-carbon-suave md:px-3 md:text-[11px]"
-        >
-          <span className="shrink-0 text-ceniza">
-            <Icon />
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-carbon-suave">
+      {items.map(({ icon: Icon, label }, index) => (
+        <span key={label} className="flex items-center gap-3">
+          {index > 0 && <span className="text-arena">·</span>}
+          <span className="flex items-center gap-1.5 whitespace-nowrap">
+            <span className="shrink-0 text-dorado-oscuro">
+              <Icon />
+            </span>
+            {label}
           </span>
-          <span className="truncate">{label}</span>
-        </div>
+        </span>
       ))}
     </div>
   );

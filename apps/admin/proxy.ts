@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { rolesPermitidos, rolesPermitidosApi } from "@/lib/nav";
+import type { RolUsuario } from "@diana-mile/shared/types";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -32,7 +35,9 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isRoot = pathname === "/";
   const isDashboardRoute = pathname.startsWith("/dashboard");
-  const isAdminApiRoute = pathname.startsWith("/api/admin");
+  // Los webhooks de Shopify no traen sesion de Supabase — se autentican con
+  // su propia firma HMAC dentro del route handler, no con esta cookie.
+  const isAdminApiRoute = pathname.startsWith("/api/admin") && !pathname.startsWith("/api/admin/webhooks");
 
   if (isRoot) {
     const url = request.nextUrl.clone();
@@ -48,6 +53,36 @@ export async function proxy(request: NextRequest) {
 
   if (!user && isAdminApiRoute) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  }
+
+  if (user && (isDashboardRoute || isAdminApiRoute)) {
+    const admin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data: rolRow } = await admin
+      .from("usuario_roles")
+      .select("rol")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    // Sin fila en usuario_roles = sin rol asignado. Nunca se asume un rol
+    // con privilegios (antes caia a "admin" por defecto) — se deniega.
+    const rol = (rolRow?.rol ?? null) as RolUsuario | null;
+
+    if (isAdminApiRoute) {
+      const permitidos = rolesPermitidosApi(pathname);
+      if (!rol || !permitidos.includes(rol)) {
+        return NextResponse.json({ error: "No autorizado para este recurso." }, { status: 403 });
+      }
+    } else if (isDashboardRoute && pathname !== "/dashboard") {
+      const permitidos = rolesPermitidos(pathname);
+      if (permitidos && (!rol || !permitidos.includes(rol))) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return response;

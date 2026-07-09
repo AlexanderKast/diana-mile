@@ -48,7 +48,7 @@ export function ProductPurchaseFlow() {
             className="btn-shine flex h-full w-full items-center justify-center gap-1.5 text-lg font-bold tracking-wide"
           >
             <BagIcon />
-            Pedir ahora ·{" "}
+            Pagas cuando recibes ·{" "}
             <span className="font-display text-xl">{formatCOP(selectedVariant?.price ?? product.price)}</span>
           </button>
         )}

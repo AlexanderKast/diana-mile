@@ -1,5 +1,3 @@
-"use client";
-
 function ShieldIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -10,11 +8,6 @@ function ShieldIcon() {
 }
 
 export function RatingBar() {
-  function handleDetailsClick(e: React.MouseEvent<HTMLAnchorElement>) {
-    e.preventDefault();
-    document.getElementById("testimonios")?.scrollIntoView({ behavior: "smooth" });
-  }
-
   return (
     <div className="flex flex-wrap items-center gap-2 text-[13px]">
       <span className="flex items-center gap-1.5 font-medium text-carbon">
@@ -23,14 +16,6 @@ export function RatingBar() {
       </span>
       <span className="text-ceniza">·</span>
       <span className="text-ceniza">Soporte por WhatsApp</span>
-      <span className="text-ceniza">·</span>
-      <a
-        href="#testimonios"
-        onClick={handleDetailsClick}
-        className="text-morado underline underline-offset-2 cursor-pointer"
-      >
-        Ver detalles
-      </a>
     </div>
   );
 }

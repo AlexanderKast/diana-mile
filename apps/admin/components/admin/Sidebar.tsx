@@ -5,33 +5,57 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cx } from "@diana-mile/shared/utils";
 import { createClient } from "@diana-mile/shared/supabase/client";
+import type { RolUsuario } from "@diana-mile/shared/types";
+import { useSession } from "@/lib/session";
+import { NAV_GRUPOS } from "@/lib/nav";
 
-const LINKS = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Pedidos", href: "/dashboard/pedidos" },
-  { label: "Leads", href: "/dashboard/leads" },
-  { label: "Configuracion", href: "/dashboard/configuracion" },
-];
+const ROL_LABELS: Record<RolUsuario, string> = {
+  superadmin: "Superadmin",
+  admin: "Admin",
+  confirmador: "Confirmador",
+  logistica: "Logística",
+  financiero: "Financiero",
+  readonly: "Solo lectura",
+};
 
-function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavLinks({
+  pathname,
+  rol,
+  onNavigate,
+}: {
+  pathname: string;
+  rol: RolUsuario;
+  onNavigate?: () => void;
+}) {
   return (
-    <nav className="flex flex-col gap-1">
-      {LINKS.map((link) => {
-        const active = pathname === link.href;
+    <nav className="flex flex-col gap-4 overflow-y-auto">
+      {NAV_GRUPOS.map((grupo) => {
+        const items = grupo.items.filter((item) => item.roles.includes(rol));
+        if (items.length === 0) return null;
         return (
-          <Link
-            key={link.href}
-            href={link.href}
-            onClick={onNavigate}
-            className={cx(
-              "px-4 py-3 min-h-[44px] flex items-center text-sm tracking-wide border-l-2 transition-colors",
-              active
-                ? "border-dorado bg-carbon-suave text-blanco"
-                : "border-transparent text-ceniza hover:text-blanco hover:bg-carbon-suave"
-            )}
-          >
-            {link.label}
-          </Link>
+          <div key={grupo.titulo}>
+            <p className="px-4 mb-1 text-[10px] uppercase tracking-widest text-ceniza/70">{grupo.titulo}</p>
+            <div className="flex flex-col gap-1">
+              {items.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cx(
+                      "px-4 py-3 min-h-[44px] flex items-center text-sm tracking-wide border-l-2 transition-colors",
+                      active
+                        ? "border-dorado bg-carbon-suave text-blanco"
+                        : "border-transparent text-ceniza hover:text-blanco hover:bg-carbon-suave"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         );
       })}
     </nav>
@@ -41,6 +65,7 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const session = useSession();
   const [open, setOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -55,7 +80,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Boton hamburguesa movil */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -69,20 +93,22 @@ export default function Sidebar() {
         </svg>
       </button>
 
-      {/* Sidebar desktop */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-56 bg-carbon text-blanco flex-col p-6">
-        <span className="font-display text-2xl mb-10">Milito Life Shop</span>
-        <NavLinks pathname={pathname} />
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="mt-auto text-left px-4 py-3 min-h-[44px] text-sm text-ceniza hover:text-blanco transition-colors"
-        >
-          Cerrar sesion
-        </button>
+        <span className="font-display text-2xl mb-8">Milito Life Shop</span>
+        <NavLinks pathname={pathname} rol={session.rol} />
+        <div className="mt-auto pt-4 border-t border-carbon-suave">
+          <p className="px-4 text-sm text-blanco truncate">{session.nombre}</p>
+          <p className="px-4 text-xs text-dorado mb-2">{ROL_LABELS[session.rol]}</p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="text-left px-4 py-3 min-h-[44px] text-sm text-ceniza hover:text-blanco transition-colors"
+          >
+            Cerrar sesion
+          </button>
+        </div>
       </aside>
 
-      {/* Drawer movil */}
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
@@ -91,7 +117,7 @@ export default function Sidebar() {
             aria-hidden="true"
           />
           <aside className="fixed left-0 top-0 h-screen w-56 bg-carbon text-blanco flex flex-col p-6 animate-fade-in-up">
-            <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center justify-between mb-8">
               <span className="font-display text-2xl">Milito Life Shop</span>
               <button
                 type="button"
@@ -105,14 +131,18 @@ export default function Sidebar() {
                 </svg>
               </button>
             </div>
-            <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="mt-auto text-left px-4 py-3 min-h-[44px] text-sm text-ceniza hover:text-blanco transition-colors"
-            >
-              Cerrar sesion
-            </button>
+            <NavLinks pathname={pathname} rol={session.rol} onNavigate={() => setOpen(false)} />
+            <div className="mt-auto pt-4 border-t border-carbon-suave">
+              <p className="px-4 text-sm text-blanco truncate">{session.nombre}</p>
+              <p className="px-4 text-xs text-dorado mb-2">{ROL_LABELS[session.rol]}</p>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-left px-4 py-3 min-h-[44px] text-sm text-ceniza hover:text-blanco transition-colors"
+              >
+                Cerrar sesion
+              </button>
+            </div>
           </aside>
         </div>
       )}

@@ -67,9 +67,12 @@ export async function PATCH(request: NextRequest) {
     const estadosValidos: EstadoPedido[] = [
       "pendiente",
       "confirmado",
+      "en_preparacion",
       "enviado",
       "entregado",
       "devuelto",
+      "cancelado",
+      "fraude",
     ];
 
     if (!estadosValidos.includes(estado)) {

@@ -43,13 +43,13 @@ export function createAdminSupabaseClient() {
  * "admins" (solo legible con service_role, un usuario autenticado normal
  * nunca puede insertarse ahi mismo).
  */
-export async function requireAdminSession(): Promise<boolean> {
+export async function getAdminUser() {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return false;
+  if (!user) return null;
 
   const admin = createAdminSupabaseClient();
   const { data } = await admin
@@ -58,5 +58,9 @@ export async function requireAdminSession(): Promise<boolean> {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  return data !== null;
+  return data !== null ? user : null;
+}
+
+export async function requireAdminSession(): Promise<boolean> {
+  return (await getAdminUser()) !== null;
 }

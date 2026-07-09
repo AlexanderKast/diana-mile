@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* packages/shared vive fuera del arbol de apps/shop (hoisted en
+   node_modules via workspaces) — sin esto Tailwind nunca ve las clases
+   usadas solo dentro de Button/Input/Spinner y las descarta en silencio. */
+@source "../../../packages/shared/src";
+
 :root {
   --blanco: #FAFAF8;
   --crema: #F2EDE6;
@@ -16,6 +21,11 @@
   --lila: #9B8EA8;
   --morado: #6B4E8C;
   --morado-oscuro: #4A3066;
+
+  /* Acentos de estado — prueba social, escasez, verificacion. */
+  --rojo-alerta: #DC2626;
+  --verde-ok: #22C55E;
+  --azul-verified: #1DA1F2;
 }
 
 @theme inline {
@@ -32,6 +42,9 @@
   --color-lila: var(--lila);
   --color-morado: var(--morado);
   --color-morado-oscuro: var(--morado-oscuro);
+  --color-rojo-alerta: var(--rojo-alerta);
+  --color-verde-ok: var(--verde-ok);
+  --color-azul-verified: var(--azul-verified);
 
   --font-display: var(--font-cormorant), serif;
   --font-sans: var(--font-inter), sans-serif;

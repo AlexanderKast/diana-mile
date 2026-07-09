@@ -1,4 +1,6 @@
-import { ReactElement } from "react";
+"use client";
+
+import { ReactElement, useState } from "react";
 
 type BenefitIcon = "gota" | "mineral" | "hoja" | "sol" | "escudo" | "planeta";
 
@@ -6,6 +8,7 @@ export type Benefit = {
   icon: BenefitIcon;
   title: string;
   description: string;
+  ciencia?: string;
 };
 
 function IconGota() {
@@ -86,10 +89,22 @@ const ICONS: Record<BenefitIcon, () => ReactElement> = {
 };
 
 export function ProductBenefits({ benefits }: { benefits: Benefit[] }) {
+  const [abiertos, setAbiertos] = useState<Set<number>>(new Set());
+
+  function toggle(index: number) {
+    setAbiertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
       {benefits.map((benefit, index) => {
         const Icon = ICONS[benefit.icon];
+        const abierto = abiertos.has(index);
         return (
           <div key={index} className="flex flex-col gap-2">
             <span className="text-dorado">
@@ -97,6 +112,20 @@ export function ProductBenefits({ benefits }: { benefits: Benefit[] }) {
             </span>
             <p className="text-sm font-semibold text-carbon">{benefit.title}</p>
             <p className="text-sm text-carbon-suave">{benefit.description}</p>
+            {benefit.ciencia && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => toggle(index)}
+                  className="self-start text-[11px] text-dorado-oscuro underline underline-offset-2"
+                >
+                  {abierto ? "Ocultar" : "¿Por qué funciona?"} {abierto ? "" : "+"}
+                </button>
+                {abierto && (
+                  <p className="animate-fade-in-up text-[11px] text-ceniza">{benefit.ciencia}</p>
+                )}
+              </>
+            )}
           </div>
         );
       })}

@@ -62,13 +62,17 @@ export type Lead = {
 export type EstadoPedido =
   | "pendiente"
   | "confirmado"
+  | "en_preparacion"
   | "enviado"
   | "entregado"
-  | "devuelto";
+  | "devuelto"
+  | "cancelado"
+  | "fraude";
 
 export type Pedido = {
   id: string;
   shopify_order_id: string | null;
+  shopify_order_number: string | null;
   nombre: string;
   telefono: string;
   direccion: string;
@@ -79,13 +83,156 @@ export type Pedido = {
   longitud: number | null;
   producto_nombre: string;
   producto_sku: string | null;
+  variante_nombre: string | null;
   variant_id: string | null;
   cantidad: number;
+  precio_venta: number | null;
+  costo_producto: number | null;
   precio_total: number | null;
   estado: EstadoPedido;
+  canal_adquisicion: string | null;
+  utm_source: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  intentos_llamada: number;
+  confirmado_por: string | null;
+  fecha_confirmacion: string | null;
+  transportadora: string | null;
+  numero_guia: string | null;
+  fecha_envio: string | null;
+  fecha_entrega_estimada: string | null;
+  fecha_entrega_real: string | null;
+  costo_envio: number | null;
+  valor_recaudado: number | null;
+  devolucion_motivo: string | null;
+  shopify_fulfillment_id: string | null;
+  prioridad: "normal" | "urgente" | "prioritario";
+  tags: string[] | null;
+  asignado_a: string | null;
   notas: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type RolUsuario =
+  | "superadmin"
+  | "admin"
+  | "confirmador"
+  | "logistica"
+  | "financiero"
+  | "readonly";
+
+export type UsuarioAdmin = {
+  id: string;
+  user_id: string;
+  email: string;
+  nombre: string;
+  rol: RolUsuario;
+  activo: boolean;
+  ultimo_acceso: string | null;
+  creado_por: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResultadoConfirmacion =
+  | "confirmado"
+  | "rechazado"
+  | "no_contesta"
+  | "numero_invalido"
+  | "rellamar"
+  | "duplicado"
+  | "fraude";
+
+export type Confirmacion = {
+  id: string;
+  pedido_id: string;
+  usuario_id: string;
+  usuario_nombre: string | null;
+  intento: number;
+  resultado: ResultadoConfirmacion;
+  notas: string | null;
+  duracion_segundos: number | null;
+  created_at: string;
+};
+
+export type Gasto = {
+  id: string;
+  tipo: string;
+  descripcion: string;
+  monto: number;
+  moneda: string;
+  tasa_cambio: number;
+  monto_cop: number | null;
+  fecha: string;
+  periodo: string | null;
+  pedido_id: string | null;
+  comprobante_url: string | null;
+  plataforma: string | null;
+  campana: string | null;
+  registrado_por: string | null;
+  notas: string | null;
+  created_at: string;
+};
+
+export type Transportadora = {
+  id: string;
+  nombre: string;
+  slug: string;
+  activa: boolean;
+  url_tracking: string | null;
+  contacto: string | null;
+  notas: string | null;
+  created_at: string;
+};
+
+export type MetricasFinancieras = {
+  periodo: string;
+  total_pedidos: number;
+  pedidos_confirmados: number;
+  pedidos_entregados: number;
+  pedidos_devueltos: number;
+  pedidos_cancelados: number;
+  tasa_confirmacion: number;
+  tasa_entrega: number;
+  tasa_devolucion: number;
+  ingresos_brutos: number;
+  ingresos_recaudados: number;
+  costo_productos: number;
+  costo_envios: number;
+  gasto_publicidad: number;
+  otros_gastos: number;
+  utilidad_bruta: number;
+  utilidad_neta: number;
+  margen_neto: number;
+  ticket_promedio: number;
+  costo_por_pedido: number;
+  roas: number | null;
+};
+
+export type RendimientoTransportadora = {
+  transportadora: string;
+  total_envios: number;
+  entregados: number;
+  devueltos: number;
+  en_transito: number;
+  tasa_entrega: number;
+  costo_promedio: number;
+  dias_promedio_entrega: number | null;
+};
+
+export type FiltrosPedidos = {
+  estado?: EstadoPedido[];
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  ciudad?: string;
+  transportadora?: string;
+  canal_adquisicion?: string;
+  busqueda?: string;
+  asignado_a?: string;
+  prioridad?: string;
+  page?: number;
+  per_page?: number;
 };
 
 export type ConfigRow = {

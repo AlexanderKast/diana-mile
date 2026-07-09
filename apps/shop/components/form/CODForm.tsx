@@ -589,7 +589,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
             Procesando tu pedido...
           </>
         ) : step === 1 ? (
-          "Continuar →"
+          "Realizar pedido →"
         ) : (
           "Confirmar mi pedido — pago al recibir"
         )}

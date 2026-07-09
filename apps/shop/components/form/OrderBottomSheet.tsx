@@ -6,6 +6,7 @@ import { formatCOP } from "@diana-mile/shared/utils";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { CODForm } from "@/components/form/CODForm";
 import { VariantSelector } from "@/components/product/VariantSelector";
+import { ScarcityBar } from "@/components/product/ScarcityBar";
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 
 function CloseIcon({ className }: { className?: string }) {
@@ -90,6 +91,8 @@ function SheetContent({ compact }: { compact: boolean }) {
         <OrderSummary />
         <p className="mt-2 text-xs text-ceniza">Pago al recibir tu pedido</p>
       </div>
+
+      <ScarcityBar />
 
       <VariantSelector compact={compact} />
 

@@ -14,6 +14,11 @@ const FAQS: FAQItem[] = [
       "Recibes el producto en la puerta de tu casa y pagas en efectivo al mensajero. No necesitas tarjeta de crédito ni hacer transferencias por adelantado.",
   },
   {
+    question: "¿Es un pedido real? ¿Cómo sé que va a llegar?",
+    answer:
+      "Apenas confirmas tu pedido te contactamos por WhatsApp para coordinar la entrega, así que tienes a alguien real respondiendo tus preguntas antes de pagar un peso. No pagas nada hasta tener el producto en tus manos.",
+  },
+  {
     question: "¿Cuánto demora el envío?",
     answer:
       "Entre 24 y 72 horas hábiles según tu ciudad. Ciudades principales (Bogotá, Medellín, Cali, Barranquilla) generalmente en 24-48 horas.",

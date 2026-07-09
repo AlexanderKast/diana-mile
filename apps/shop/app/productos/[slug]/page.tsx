@@ -16,7 +16,6 @@ import { ProductHeroCTA } from "@/components/product/ProductHeroCTA";
 import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
 import { IngredientsAccordion } from "@/components/product/IngredientsAccordion";
-import { LiveActivityBar } from "@/components/product/LiveActivityBar";
 import { RatingBar } from "@/components/product/RatingBar";
 import TrustBadges from "@/components/product/TrustBadges";
 import { UGCSection } from "@/components/product/UGCSection";
@@ -28,6 +27,10 @@ import { ProductQuickNav } from "@/components/product/ProductQuickNav";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
 import { ExitIntentPopup } from "@/components/product/ExitIntentPopup";
 import { ComparisonSection } from "@/components/product/ComparisonSection";
+import { SkinTypeSelector } from "@/components/product/SkinTypeSelector";
+import { ResultsTimeline } from "@/components/product/ResultsTimeline";
+import { FreeGuide } from "@/components/product/FreeGuide";
+import { WithoutRitualSection } from "@/components/product/WithoutRitualSection";
 
 const PASOS_RITUAL = [
   {
@@ -97,10 +100,6 @@ export default async function ProductoPage({ params }: ProductPageProps) {
     <OrderSheetProvider product={product}>
       <ExitIntentPopup />
       <main className="flex flex-col gap-3 pb-28">
-        <div className="px-6 pt-3 md:px-10">
-          <LiveActivityBar />
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10 min-w-0">
           <div className="md:sticky md:top-24 md:self-start min-w-0">
             <ProductGallery images={product.images} />
@@ -125,6 +124,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
               </p>
             </div>
 
+            <SkinTypeSelector />
+
             <ProductHeroCTA />
 
             <OrderBottomSheet />
@@ -132,6 +133,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         </div>
 
         <ProductQuickNav showIngredientes={isEpoch} />
+
+        <WithoutRitualSection productName={product.title} />
 
         {ingredientStory && (
           <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">
@@ -153,24 +156,16 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </section>
         )}
 
-        <SocialCTABand tone="outline-morado" buttonLabel={`Probar ${product.title}`} />
-
         <section id="beneficios" className="py-12 px-6 flex flex-col gap-6 scroll-mt-20">
           <h2 className="font-display text-2xl text-carbon text-center">
-            Lo que hace por tu piel
+            Lo que vas a dejar de esconder
           </h2>
           <ProductBenefits benefits={benefits} />
         </section>
 
-        <SocialCTABand
-          tone="lila-band"
-          title="Lista para transformar tu ritual de cuidado?"
-          buttonLabel="Pedirlo ahora - Contraentrega"
-        />
+        <SocialCTABand tone="outline-morado" buttonLabel="Quiero probarlo" />
 
         {isEpoch && <UGCSection />}
-
-        <ComparisonSection productName={product.title} />
 
         <section id="como-usarlo" className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8 scroll-mt-20">
           <h2 className="font-display text-2xl text-center">Tu ritual en 3 pasos</h2>
@@ -204,9 +199,21 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </div>
         </section>
 
+        <ResultsTimeline />
+
         <TestimonialsSection productName={product.title} showUsageStats={isEpoch} />
 
+        <ComparisonSection />
+
         <GuaranteeSection />
+
+        <FreeGuide productName={product.title} />
+
+        <SocialCTABand
+          tone="lila-band"
+          title="Lista para transformar tu ritual de cuidado?"
+          buttonLabel="Reservar el mío · Contraentrega"
+        />
 
         <section id="preguntas" className="px-6 py-12 scroll-mt-20">
           <FAQAccordion />
