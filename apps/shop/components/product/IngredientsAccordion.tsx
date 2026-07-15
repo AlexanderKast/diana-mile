@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import type { LandingIngredients } from "@diana-mile/shared/types";
 
-const INGREDIENTES =
-  "Sodium Cocoyl Isethionate, Stearic Acid, Aqua, Sodium Isethionate, Parfum, Sea Clay Extract, Sodium Chloride, Titanium Dioxide, Tsuga Heterophylla Bark Powder, Iron Oxides, Ascorbyl Palmitate, Tocopherol, Allantoin.";
-
-export function IngredientsAccordion() {
+export function IngredientsAccordion({
+  ingredients,
+}: {
+  ingredients: LandingIngredients;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,13 +22,11 @@ export function IngredientsAccordion() {
 
       {open ? (
         <p className="text-sm text-carbon-suave leading-relaxed animate-fade-in-up">
-          {INGREDIENTES}
+          {ingredients.inci}
         </p>
       ) : null}
 
-      <p className="text-xs text-ceniza">
-        Sin parabenos · Sin sulfatos · Sin jabón · Sin aceites minerales
-      </p>
+      <p className="text-xs text-ceniza">{ingredients.freeFrom}</p>
     </div>
   );
 }

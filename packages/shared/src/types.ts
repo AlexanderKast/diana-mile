@@ -10,6 +10,132 @@ export type ProductMetafields = {
   nuskinDirectPrecio: string | null;
   ahorroPack2: string | null;
   ahorroPack3: string | null;
+  /**
+   * Contenido de la landing por producto (metafield JSON
+   * `diana_mile.landing_content`). Es parcial: cada bloque ausente se
+   * completa con un fallback neutral en el resolver del app shop
+   * (`lib/product-content.ts`). Poblado automaticamente por el script de
+   * generacion con IA (`scripts/generate-landing.mjs`).
+   */
+  landingContent: ProductLandingContent | null;
+};
+
+/** Iconos disponibles para las tarjetas de beneficio. */
+export type LandingBenefitIcon =
+  | "gota"
+  | "mineral"
+  | "hoja"
+  | "sol"
+  | "escudo"
+  | "planeta";
+
+export type LandingBenefit = {
+  icon: LandingBenefitIcon;
+  title: string;
+  description: string;
+  /** Explicacion opcional "por que funciona" (se despliega bajo el beneficio). */
+  ciencia?: string;
+};
+
+export type LandingStep = {
+  numero: string;
+  titulo: string;
+  descripcion: string;
+  /** Ruta de imagen opcional; si falta, la tarjeta se muestra sin foto. */
+  imagen?: string;
+};
+
+export type LandingFaq = { question: string; answer: string };
+
+export type LandingTimelineStage = {
+  momento: string;
+  titulo: string;
+  descripcion: string;
+};
+
+export type LandingTestimonial = { title: string; text: string };
+
+export type LandingComparison = { title: string; rows: string[] };
+
+export type LandingWithoutRitual = {
+  title: string;
+  /** Etiqueta de la columna positiva, ej. "Con el Serum Luminoso". */
+  conLabel: string;
+  sin: string[];
+  con: string[];
+};
+
+export type LandingIngredientStory = { title: string; body: string };
+
+export type LandingIngredients = {
+  /** Lista INCI completa. */
+  inci: string;
+  /** Linea de "libre de", ej. "Sin parabenos · Sin sulfatos". */
+  freeFrom: string;
+};
+
+export type LandingSkinTypeOption = {
+  id: string;
+  label: string;
+  message: string;
+};
+
+export type LandingSkinType = {
+  question: string;
+  options: LandingSkinTypeOption[];
+};
+
+export type LandingUGCPost = {
+  emoji: string;
+  title: string;
+  text: string;
+};
+
+export type LandingFreeGuideSection = { title: string; body: string };
+
+export type LandingFreeGuide = {
+  title: string;
+  description: string;
+  sections: LandingFreeGuideSection[];
+};
+
+/**
+ * Contenido editorial de la landing de un producto. TODO es opcional: el
+ * resolver (`resolveLanding` en el app shop) completa cada bloque ausente
+ * con un fallback neutral derivado del titulo/descripcion del producto, de
+ * modo que un producto sin este metafield sigue teniendo una landing
+ * coherente (aunque generica). El objetivo es que el script de IA lo llene
+ * completo para que cada producto tenga una landing unica y "ganadora".
+ */
+export type ProductLandingContent = {
+  /** Texto pequeno sobre el titulo, ej. "Coleccion Epoch® · Nu Skin". */
+  eyebrow?: string;
+  /** Promesa/subtitulo bajo el titulo del producto. */
+  tagline?: string;
+  /** Encabezado de la seccion de beneficios. */
+  benefitsHeading?: string;
+  benefits?: LandingBenefit[];
+  ingredientStory?: LandingIngredientStory;
+  ingredients?: LandingIngredients;
+  skinType?: LandingSkinType;
+  /** Encabezado de la seccion de pasos de uso. */
+  usageHeading?: string;
+  usageSteps?: LandingStep[];
+  withoutRitual?: LandingWithoutRitual;
+  resultsHeading?: string;
+  resultsTimeline?: LandingTimelineStage[];
+  testimonialsHeading?: string;
+  testimonials?: LandingTestimonial[];
+  comparison?: LandingComparison;
+  faqs?: LandingFaq[];
+  ugcHeading?: string;
+  ugcSubheading?: string;
+  ugc?: LandingUGCPost[];
+  freeGuide?: LandingFreeGuide;
+  /** Encabezado del cierre final antes del ultimo CTA. */
+  closingHeading?: string;
+  /** Muestra el badge "100% original" y stats de uso (marcas revendidas). */
+  authenticity?: boolean;
 };
 
 export type Product = {

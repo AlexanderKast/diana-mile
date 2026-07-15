@@ -1,4 +1,8 @@
-import { Product, ProductMetafields } from "@diana-mile/shared/types";
+import {
+  Product,
+  ProductLandingContent,
+  ProductMetafields,
+} from "@diana-mile/shared/types";
 import { splitFullName } from "@diana-mile/shared/utils";
 import { ENVIO_PRIORITARIO_VARIANT_ID } from "@/lib/pricing";
 
@@ -18,10 +22,110 @@ const MOCK_PRODUCTS: Product[] = [
       "Serum anti-edad de accion prolongada. Ilumina, firma y reduce lineas de expresion con uso constante en tu ritual nocturno.",
     price: "289000",
     currencyCode: "COP",
-    images: [{ url: "/images/product-epoch-hero.jpg", altText: "Serum Luminoso 24H" }],
+    images: [
+      { url: "/images/product-epoch-hero.jpg", altText: "Serum Luminoso 24H" },
+    ],
     variantId: "mock-variant-1",
-    variants: [{ id: "mock-variant-1", title: "1 unidad", price: "289000", compareAtPrice: null }],
-    metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
+    variants: [
+      {
+        id: "mock-variant-1",
+        title: "1 unidad",
+        price: "289000",
+        compareAtPrice: null,
+      },
+    ],
+    metafields: {
+      nuskinDirectUrl: null,
+      nuskinDirectPrecio: null,
+      ahorroPack2: null,
+      ahorroPack3: null,
+      landingContent: {
+        eyebrow: "Ritual Milito Life Shop · Anti-edad",
+        tagline: "Luminosidad que se nota de cerca — noche tras noche.",
+        benefitsHeading: "Lo que vas a ver en el espejo",
+        benefits: [
+          {
+            icon: "gota",
+            title: "Ilumina desde la primera semana",
+            description:
+              "Concentrado de accion prolongada que unifica el tono y devuelve el brillo apagado por el tiempo.",
+            ciencia:
+              "Los activos iluminadores actuan sobre la melanina superficial y aceleran la renovacion celular nocturna, cuando la piel se repara mas rapido.",
+          },
+          {
+            icon: "escudo",
+            title: "Firma y reduce lineas finas",
+            description:
+              "Con uso constante la piel se ve mas tensa y las lineas de expresion se suavizan.",
+          },
+          {
+            icon: "sol",
+            title: "Absorcion inmediata",
+            description:
+              "Textura ligera que penetra sin dejar sensacion grasa. Perfecto bajo tu crema de noche.",
+          },
+        ],
+        usageHeading: "Como aplicarlo en 3 pasos",
+        usageSteps: [
+          {
+            numero: "1",
+            titulo: "Limpia",
+            descripcion:
+              "Aplica sobre la piel limpia y seca antes de tu crema.",
+          },
+          {
+            numero: "2",
+            titulo: "Dosifica",
+            descripcion: "2 a 3 gotas son suficientes para todo el rostro.",
+          },
+          {
+            numero: "3",
+            titulo: "Sella",
+            descripcion: "Masajea hacia arriba y sella con tu crema nocturna.",
+          },
+        ],
+        resultsHeading: "Que esperar del serum",
+        resultsTimeline: [
+          {
+            momento: "Semana 1",
+            titulo: "Piel mas luminosa",
+            descripcion:
+              "El tono se ve mas uniforme y descansado al despertar.",
+          },
+          {
+            momento: "Semana 3-4",
+            titulo: "Lineas mas suaves",
+            descripcion:
+              "Las lineas finas de expresion empiezan a difuminarse.",
+          },
+          {
+            momento: "Dia 60+",
+            titulo: "Firmeza visible",
+            descripcion:
+              "La piel luce mas tensa, elastica y con brillo saludable.",
+          },
+        ],
+        faqs: [
+          {
+            question: "¿Se usa de dia o de noche?",
+            answer:
+              "Idealmente de noche, cuando la piel se repara. Si lo usas de dia, aplica siempre protector solar encima.",
+          },
+          {
+            question: "¿Cada cuanto se aplica?",
+            answer:
+              "Todas las noches. Con 2-3 gotas el frasco te rinde entre 6 y 8 semanas.",
+          },
+          {
+            question: "¿Sirve para piel sensible?",
+            answer:
+              "Si. Empieza aplicandolo dia por medio la primera semana para que tu piel se acostumbre.",
+          },
+        ],
+        testimonialsHeading: "Antes de pedir tu serum",
+        closingHeading: "Tu piel iluminada te esta esperando",
+      },
+    },
   },
   {
     id: "mock-2",
@@ -31,10 +135,54 @@ const MOCK_PRODUCTS: Product[] = [
       "Textura envolvente con tecnologia regeneradora. Trabaja mientras duermes para devolver firmeza y luminosidad a tu piel.",
     price: "319000",
     currencyCode: "COP",
-    images: [{ url: "/images/lifestyle-ritual.jpg", altText: "Crema Ritual Nocturno" }],
+    images: [
+      { url: "/images/lifestyle-ritual.jpg", altText: "Crema Ritual Nocturno" },
+    ],
     variantId: "mock-variant-2",
-    variants: [{ id: "mock-variant-2", title: "1 unidad", price: "319000", compareAtPrice: null }],
-    metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
+    variants: [
+      {
+        id: "mock-variant-2",
+        title: "1 unidad",
+        price: "319000",
+        compareAtPrice: null,
+      },
+    ],
+    metafields: {
+      nuskinDirectUrl: null,
+      nuskinDirectPrecio: null,
+      ahorroPack2: null,
+      ahorroPack3: null,
+      landingContent: {
+        eyebrow: "Ritual Milito Life Shop · Noche",
+        tagline: "Firmeza y luminosidad mientras duermes.",
+        benefits: [
+          {
+            icon: "gota",
+            title: "Nutricion intensa nocturna",
+            description:
+              "Textura envolvente que repone la hidratacion perdida durante el dia.",
+          },
+          {
+            icon: "escudo",
+            title: "Regenera mientras descansas",
+            description:
+              "Tecnologia regeneradora que trabaja en las horas de mayor reparacion de la piel.",
+          },
+        ],
+        faqs: [
+          {
+            question: "¿Se puede usar todos los dias?",
+            answer:
+              "Si, es de uso diario nocturno. Aplica una capa fina sobre el rostro y cuello.",
+          },
+          {
+            question: "¿Va antes o despues del serum?",
+            answer:
+              "Despues. El serum primero, la crema sella y potencia sus activos.",
+          },
+        ],
+      },
+    },
   },
   {
     id: "mock-3",
@@ -44,10 +192,26 @@ const MOCK_PRODUCTS: Product[] = [
       "Formula concentrada para la zona mas delicada del rostro. Reduce ojeras y lineas finas con particulas de oro coloidal.",
     price: "199000",
     currencyCode: "COP",
-    images: [{ url: "/images/hero-home.jpg", altText: "Contorno de Ojos Dorado" }],
+    images: [
+      { url: "/images/hero-home.jpg", altText: "Contorno de Ojos Dorado" },
+    ],
     variantId: "mock-variant-3",
-    variants: [{ id: "mock-variant-3", title: "1 unidad", price: "199000", compareAtPrice: null }],
-    metafields: { nuskinDirectUrl: null, nuskinDirectPrecio: null, ahorroPack2: null, ahorroPack3: null },
+    variants: [
+      {
+        id: "mock-variant-3",
+        title: "1 unidad",
+        price: "199000",
+        compareAtPrice: null,
+      },
+    ],
+    metafields: {
+      nuskinDirectUrl: null,
+      nuskinDirectPrecio: null,
+      ahorroPack2: null,
+      ahorroPack3: null,
+      // Sin landingContent: prueba el camino de fallback neutral del resolver.
+      landingContent: null,
+    },
   },
 ];
 
@@ -55,7 +219,8 @@ const METAFIELD_IDENTIFIERS_GQL = `[
   {namespace: "diana_mile", key: "nuskin_direct_url"},
   {namespace: "diana_mile", key: "nuskin_direct_precio"},
   {namespace: "diana_mile", key: "ahorro_pack2"},
-  {namespace: "diana_mile", key: "ahorro_pack3"}
+  {namespace: "diana_mile", key: "ahorro_pack3"},
+  {namespace: "diana_mile", key: "landing_content"}
 ]`;
 
 const PRODUCTS_QUERY = `
@@ -92,16 +257,22 @@ const PRODUCT_BY_HANDLE_QUERY = `
   }
 `;
 
-async function storefrontFetch<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  const res = await fetch(`https://${STORE_DOMAIN}/api/${API_VERSION}/graphql.json`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Storefront-Access-Token": STOREFRONT_TOKEN!,
+async function storefrontFetch<T>(
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
+  const res = await fetch(
+    `https://${STORE_DOMAIN}/api/${API_VERSION}/graphql.json`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": STOREFRONT_TOKEN!,
+      },
+      body: JSON.stringify({ query, variables }),
+      next: { revalidate: 60 },
     },
-    body: JSON.stringify({ query, variables }),
-    next: { revalidate: 60 },
-  });
+  );
 
   if (!res.ok) {
     throw new Error(`Shopify Storefront API error: ${res.status}`);
@@ -111,14 +282,40 @@ async function storefrontFetch<T>(query: string, variables: Record<string, unkno
   return json.data as T;
 }
 
-function mapMetafields(metafields: { key: string; value: string }[] | null | undefined): ProductMetafields {
-  const byKey = new Map((metafields ?? []).filter(Boolean).map((m) => [m.key, m.value]));
+function mapMetafields(
+  metafields: { key: string; value: string }[] | null | undefined,
+): ProductMetafields {
+  const byKey = new Map(
+    (metafields ?? []).filter(Boolean).map((m) => [m.key, m.value]),
+  );
   return {
     nuskinDirectUrl: byKey.get("nuskin_direct_url") ?? null,
     nuskinDirectPrecio: byKey.get("nuskin_direct_precio") ?? null,
     ahorroPack2: byKey.get("ahorro_pack2") ?? null,
     ahorroPack3: byKey.get("ahorro_pack3") ?? null,
+    landingContent: parseLandingContent(byKey.get("landing_content")),
   };
+}
+
+/**
+ * El metafield `diana_mile.landing_content` es un JSON (tipo `json` en
+ * Shopify) con el contenido editorial de la landing. Si esta vacio o mal
+ * formado devolvemos null y el resolver usa fallbacks neutrales — nunca
+ * debe romper el render del producto.
+ */
+function parseLandingContent(
+  value: string | undefined,
+): ProductLandingContent | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object"
+      ? (parsed as ProductLandingContent)
+      : null;
+  } catch (error) {
+    console.warn("landing_content no es un JSON valido:", error);
+    return null;
+  }
 }
 
 function mapNode(node: {
@@ -130,7 +327,12 @@ function mapNode(node: {
   images: { edges: { node: { url: string; altText: string | null } }[] };
   variants: {
     edges: {
-      node: { id: string; title: string; price: { amount: string }; compareAtPrice: { amount: string } | null };
+      node: {
+        id: string;
+        title: string;
+        price: { amount: string };
+        compareAtPrice: { amount: string } | null;
+      };
     }[];
   };
   metafields: ({ key: string; value: string } | null)[];
@@ -154,7 +356,11 @@ function mapNode(node: {
     images: node.images.edges.map((e) => e.node),
     variantId: variants[0]?.id ?? "",
     variants,
-    metafields: mapMetafields(node.metafields.filter((m): m is { key: string; value: string } => m !== null)),
+    metafields: mapMetafields(
+      node.metafields.filter(
+        (m): m is { key: string; value: string } => m !== null,
+      ),
+    ),
   };
 }
 
@@ -168,15 +374,16 @@ export async function getProducts(): Promise<Product[]> {
   return data.products.edges.map((e) => mapNode(e.node));
 }
 
-export async function getProductByHandle(handle: string): Promise<Product | null> {
+export async function getProductByHandle(
+  handle: string,
+): Promise<Product | null> {
   if (!isShopifyConfigured) {
     return MOCK_PRODUCTS.find((p) => p.handle === handle) ?? null;
   }
 
-  const data = await storefrontFetch<{ productByHandle: Parameters<typeof mapNode>[0] | null }>(
-    PRODUCT_BY_HANDLE_QUERY,
-    { handle }
-  );
+  const data = await storefrontFetch<{
+    productByHandle: Parameters<typeof mapNode>[0] | null;
+  }>(PRODUCT_BY_HANDLE_QUERY, { handle });
 
   return data.productByHandle ? mapNode(data.productByHandle) : null;
 }
@@ -216,7 +423,7 @@ function toRestVariantId(id: string): string {
 async function findExistingCustomerId(phone: string): Promise<string | null> {
   const res = await fetch(
     `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/customers/search.json?query=${encodeURIComponent(`phone:${phone}`)}`,
-    { headers: { "X-Shopify-Access-Token": ADMIN_TOKEN! } }
+    { headers: { "X-Shopify-Access-Token": ADMIN_TOKEN! } },
   );
 
   if (!res.ok) return null;
@@ -233,23 +440,32 @@ async function findExistingCustomerId(phone: string): Promise<string | null> {
 async function findOrCreateCustomerId(
   phone: string,
   firstName: string,
-  lastName: string
+  lastName: string,
 ): Promise<string | null> {
   const existing = await findExistingCustomerId(phone);
   if (existing) return existing;
 
   try {
-    const res = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/customers.json`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": ADMIN_TOKEN!,
+    const res = await fetch(
+      `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/customers.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": ADMIN_TOKEN!,
+        },
+        body: JSON.stringify({
+          customer: { first_name: firstName, last_name: lastName, phone },
+        }),
       },
-      body: JSON.stringify({ customer: { first_name: firstName, last_name: lastName, phone } }),
-    });
+    );
 
     if (!res.ok) {
-      console.error("Error al crear customer para carrito abandonado:", res.status, await res.text());
+      console.error(
+        "Error al crear customer para carrito abandonado:",
+        res.status,
+        await res.text(),
+      );
       return null;
     }
 
@@ -271,7 +487,7 @@ async function findOrCreateCustomerId(
  */
 export async function upsertCheckoutDraftOrder(
   input: CreateOrderInput,
-  existingDraftOrderId?: string | null
+  existingDraftOrderId?: string | null,
 ): Promise<{ draftOrderId: string } | null> {
   if (!STORE_DOMAIN || !ADMIN_TOKEN) {
     return { draftOrderId: existingDraftOrderId ?? `MOCK-DRAFT-${Date.now()}` };
@@ -279,7 +495,11 @@ export async function upsertCheckoutDraftOrder(
 
   try {
     const { firstName, lastName } = splitFullName(input.nombre);
-    const customerId = await findOrCreateCustomerId(input.telefono, firstName, lastName);
+    const customerId = await findOrCreateCustomerId(
+      input.telefono,
+      firstName,
+      lastName,
+    );
 
     // Shopify descarta shipping_address/customer ENTERO y sin error si
     // faltan last_name, province o country_code — asi se rompio antes.
@@ -297,14 +517,21 @@ export async function upsertCheckoutDraftOrder(
 
     const notePartes = ["Pedido COD — Contraentrega"];
     if (typeof input.lat === "number" && typeof input.lng === "number") {
-      notePartes.push(`Ubicación GPS del cliente: https://maps.google.com/?q=${input.lat},${input.lng}`);
+      notePartes.push(
+        `Ubicación GPS del cliente: https://maps.google.com/?q=${input.lat},${input.lng}`,
+      );
     }
     if (input.discountPercent) {
-      notePartes.push(`Descuento popup exit-intent aplicado: ${input.discountPercent}%`);
+      notePartes.push(
+        `Descuento popup exit-intent aplicado: ${input.discountPercent}%`,
+      );
     }
 
     const lineItems: Record<string, unknown>[] = [
-      { variant_id: toRestVariantId(input.variantId), quantity: input.quantity },
+      {
+        variant_id: toRestVariantId(input.variantId),
+        quantity: input.quantity,
+      },
     ];
     if (input.envioPrioritario) {
       lineItems.push({ variant_id: ENVIO_PRIORITARIO_VARIANT_ID, quantity: 1 });
@@ -346,7 +573,11 @@ export async function upsertCheckoutDraftOrder(
     });
 
     if (!res.ok) {
-      console.error("Error al crear/actualizar draft order de checkout:", res.status, await res.text());
+      console.error(
+        "Error al crear/actualizar draft order de checkout:",
+        res.status,
+        await res.text(),
+      );
       return null;
     }
 
@@ -365,10 +596,13 @@ export async function upsertCheckoutDraftOrder(
  * "pending" (es contraentrega, no se cobra en el momento).
  */
 export async function completeDraftOrder(
-  draftOrderId: string
+  draftOrderId: string,
 ): Promise<{ orderId: string; orderNumber: string }> {
   if (!STORE_DOMAIN || !ADMIN_TOKEN) {
-    return { orderId: `MOCK-${Date.now()}`, orderNumber: `#DM${Math.floor(1000 + Math.random() * 9000)}` };
+    return {
+      orderId: `MOCK-${Date.now()}`,
+      orderNumber: `#DM${Math.floor(1000 + Math.random() * 9000)}`,
+    };
   }
 
   const completeRes = await fetch(
@@ -376,23 +610,30 @@ export async function completeDraftOrder(
     {
       method: "PUT",
       headers: { "X-Shopify-Access-Token": ADMIN_TOKEN },
-    }
+    },
   );
 
   if (!completeRes.ok) {
     const errorBody = await completeRes.text();
-    throw new Error(`Shopify Admin API error al completar el pedido: ${completeRes.status} — ${errorBody}`);
+    throw new Error(
+      `Shopify Admin API error al completar el pedido: ${completeRes.status} — ${errorBody}`,
+    );
   }
 
   const completeJson = await completeRes.json();
   const orderId = String(completeJson.draft_order.order_id);
 
-  const orderRes = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders/${orderId}.json`, {
-    headers: { "X-Shopify-Access-Token": ADMIN_TOKEN },
-  });
+  const orderRes = await fetch(
+    `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders/${orderId}.json`,
+    {
+      headers: { "X-Shopify-Access-Token": ADMIN_TOKEN },
+    },
+  );
 
   if (!orderRes.ok) {
-    throw new Error(`Shopify Admin API error al leer la orden confirmada: ${orderRes.status}`);
+    throw new Error(
+      `Shopify Admin API error al leer la orden confirmada: ${orderRes.status}`,
+    );
   }
 
   const orderJson = await orderRes.json();
@@ -415,17 +656,23 @@ export type AbandonedCartInput = {
  */
 export async function upsertAbandonedDraftOrder(
   input: AbandonedCartInput,
-  existingDraftOrderId?: string | null
+  existingDraftOrderId?: string | null,
 ): Promise<{ draftOrderId: string } | null> {
   if (!STORE_DOMAIN || !ADMIN_TOKEN) return null;
 
   try {
     const { firstName, lastName } = splitFullName(input.nombre);
-    const customerId = await findOrCreateCustomerId(input.telefono, firstName, lastName);
+    const customerId = await findOrCreateCustomerId(
+      input.telefono,
+      firstName,
+      lastName,
+    );
 
     const payload = {
       draft_order: {
-        line_items: [{ variant_id: toRestVariantId(input.variantId), quantity: 1 }],
+        line_items: [
+          { variant_id: toRestVariantId(input.variantId), quantity: 1 },
+        ],
         ...(customerId ? { customer: { id: customerId } } : {}),
         note: `Carrito abandonado — checkout no completado${input.ciudad ? ` (${input.ciudad})` : ""}\nNombre: ${input.nombre} · Tel: ${input.telefono}`,
         tags: "carrito-abandonado",
@@ -447,7 +694,11 @@ export async function upsertAbandonedDraftOrder(
     });
 
     if (!res.ok) {
-      console.error("Error al crear/actualizar draft order de carrito abandonado:", res.status, await res.text());
+      console.error(
+        "Error al crear/actualizar draft order de carrito abandonado:",
+        res.status,
+        await res.text(),
+      );
       return null;
     }
 
@@ -466,10 +717,13 @@ export async function upsertAbandonedDraftOrder(
 export async function deleteDraftOrder(draftOrderId: string): Promise<void> {
   if (!STORE_DOMAIN || !ADMIN_TOKEN) return;
   try {
-    await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/draft_orders/${draftOrderId}.json`, {
-      method: "DELETE",
-      headers: { "X-Shopify-Access-Token": ADMIN_TOKEN },
-    });
+    await fetch(
+      `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/draft_orders/${draftOrderId}.json`,
+      {
+        method: "DELETE",
+        headers: { "X-Shopify-Access-Token": ADMIN_TOKEN },
+      },
+    );
   } catch (error) {
     console.error("Error al borrar draft order de carrito abandonado:", error);
   }

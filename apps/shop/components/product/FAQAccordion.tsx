@@ -1,47 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import type { LandingFaq } from "@diana-mile/shared/types";
 
-interface FAQItem {
-  question: string;
-  answer: string;
-}
-
-const FAQS: FAQItem[] = [
-  {
-    question: "¿Cómo funciona el pago contraentrega?",
-    answer:
-      "Recibes el producto en la puerta de tu casa y pagas en efectivo al mensajero. No necesitas tarjeta de crédito ni hacer transferencias por adelantado.",
-  },
-  {
-    question: "¿Es un pedido real? ¿Cómo sé que va a llegar?",
-    answer:
-      "Apenas confirmas tu pedido te contactamos por WhatsApp para coordinar la entrega, así que tienes a alguien real respondiendo tus preguntas antes de pagar un peso. No pagas nada hasta tener el producto en tus manos.",
-  },
-  {
-    question: "¿Cuánto demora el envío?",
-    answer:
-      "Entre 24 y 72 horas hábiles según tu ciudad. Ciudades principales (Bogotá, Medellín, Cali, Barranquilla) generalmente en 24-48 horas.",
-  },
-  {
-    question: "¿Para qué tipo de piel funciona?",
-    answer:
-      "Para todo tipo de piel. Es especialmente efectivo para piel mixta a grasa. Sin jabón, no reseca. Si tienes piel muy sensible, recomendamos usarlo 2-3 veces por semana al inicio.",
-  },
-  {
-    question: "¿Se puede usar en el rostro?",
-    answer:
-      "Sí. Muchas de nuestras clientas lo usan tanto en rostro como en cuerpo. La exfoliación es suave y no irrita. Consulta con tu dermatólogo si tienes condiciones de piel activas.",
-  },
-  {
-    question: "¿Qué pasa si no quedo satisfecha?",
-    answer:
-      "Escríbenos por WhatsApp. Si el producto llega en mal estado o hay algún inconveniente con tu pedido, lo solucionamos sin complicaciones.",
-  },
-];
-
-export function FAQAccordion() {
+export function FAQAccordion({ faqs }: { faqs: LandingFaq[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  if (faqs.length === 0) return null;
 
   const toggleItem = (index: number) => {
     setOpenIndex((prev) => (prev === index ? null : index));
@@ -54,7 +19,7 @@ export function FAQAccordion() {
       </h2>
 
       <div>
-        {FAQS.map((faq, index) => {
+        {faqs.map((faq, index) => {
           const isOpen = openIndex === index;
 
           return (

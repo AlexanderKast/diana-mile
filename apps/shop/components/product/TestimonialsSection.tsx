@@ -1,33 +1,17 @@
 "use client";
 
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
-
-type Experience = {
-  title: string;
-  text: string;
-};
-
-const EXPERIENCES: Experience[] = [
-  {
-    title: "Compra sin anticipo",
-    text:
-      "El pago contraentrega ayuda a probar el producto sin transferencias previas ni tarjeta.",
-  },
-  {
-    title: "Acompanamiento por WhatsApp",
-    text:
-      "Si tienes dudas sobre uso, entrega o disponibilidad, puedes confirmar antes de comprar.",
-  },
-  {
-    title: "Rutina simple",
-    text:
-      "La recomendacion es mantener pocos pasos, constancia y elegir el pack segun frecuencia de uso.",
-  },
-];
+import type { LandingTestimonial } from "@diana-mile/shared/types";
 
 function IconStar() {
   return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="var(--dorado)" aria-hidden="true">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 20 20"
+      fill="var(--dorado)"
+      aria-hidden="true"
+    >
       <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L10 1.5z" />
     </svg>
   );
@@ -35,18 +19,26 @@ function IconStar() {
 
 export function TestimonialsSection({
   productName,
+  items,
+  heading,
   showUsageStats = false,
 }: {
   productName: string;
+  items: LandingTestimonial[];
+  heading?: string | null;
   showUsageStats?: boolean;
 }) {
   const { openOrderSheet } = useOrderSheet();
+
+  if (items.length === 0) return null;
 
   return (
     <section id="testimonios">
       {showUsageStats && (
         <div className="seccion-joya text-carbon py-8 px-6 text-center">
-          <p className="font-display text-2xl">Un ritual pensado para uso constante</p>
+          <p className="font-display text-2xl">
+            Un ritual pensado para uso constante
+          </p>
           <p className="mt-1 text-[13px] text-carbon-suave">
             Rostro, cuerpo y rutina semanal segun tu tipo de piel
           </p>
@@ -70,14 +62,14 @@ export function TestimonialsSection({
 
       <div className="bg-blanco py-12 px-6">
         <h2 className="font-display text-2xl text-carbon text-center mb-6">
-          Antes de pedir {productName}
+          {heading ?? `Antes de pedir ${productName}`}
         </h2>
 
         <div
           className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:grid md:grid-cols-3 md:overflow-visible md:gap-4"
           style={{ scrollbarWidth: "none" }}
         >
-          {EXPERIENCES.map((item) => (
+          {items.map((item) => (
             <div
               key={item.title}
               className="min-w-[85%] snap-center flex flex-col gap-3 bg-blanco border border-arena rounded-2xl p-5 md:min-w-0"
@@ -87,15 +79,21 @@ export function TestimonialsSection({
                   <IconStar key={i} />
                 ))}
               </div>
-              <p className="text-[14px] font-semibold text-carbon">{item.title}</p>
-              <p className="text-[14px] leading-relaxed text-carbon-suave">{item.text}</p>
+              <p className="text-[14px] font-semibold text-carbon">
+                {item.title}
+              </p>
+              <p className="text-[14px] leading-relaxed text-carbon-suave">
+                {item.text}
+              </p>
             </div>
           ))}
         </div>
       </div>
 
       <div className="bg-blanco py-8 px-6 text-center">
-        <p className="font-display text-xl text-carbon mb-4">Lista para empezar tu ritual?</p>
+        <p className="font-display text-xl text-carbon mb-4">
+          Lista para empezar tu ritual?
+        </p>
         <button
           type="button"
           onClick={() => openOrderSheet()}

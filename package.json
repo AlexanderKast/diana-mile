@@ -13,7 +13,8 @@
     "dev:admin": "npm run dev -w apps/admin",
     "dev:app": "npm run dev -w apps/app",
     "build": "npm run build -ws --if-present",
-    "lint": "npm run lint -ws --if-present"
+    "lint": "npm run lint -ws --if-present",
+    "landing:gen": "node scripts/generate-landing.mjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

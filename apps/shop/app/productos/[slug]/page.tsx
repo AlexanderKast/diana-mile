@@ -2,13 +2,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getProductByHandle } from "@/lib/shopify";
-import {
-  getIngredientStory,
-  getPrimaryProductBenefits,
-  getProductEyebrow,
-  getProductTagline,
-  isEpochProduct,
-} from "@/lib/product-content";
+import { resolveLanding } from "@/lib/product-content";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductBenefits } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
@@ -32,32 +26,13 @@ import { ResultsTimeline } from "@/components/product/ResultsTimeline";
 import { FreeGuide } from "@/components/product/FreeGuide";
 import { WithoutRitualSection } from "@/components/product/WithoutRitualSection";
 
-const PASOS_RITUAL = [
-  {
-    numero: "1",
-    titulo: "Humedece",
-    descripcion: "Aplica agua tibia sobre la piel",
-    imagen: "/images/ritual-paso-1-humedece.jpg",
-  },
-  {
-    numero: "2",
-    titulo: "Masajea",
-    descripcion: "Movimientos circulares suaves por 60 segundos",
-    imagen: "/images/ritual-paso-2-masajea.jpg",
-  },
-  {
-    numero: "3",
-    titulo: "Enjuaga",
-    descripcion: "Agua tibia. Siente la diferencia inmediata.",
-    imagen: "/images/ritual-paso-3-enjuaga.jpg",
-  },
-];
-
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductByHandle(slug);
 
@@ -73,7 +48,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     openGraph: {
       title: `${product.title} - Milito Life Shop`,
       description: product.description,
-      images: image ? [{ url: image.url, alt: image.altText ?? product.title }] : [],
+      images: image
+        ? [{ url: image.url, alt: image.altText ?? product.title }]
+        : [],
     },
     twitter: {
       card: "summary_large_image",
@@ -92,9 +69,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  const benefits = getPrimaryProductBenefits(product);
-  const ingredientStory = getIngredientStory(product);
-  const isEpoch = isEpochProduct(product);
+  const landing = resolveLanding(product);
 
   return (
     <OrderSheetProvider product={product}>
@@ -108,23 +83,21 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
             <div className="flex flex-col gap-2">
               <RatingBar />
-              <TrustBadges showAuthenticity={isEpoch} />
+              <TrustBadges showAuthenticity={landing.authenticity} />
             </div>
 
             <div className="flex flex-col gap-2">
               <p className="text-[11px] text-ceniza uppercase tracking-wide">
-                {getProductEyebrow(product)}
+                {landing.eyebrow}
               </p>
               <h1 className="font-display text-[26px] md:text-[32px] text-carbon leading-tight">
                 {product.title}
               </h1>
               <div className="linea-dorada w-12" />
-              <p className="text-sm text-carbon-suave">
-                {getProductTagline(product)}
-              </p>
+              <p className="text-sm text-carbon-suave">{landing.tagline}</p>
             </div>
 
-            <SkinTypeSelector />
+            {landing.skinType && <SkinTypeSelector data={landing.skinType} />}
 
             <ProductHeroCTA />
 
@@ -132,17 +105,19 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </div>
         </div>
 
-        <ProductQuickNav showIngredientes={isEpoch} />
+        <ProductQuickNav showIngredientes={landing.ingredients !== null} />
 
-        <WithoutRitualSection productName={product.title} />
+        {landing.withoutRitual && (
+          <WithoutRitualSection data={landing.withoutRitual} />
+        )}
 
-        {ingredientStory && (
+        {landing.ingredientStory && (
           <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">
             <h2 className="font-display text-[28px] text-carbon max-w-md">
-              {ingredientStory.title}
+              {landing.ingredientStory.title}
             </h2>
             <p className="text-sm text-carbon-suave leading-relaxed max-w-md">
-              {ingredientStory.body}
+              {landing.ingredientStory.body}
             </p>
             <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden max-w-md">
               <Image
@@ -156,58 +131,98 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </section>
         )}
 
-        <section id="beneficios" className="py-12 px-6 flex flex-col gap-6 scroll-mt-20">
-          <h2 className="font-display text-2xl text-carbon text-center">
-            Lo que vas a dejar de esconder
-          </h2>
-          <ProductBenefits benefits={benefits} />
-        </section>
+        {landing.benefits.length > 0 && (
+          <section
+            id="beneficios"
+            className="py-12 px-6 flex flex-col gap-6 scroll-mt-20"
+          >
+            <h2 className="font-display text-2xl text-carbon text-center">
+              {landing.benefitsHeading}
+            </h2>
+            <ProductBenefits benefits={landing.benefits} />
+          </section>
+        )}
 
         <SocialCTABand tone="outline-morado" buttonLabel="Quiero probarlo" />
 
-        {isEpoch && <UGCSection />}
+        {landing.ugc && (
+          <UGCSection
+            heading={landing.ugcHeading}
+            subheading={landing.ugcSubheading}
+            posts={landing.ugc}
+          />
+        )}
 
-        <section id="como-usarlo" className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8 scroll-mt-20">
-          <h2 className="font-display text-2xl text-center">Tu ritual en 3 pasos</h2>
-          <div
-            className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible"
-            style={{ scrollbarWidth: "none" }}
+        {landing.usageSteps.length > 0 && (
+          <section
+            id="como-usarlo"
+            className="bg-blanco text-carbon py-12 px-6 flex flex-col gap-8 scroll-mt-20"
           >
-            {PASOS_RITUAL.map((paso) => (
-              <div
-                key={paso.numero}
-                className="shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-3 rounded-2xl border border-arena bg-blanco overflow-hidden shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
-              >
-                <div className="relative aspect-[4/5] w-full">
-                  <Image
-                    src={paso.imagen}
-                    alt={`Paso ${paso.numero}: ${paso.titulo}`}
-                    fill
-                    className="object-cover"
-                    sizes="(min-width: 768px) 33vw, 80vw"
-                  />
-                  <span className="absolute top-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-dorado-oscuro font-display text-base text-blanco">
-                    {paso.numero}
-                  </span>
+            <h2 className="font-display text-2xl text-center">
+              {landing.usageHeading}
+            </h2>
+            <div
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {landing.usageSteps.map((paso) => (
+                <div
+                  key={paso.numero}
+                  className="shrink-0 w-[80%] md:w-auto snap-center flex flex-col gap-3 rounded-2xl border border-arena bg-blanco overflow-hidden shadow-[0_1px_3px_rgba(26,23,20,0.08)]"
+                >
+                  {paso.imagen ? (
+                    <div className="relative aspect-[4/5] w-full">
+                      <Image
+                        src={paso.imagen}
+                        alt={`Paso ${paso.numero}: ${paso.titulo}`}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 768px) 33vw, 80vw"
+                      />
+                      <span className="absolute top-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-dorado-oscuro font-display text-base text-blanco">
+                        {paso.numero}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 px-5 pt-5">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-dorado-oscuro font-display text-base text-blanco">
+                        {paso.numero}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1.5 p-5 pt-2">
+                    <h3 className="font-display text-xl text-carbon">
+                      {paso.titulo}
+                    </h3>
+                    <p className="text-sm text-carbon-suave">
+                      {paso.descripcion}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5 p-5 pt-2">
-                  <h3 className="font-display text-xl text-carbon">{paso.titulo}</h3>
-                  <p className="text-sm text-carbon-suave">{paso.descripcion}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
-        <ResultsTimeline />
+        {landing.resultsTimeline && (
+          <ResultsTimeline
+            heading={landing.resultsHeading}
+            stages={landing.resultsTimeline}
+          />
+        )}
 
-        <TestimonialsSection productName={product.title} showUsageStats={isEpoch} />
+        <TestimonialsSection
+          productName={product.title}
+          items={landing.testimonials}
+          heading={landing.testimonialsHeading}
+          showUsageStats={landing.authenticity}
+        />
 
-        <ComparisonSection />
+        {landing.comparison && <ComparisonSection data={landing.comparison} />}
 
         <GuaranteeSection />
 
-        <FreeGuide productName={product.title} />
+        {landing.freeGuide && <FreeGuide data={landing.freeGuide} />}
 
         <SocialCTABand
           tone="lila-band"
@@ -215,21 +230,25 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           buttonLabel="Reservar el mío · Contraentrega"
         />
 
-        <section id="preguntas" className="px-6 py-12 scroll-mt-20">
-          <FAQAccordion />
-        </section>
+        {landing.faqs.length > 0 && (
+          <section id="preguntas" className="px-6 py-12 scroll-mt-20">
+            <FAQAccordion faqs={landing.faqs} />
+          </section>
+        )}
 
-        {isEpoch && (
+        {landing.ingredients && (
           <section id="ingredientes" className="px-6 pb-4 scroll-mt-20">
-            <IngredientsAccordion />
+            <IngredientsAccordion ingredients={landing.ingredients} />
           </section>
         )}
 
         <NuskinSection />
 
         <section className="seccion-joya text-carbon py-12 px-6 text-center flex flex-col items-center gap-4">
-          <h2 className="font-display text-[28px]">Tu piel te lo va a agradecer</h2>
-          <p className="text-sm text-carbon-suave">Envio contraentrega - Pagas al recibir</p>
+          <h2 className="font-display text-[28px]">{landing.closingHeading}</h2>
+          <p className="text-sm text-carbon-suave">
+            Envio contraentrega - Pagas al recibir
+          </p>
           <SocialCTABand tone="gold-solid" buttonLabel="Empezar mi ritual" />
         </section>
 

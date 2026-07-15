@@ -36,6 +36,16 @@ diana-mile/
 - `app/api/leads/carrito/route.ts`: registra lead de carrito abandonado (debounced desde `CODForm`).
 - `app/api/products/route.ts`, `app/api/leads/route.ts`: endpoints adicionales de catálogo/leads.
 
+## Contenido de landing por producto (data-driven)
+
+Cada landing de producto (`app/productos/[slug]/page.tsx`) se arma desde un objeto de contenido resuelto, **no** desde copy hardcodeado. Fuente: metafield JSON `diana_mile.landing_content` de Shopify.
+
+- `lib/product-content.ts` → `resolveLanding(product)` devuelve el contenido final con esta precedencia: **metafield** > preset Epoch (solo si el título matchea `epoch|polishing bar`, conserva la landing actual del producto estrella) > **fallback neutral** derivado de título/descripción. Un producto sin metafield igual renderiza una landing coherente pero sobria (sin afirmaciones inventadas de ingredientes/resultados).
+- Los tipos del contenido (`ProductLandingContent`, `Landing*`) viven en `@diana-mile/shared/types`. `lib/shopify.ts` trae el metafield en el query GraphQL y lo parsea en `mapMetafields` (JSON, tolerante a errores → null).
+- Cada sección es un componente que recibe su data por props y se **oculta si no hay contenido** (`ResultsTimeline`, `WithoutRitualSection`, `UGCSection`, `IngredientsAccordion`, `SkinTypeSelector`, `ingredientStory` → condicionales en la page).
+- **Generación automática**: `scripts/generate-landing.mjs` (`npm run landing:gen -- <handle>` o `-- --all`) lee el producto de Shopify, genera el JSON de la landing con la API de Claude y lo guarda en el metafield. El prompt aplica gatillos mentales/sesgos cognitivos mapeados a cada sección (estructura social funnel; ver mapa en `.claude/skills/crear-producto/SKILL.md`) y acepta `--brief docs/briefs/<handle>.md` para inyectar investigación de audiencia/competencia. Crea la definición del metafield con `storefront: PUBLIC_READ` (imprescindible para que la Storefront API lo devuelva). Env: `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_ADMIN_API_TOKEN`, `ANTHROPIC_API_KEY`, opcional `LANDING_MODEL`.
+- **Skill `/crear-producto`** (`.claude/skills/crear-producto/`): flujo completo de alta de producto — investigación de mercado/audiencia → brief psicológico (`docs/briefs/<handle>.md`) → producto en Shopify (DRAFT) → generación de landing con brief → verificación → ACTIVE.
+
 ## Componentes clave (producto/checkout)
 
 - **`OrderSheetContext.tsx`** (`components/product/`): contexto global del flujo de compra en la página de producto — variante seleccionada, apertura del sheet de pedido, y el descuento del popup exit-intent (persistido 5 min en `sessionStorage`, key `milito_descuento_expira`). Expone `DISCOUNT_PERCENT` (10%, definido server-side en `lib/pricing.ts`).
