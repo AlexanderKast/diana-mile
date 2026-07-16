@@ -233,11 +233,11 @@ const MOCK_COLLECTIONS: Collection[] = [
   {
     id: "mock-collection-ritual-epoch",
     handle: "ritual-epoch",
-    title: "Ritual Epoch",
+    title: "Nuskin",
     description: "La linea Epoch® de Nu Skin, curada por Milito Life Shop.",
     image: {
       url: "/images/product-epoch-hero.jpg",
-      altText: "Ritual Epoch",
+      altText: "Nuskin",
     },
     landingContent: null,
     products: [],
@@ -245,17 +245,17 @@ const MOCK_COLLECTIONS: Collection[] = [
   {
     id: "mock-collection-rituales-de-piel",
     handle: "rituales-de-piel",
-    title: "Rituales de Piel",
+    title: "Rituales",
     description:
       "Skincare para tu ritual diario: sueros, cremas y contornos de ojos.",
-    image: { url: "/images/lifestyle-ritual.jpg", altText: "Rituales de Piel" },
+    image: { url: "/images/lifestyle-ritual.jpg", altText: "Rituales" },
     landingContent: null,
     products: MOCK_PRODUCTS,
   },
   {
     id: "mock-collection-tendencia-milito",
     handle: "tendencia-milito",
-    title: "Tendencia Milito",
+    title: "Tendencias",
     description: "Lo que mas estan pidiendo esta temporada.",
     image: null,
     landingContent: null,
@@ -314,37 +314,6 @@ const PRODUCT_BY_HANDLE_QUERY = `
       images(first: 6) { edges { node { url altText } } }
       variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
       metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
-    }
-  }
-`;
-
-const COLLECTIONS_QUERY = `
-  query Collections($first: Int!) {
-    collections(first: $first) {
-      edges {
-        node {
-          id
-          handle
-          title
-          description
-          image { url altText }
-          metafields(identifiers: ${COLLECTION_METAFIELD_IDENTIFIERS_GQL}) { key value }
-          products(first: 24) {
-            edges {
-              node {
-                id
-                handle
-                title
-                description
-                priceRange { minVariantPrice { amount currencyCode } }
-                images(first: 3) { edges { node { url altText } } }
-                variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
-                metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
-              }
-            }
-          }
-        }
-      }
     }
   }
 `;
@@ -553,14 +522,18 @@ function mapCollectionNode(node: {
   };
 }
 
+/**
+ * Trae SOLO las categorias curadas de la tienda (COLLECTION_HANDLES), no
+ * todas las collections que existan en Shopify — la tienda tiene otras
+ * (ej. "Home page", "Liteshop Import") que no son parte de esta navegacion.
+ */
 export async function getCollections(): Promise<Collection[]> {
   if (!isShopifyConfigured) return MOCK_COLLECTIONS;
 
-  const data = await storefrontFetch<{
-    collections: { edges: { node: Parameters<typeof mapCollectionNode>[0] }[] };
-  }>(COLLECTIONS_QUERY, { first: 10 });
-
-  return data.collections.edges.map((e) => mapCollectionNode(e.node));
+  const collections = await Promise.all(
+    COLLECTION_HANDLES.map((handle) => getCollectionByHandle(handle)),
+  );
+  return collections.filter((c): c is Collection => c !== null);
 }
 
 export async function getCollectionByHandle(

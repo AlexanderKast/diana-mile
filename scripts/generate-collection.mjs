@@ -215,7 +215,7 @@ Devuelve un JSON con EXACTAMENTE esta forma (todos los campos opcionales, pero l
 
 REGLAS:
 - No inventes ingredientes, cifras de ventas ni resenas.
-- Si la categoria es "Ritual Epoch", puedes mencionar que es la linea Epoch de Nu Skin curada por Milito Life Shop.
+- Si la categoria es "Nuskin", puedes mencionar que es la linea Epoch de Nu Skin curada por Milito Life Shop.
 - Todo el texto en espanol. No uses markdown.`;
 }
 

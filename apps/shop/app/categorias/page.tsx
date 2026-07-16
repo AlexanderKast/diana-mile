@@ -5,7 +5,7 @@ import { CategoryCard } from "@/components/category/CategoryCard";
 export const metadata: Metadata = {
   title: "Categorías — Milito Life Shop",
   description:
-    "Explora las categorías de Milito Life Shop: Ritual Epoch, Rituales de Piel, Tendencia y Suplementos & Bienestar.",
+    "Explora las categorías de Milito Life Shop: Nuskin, Rituales, Tendencias y Suplementos y Bienestar.",
 };
 
 export default async function CategoriasPage() {
