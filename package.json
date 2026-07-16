@@ -14,7 +14,8 @@
     "dev:app": "npm run dev -w apps/app",
     "build": "npm run build -ws --if-present",
     "lint": "npm run lint -ws --if-present",
-    "landing:gen": "node scripts/generate-landing.mjs"
+    "landing:gen": "node scripts/generate-landing.mjs",
+    "collection:gen": "node scripts/generate-collection.mjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
