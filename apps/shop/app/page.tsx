@@ -11,58 +11,16 @@ import { SocialProofSection } from "@/components/site/SocialProofSection";
 import TrustBadges from "@/components/product/TrustBadges";
 
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Bienestar y Anti-edad",
+  title: "Milito Life Shop — Curado por Diana Mile",
   description:
-    "Rituales de piel con sabiduria indigena y minerales del oceano. Descubre los productos Milito Life Shop para una piel mas luminosa y firme.",
+    "Piel, tendencia y bienestar curados por Diana Mile. Pago contraentrega en toda Colombia, productos 100% originales.",
 };
 
 const PILARES = [
   {
-    titulo: "Minerales del oceano",
+    titulo: "Curaduría personal",
     descripcion:
-      "Activos marinos de alta concentracion que nutren y revitalizan la piel en cada aplicacion.",
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M2 16c1.5 1.5 3 1.5 4.5 0s3-1.5 4.5 0 3 1.5 4.5 0 3-1.5 4.5 0" />
-        <path d="M2 20c1.5 1.5 3 1.5 4.5 0s3-1.5 4.5 0 3 1.5 4.5 0 3-1.5 4.5 0" />
-        <path d="M12 4c-2 2-2 4 0 6s2 4 0 6" />
-      </svg>
-    ),
-  },
-  {
-    titulo: "Sabiduria indigena",
-    descripcion:
-      "Rituales ancestrales de bienestar transformados en formulas modernas para tu piel.",
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12 2v20" />
-        <path d="M5 8l7-6 7 6" />
-        <path d="M5 8v13h14V8" />
-      </svg>
-    ),
-  },
-  {
-    titulo: "Resultados anti-edad",
-    descripcion:
-      "Piel mas firme, luminosa y uniforme con uso constante desde las primeras semanas.",
+      "Cada producto que ves aquí pasó primero por el ritual de Diana antes de llegar a la tienda.",
     icon: (
       <svg
         width="20"
@@ -75,7 +33,48 @@ const PILARES = [
         strokeLinejoin="round"
       >
         <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 3" />
+        <path d="M8 12l2.5 2.5L16 9" />
+      </svg>
+    ),
+  },
+  {
+    titulo: "Pago contraentrega",
+    descripcion:
+      "Pagas cuando ya lo tienes en tus manos, sin sorpresas ni letra pequeña.",
+    icon: (
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 8l9-5 9 5-9 5-9-5z" />
+        <path d="M3 8v8l9 5 9-5V8" />
+        <path d="M12 13v8" />
+      </svg>
+    ),
+  },
+  {
+    titulo: "100% original",
+    descripcion:
+      "Trabajamos solo con productos auténticos, sin falsificaciones ni intermediarios dudosos.",
+    icon: (
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z" />
+        <path d="M9 12l2 2 4-4" />
       </svg>
     ),
   },
@@ -114,14 +113,15 @@ export default async function HomePage() {
             style={{ animationDelay: "100ms" }}
           >
             <h1 className="font-display text-4xl md:text-6xl leading-tight text-carbon">
-              Tu version mas luminosa
+              Curado por Diana, hecho para ti
             </h1>
             <p className="mt-4 text-[15px] text-carbon-suave max-w-md">
-              Rituales de piel con sabiduria indigena y minerales del oceano
+              Piel, tendencia y bienestar — todo lo que uso y recomiendo, con
+              pago contraentrega en toda Colombia.
             </p>
             <div className="mt-8">
               <Link href="/productos">
-                <Button variant="primary">Descubrir rituales →</Button>
+                <Button variant="primary">Descubrir la tienda →</Button>
               </Link>
             </div>
             <div className="mt-6">

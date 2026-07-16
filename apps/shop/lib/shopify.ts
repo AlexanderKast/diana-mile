@@ -284,25 +284,6 @@ const COLLECTION_METAFIELD_IDENTIFIERS_GQL = `[
   {namespace: "diana_mile", key: "collection_content"}
 ]`;
 
-const PRODUCTS_QUERY = `
-  query Products($first: Int!) {
-    products(first: $first) {
-      edges {
-        node {
-          id
-          handle
-          title
-          description
-          priceRange { minVariantPrice { amount currencyCode } }
-          images(first: 3) { edges { node { url altText } } }
-          variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
-          metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
-        }
-      }
-    }
-  }
-`;
-
 const PRODUCT_BY_HANDLE_QUERY = `
   query ProductByHandle($handle: String!) {
     productByHandle(handle: $handle) {
@@ -452,14 +433,24 @@ function mapNode(node: {
   };
 }
 
+/**
+ * Devuelve SOLO los productos que pertenecen a alguna de las 4 categorias
+ * curadas (COLLECTION_HANDLES) — no el catalogo Shopify completo, que
+ * incluye productos de importaciones genericas (ej. "Liteshop Import")
+ * ajenos al posicionamiento de la tienda. Deduplicado por id (un producto
+ * puede estar en mas de una categoria).
+ */
 export async function getProducts(): Promise<Product[]> {
   if (!isShopifyConfigured) return MOCK_PRODUCTS;
 
-  const data = await storefrontFetch<{
-    products: { edges: { node: Parameters<typeof mapNode>[0] }[] };
-  }>(PRODUCTS_QUERY, { first: 24 });
-
-  return data.products.edges.map((e) => mapNode(e.node));
+  const collections = await getCollections();
+  const byId = new Map<string, Product>();
+  for (const collection of collections) {
+    for (const product of collection.products) {
+      byId.set(product.id, product);
+    }
+  }
+  return Array.from(byId.values());
 }
 
 export async function getProductByHandle(
