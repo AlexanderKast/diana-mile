@@ -1,8 +1,16 @@
 import Link from "next/link";
+import { getCollections } from "@/lib/shopify";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="none" className={className}>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="none"
+      className={className}
+    >
       <path
         fill="currentColor"
         d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.76.46 3.48 1.34 5L2 22l5.14-1.35a10 10 0 0 0 4.9 1.25h.01c5.52 0 10-4.48 10-10s-4.48-9.9-10.01-9.9Zm0 18.1h-.01a8.3 8.3 0 0 1-4.23-1.16l-.3-.18-3.05.8.82-2.97-.2-.3a8.26 8.26 0 0 1-1.27-4.4c0-4.58 3.73-8.3 8.31-8.3 2.22 0 4.3.87 5.87 2.44a8.24 8.24 0 0 1 2.43 5.87c0 4.58-3.73 8.3-8.3 8.3Zm4.55-6.22c-.25-.13-1.47-.72-1.7-.8-.23-.08-.4-.13-.56.13-.17.25-.65.8-.8.97-.14.17-.29.19-.54.06-.25-.13-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.38-.43.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.08 0 1.23.89 2.42 1.02 2.58.13.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.16-.48-.29Z"
@@ -17,19 +25,40 @@ const whatsappHref = WHATSAPP_NUMERO
   : null;
 const LINKTREE_URL = process.env.NEXT_PUBLIC_LINKTREE_URL || "/";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const collections = await getCollections();
+
   return (
     <header className="sticky top-0 z-40 border-b border-arena/80 bg-blanco/95 backdrop-blur">
       <div className="mx-auto flex min-h-[60px] max-w-6xl items-center justify-between gap-4 px-5 md:px-6">
-        <Link href="/" className="font-display text-2xl text-carbon" aria-label="Milito Life Shop inicio">
+        <Link
+          href="/"
+          className="font-display text-2xl text-carbon"
+          aria-label="Milito Life Shop inicio"
+        >
           Milito Life Shop
         </Link>
 
         <nav className="flex items-center gap-1 text-sm text-carbon-suave">
-          <Link href="/productos" className="rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon">
+          <Link
+            href="/productos"
+            className="rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon"
+          >
             Productos
           </Link>
-          <Link href={LINKTREE_URL} className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon sm:inline-flex">
+          {collections.map((collection) => (
+            <Link
+              key={collection.id}
+              href={`/categorias/${collection.handle}`}
+              className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon md:inline-flex"
+            >
+              {collection.title}
+            </Link>
+          ))}
+          <Link
+            href={LINKTREE_URL}
+            className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon sm:inline-flex"
+          >
             Redes
           </Link>
           {whatsappHref && (
