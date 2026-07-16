@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { getProducts, getCollections } from "@/lib/shopify";
 import { Button } from "@diana-mile/shared/ui/Button";
-import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CategoryCard } from "@/components/category/CategoryCard";
 import { DianaStory } from "@/components/site/DianaStory";
@@ -253,8 +252,6 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
-
-      <WhatsAppFloat />
     </>
   );
 }

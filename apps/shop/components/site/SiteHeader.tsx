@@ -42,7 +42,7 @@ export async function SiteHeader() {
         <nav className="flex items-center gap-1 text-sm text-carbon-suave">
           <Link
             href="/productos"
-            className="rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon"
+            className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon md:inline-flex"
           >
             Productos
           </Link>
@@ -66,7 +66,7 @@ export async function SiteHeader() {
               href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-blanco transition-colors hover:bg-[#1EBE5A]"
+              className="hidden items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-blanco transition-colors hover:bg-[#1EBE5A] md:flex"
             >
               <WhatsAppIcon />
               WhatsApp

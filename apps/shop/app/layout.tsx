@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
+import { MobileTabBar } from "@/components/site/MobileTabBar";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -37,6 +38,7 @@ export default function RootLayout({
           <SiteHeader />
           <div className="flex-1">{children}</div>
           <SiteFooter />
+          <MobileTabBar />
         </div>
       </body>
     </html>
