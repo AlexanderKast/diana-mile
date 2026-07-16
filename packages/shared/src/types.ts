@@ -395,3 +395,18 @@ export type ConfigRow = {
   descripcion: string | null;
   updated_at: string;
 };
+
+export type TipoContenido = "rutina" | "guia" | "plan_alimentacion";
+
+export type Contenido = {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  tipo: TipoContenido;
+  cuerpo: string | null;
+  archivo_path: string | null;
+  publicado: boolean;
+  orden: number;
+  created_at: string;
+  updated_at: string;
+};
