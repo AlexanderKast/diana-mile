@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@diana-mile/shared/ui/Button";
+import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
 
 function IconStar() {
   return (
@@ -56,10 +57,20 @@ export function SocialProofSection() {
               key={item.titulo}
               className="flex min-w-[85%] shrink-0 snap-center flex-col gap-3 rounded-2xl border border-arena bg-blanco p-5 md:min-w-0"
             >
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <IconStar key={i} />
-                ))}
+              <div className="flex items-center gap-3">
+                <ImagePlaceholder
+                  label="Foto"
+                  aspect="aspect-square"
+                  rounded="rounded-full"
+                  showLabel={false}
+                  iconSize={16}
+                  className="w-9 shrink-0 px-0"
+                />
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <IconStar key={i} />
+                  ))}
+                </div>
               </div>
               <p className="text-[14px] font-semibold text-carbon">
                 {item.titulo}
