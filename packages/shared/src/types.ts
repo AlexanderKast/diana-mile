@@ -410,3 +410,13 @@ export type Contenido = {
   created_at: string;
   updated_at: string;
 };
+
+export type PushSuscripcion = {
+  id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  telefono: string | null;
+  user_agent: string | null;
+  created_at: string;
+};

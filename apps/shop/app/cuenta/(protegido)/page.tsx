@@ -5,6 +5,7 @@ import {
 } from "@diana-mile/shared/supabase/server";
 import type { Pedido } from "@diana-mile/shared/types";
 import { clienteHaComprado } from "@/lib/cuenta";
+import { PushOptIn } from "@/components/site/PushOptIn";
 
 export default async function CuentaPage() {
   const cliente = await getClienteUser();
@@ -53,6 +54,12 @@ export default async function CuentaPage() {
           </p>
         </Link>
       </div>
+
+      <PushOptIn
+        telefono={cliente.telefono}
+        titulo="Recibe novedades y el estado de tus pedidos"
+        descripcion="Activa las notificaciones para no perderte cambios de estado ni contenido nuevo."
+      />
     </div>
   );
 }
