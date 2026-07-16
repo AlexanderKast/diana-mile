@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { getProductByHandle } from "@/lib/shopify";
 import { resolveLanding } from "@/lib/product-content";
@@ -9,22 +10,42 @@ import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
 import { ProductHeroCTA } from "@/components/product/ProductHeroCTA";
 import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
-import { IngredientsAccordion } from "@/components/product/IngredientsAccordion";
 import { RatingBar } from "@/components/product/RatingBar";
 import TrustBadges from "@/components/product/TrustBadges";
 import { UGCSection } from "@/components/product/UGCSection";
-import { TestimonialsSection } from "@/components/product/TestimonialsSection";
 import { GuaranteeSection } from "@/components/product/GuaranteeSection";
-import { FAQAccordion } from "@/components/product/FAQAccordion";
 import { NuskinSection } from "@/components/product/NuskinSection";
 import { ProductQuickNav } from "@/components/product/ProductQuickNav";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
 import { ExitIntentPopup } from "@/components/product/ExitIntentPopup";
 import { ComparisonSection } from "@/components/product/ComparisonSection";
-import { SkinTypeSelector } from "@/components/product/SkinTypeSelector";
 import { ResultsTimeline } from "@/components/product/ResultsTimeline";
-import { FreeGuide } from "@/components/product/FreeGuide";
 import { WithoutRitualSection } from "@/components/product/WithoutRitualSection";
+
+// Client components condicionales (no siempre se renderizan segun el
+// producto) — se cargan en un chunk separado para no engordar el bundle
+// inicial de la PDP con codigo que a veces ni se usa.
+const IngredientsAccordion = dynamic(() =>
+  import("@/components/product/IngredientsAccordion").then(
+    (m) => m.IngredientsAccordion,
+  ),
+);
+const TestimonialsSection = dynamic(() =>
+  import("@/components/product/TestimonialsSection").then(
+    (m) => m.TestimonialsSection,
+  ),
+);
+const FAQAccordion = dynamic(() =>
+  import("@/components/product/FAQAccordion").then((m) => m.FAQAccordion),
+);
+const SkinTypeSelector = dynamic(() =>
+  import("@/components/product/SkinTypeSelector").then(
+    (m) => m.SkinTypeSelector,
+  ),
+);
+const FreeGuide = dynamic(() =>
+  import("@/components/product/FreeGuide").then((m) => m.FreeGuide),
+);
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;

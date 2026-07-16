@@ -229,13 +229,15 @@ export default async function HomePage() {
 
       {/* Prueba social */}
       <section className="bg-blanco">
-        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20 grid grid-cols-3 gap-4 text-center">
+        <div className="mx-auto max-w-6xl px-4 py-16 md:py-20 grid grid-cols-3 gap-3 md:gap-4 text-center">
           {STATS.map((stat) => (
-            <div key={stat.numero}>
+            <div key={stat.numero} className="px-1">
               <p className="font-display text-3xl md:text-4xl text-dorado-oscuro">
                 {stat.numero}
               </p>
-              <p className="mt-2 text-xs text-ceniza">{stat.texto}</p>
+              <p className="mt-2 text-[13px] leading-snug text-ceniza">
+                {stat.texto}
+              </p>
             </div>
           ))}
         </div>
