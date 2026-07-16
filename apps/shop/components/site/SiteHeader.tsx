@@ -56,6 +56,12 @@ export async function SiteHeader() {
             </Link>
           ))}
           <Link
+            href="/cuenta"
+            className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon md:inline-flex"
+          >
+            Mi cuenta
+          </Link>
+          <Link
             href={LINKTREE_URL}
             className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon sm:inline-flex"
           >

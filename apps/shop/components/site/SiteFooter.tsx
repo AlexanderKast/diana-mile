@@ -23,6 +23,9 @@ export async function SiteFooter() {
               {collection.title}
             </Link>
           ))}
+          <Link href="/cuenta" className="hover:text-carbon">
+            Mi cuenta
+          </Link>
           <Link href={LINKTREE_URL} className="hover:text-carbon">
             Redes
           </Link>

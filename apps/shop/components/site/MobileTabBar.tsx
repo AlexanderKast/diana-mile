@@ -66,6 +66,25 @@ function ProductosIcon({ className }: { className?: string }) {
   );
 }
 
+function CuentaIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M4.5 20c1.5-4 5-5.5 7.5-5.5s6 1.5 7.5 5.5" />
+    </svg>
+  );
+}
+
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -117,6 +136,12 @@ export function MobileTabBar() {
       label: "Productos",
       Icon: ProductosIcon,
       active: pathname.startsWith("/productos"),
+    },
+    {
+      href: "/cuenta",
+      label: "Mi cuenta",
+      Icon: CuentaIcon,
+      active: pathname.startsWith("/cuenta"),
     },
   ];
 
