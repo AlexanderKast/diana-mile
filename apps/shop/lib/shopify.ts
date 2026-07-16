@@ -265,7 +265,8 @@ const MOCK_COLLECTIONS: Collection[] = [
     id: "mock-collection-suplementos-y-bienestar",
     handle: "suplementos-y-bienestar",
     title: "Suplementos y Bienestar",
-    description: "Bienestar desde adentro, complemento de tu ritual de piel.",
+    description:
+      "Bienestar desde adentro — lo que Diana recomienda desde su experiencia como entrenadora física.",
     image: null,
     landingContent: null,
     products: [],

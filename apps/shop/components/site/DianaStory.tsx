@@ -1,9 +1,11 @@
 import Image from "next/image";
 
 /**
- * Copy y foto placeholder — reemplazar por la bio real y una foto de
- * Diana antes de publicar. Se dejo generico a proposito para no inventar
- * datos (anios de experiencia, credenciales, etc.) que no se han confirmado.
+ * Copy y foto placeholder — reemplazar antes de publicar. Faltan por
+ * confirmar (no inventar): anios de experiencia, especialidad de
+ * entrenamiento, certificacion, y una foto real de Diana entrenando (se
+ * reviso apps/linktree/public/images/diana-profile.jpg: es foto de stock
+ * de producto, no sirve). Mientras tanto se usa /images/lifestyle-ritual.jpg.
  */
 export function DianaStory() {
   return (
@@ -28,9 +30,9 @@ export function DianaStory() {
           </h2>
           <div className="linea-dorada w-12" />
           <p className="text-sm leading-relaxed text-carbon-suave">
-            Cada producto que encuentras aquí pasó primero por mi propio ritual.
-            Milito Life Shop nace de eso: lo que uso, lo que le funciona a mi
-            piel y lo que estoy dispuesta a recomendarte con mi nombre.
+            Soy entrenadora física y personal de salud. Llevo años acompañando
+            procesos de bienestar, y esta tienda nace de lo mismo: lo que
+            entreno, lo que uso y lo que recomiendo con mi nombre.
           </p>
           <p className="text-sm leading-relaxed text-carbon-suave">
             No vendo promesas vacías — comparto lo que confío.

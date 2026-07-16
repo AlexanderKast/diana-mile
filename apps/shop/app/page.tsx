@@ -11,10 +11,17 @@ import { SocialProofSection } from "@/components/site/SocialProofSection";
 import TrustBadges from "@/components/product/TrustBadges";
 
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Probado por Diana Mile",
+  title: "Milito Life Shop — Bienestar probado por Diana Mile",
   description:
-    "Piel, tendencia y bienestar probados por Diana Mile. Pago contraentrega en toda Colombia, productos 100% originales.",
+    "Bienestar, piel y tendencia probados por Diana Mile, entrenadora física y personal de salud. Pago contraentrega en toda Colombia, productos 100% originales.",
 };
+
+const WHATSAPP_NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
+const WHATSAPP_ENTRENAMIENTO_HREF = WHATSAPP_NUMERO
+  ? `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(
+      "Hola Diana, quiero información sobre tu acompañamiento de entrenamiento",
+    )}`
+  : null;
 
 const PILARES = [
   {
@@ -116,7 +123,7 @@ export default async function HomePage() {
               Probado por Diana, hecho para ti
             </h1>
             <p className="mt-4 text-[15px] text-carbon-suave max-w-md">
-              Piel, tendencia y bienestar — todo lo que uso y recomiendo, con
+              Bienestar, piel y tendencia — todo lo que uso y recomiendo, con
               pago contraentrega en toda Colombia.
             </p>
             <div className="mt-8">
@@ -200,6 +207,26 @@ export default async function HomePage() {
       </section>
 
       <DianaStory />
+
+      {/* Entrena con Diana */}
+      {WHATSAPP_ENTRENAMIENTO_HREF && (
+        <section className="seccion-joya text-carbon py-12 px-6 text-center">
+          <h2 className="font-display text-2xl">Entrena con Diana</h2>
+          <p className="mt-3 text-sm text-carbon-suave max-w-md mx-auto">
+            Acompañamiento de bienestar y salud personal, uno a uno, con la
+            misma entrenadora detrás de esta tienda.
+          </p>
+          <div className="mt-6">
+            <a
+              href={WHATSAPP_ENTRENAMIENTO_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="primary">Escribir por WhatsApp →</Button>
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* Prueba social */}
       <section className="bg-blanco">

@@ -6,26 +6,26 @@
 @source "../../../packages/shared/src";
 
 :root {
-  --blanco: #FAFAF8;
-  --crema: #F2EDE6;
-  --arena: #E8DDD0;
-  --carbon: #1A1714;
-  --carbon-suave: #3D3730;
-  --ceniza: #9A928A;
-  --dorado: #C4A882;
-  --dorado-oscuro: #A8885E;
-  --error: #B3413A;
+  --blanco: #fafaf8;
+  --crema: #f2ede6;
+  --arena: #e8ddd0;
+  --carbon: #1a1714;
+  --carbon-suave: #3d3730;
+  --ceniza: #9a928a;
+  --dorado: #c4a882;
+  --dorado-oscuro: #a8885e;
+  --error: #b3413a;
 
-  /* Lila — identidad personal de Mile, acento secundario. El dorado sigue siendo el acento de lujo principal. */
-  --lila-suave: #EDE8F5;
-  --lila: #9B8EA8;
-  --morado: #6B4E8C;
-  --morado-oscuro: #4A3066;
+  /* Lila/morado — identidad personal de Mile: acento de bienestar y entrenamiento, secundario al dorado. El dorado sigue siendo el acento de lujo principal. */
+  --lila-suave: #ede8f5;
+  --lila: #9b8ea8;
+  --morado: #6b4e8c;
+  --morado-oscuro: #4a3066;
 
   /* Acentos de estado — prueba social, escasez, verificacion. */
-  --rojo-alerta: #DC2626;
-  --verde-ok: #22C55E;
-  --azul-verified: #1DA1F2;
+  --rojo-alerta: #dc2626;
+  --verde-ok: #22c55e;
+  --azul-verified: #1da1f2;
 }
 
 @theme inline {
@@ -107,7 +107,12 @@ body {
   left: -75%;
   width: 40%;
   height: 100%;
-  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  background: linear-gradient(
+    115deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
   transform: skewX(-20deg);
   pointer-events: none;
 }
