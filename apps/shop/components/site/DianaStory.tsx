@@ -2,10 +2,13 @@ import Image from "next/image";
 
 /**
  * Copy y foto placeholder — reemplazar antes de publicar. Confirmado:
- * Diana tiene 35 anios. Faltan por confirmar (no inventar): especialidad
- * de entrenamiento, certificacion, y una foto real de Diana entrenando
- * (se reviso apps/linktree/public/images/diana-profile.jpg: es foto de
- * stock de producto, no sirve). Mientras tanto se usa
+ * Diana tiene 35 anios, es mama de 2, empresaria, entrenadora fisica y
+ * personal de salud, y creadora de contenido (@militolife). Faltan por
+ * confirmar (no inventar): especialidad de entrenamiento, certificacion,
+ * y una foto real de Diana entrenando (se reviso
+ * apps/linktree/public/images/diana-profile.jpg: es foto de stock de
+ * producto, no sirve; tampoco se pudo extraer bio/datos verificables
+ * desde su Instagram publico). Mientras tanto se usa
  * /images/lifestyle-ritual.jpg.
  */
 export function DianaStory() {
@@ -31,9 +34,11 @@ export function DianaStory() {
           </h2>
           <div className="linea-dorada w-12" />
           <p className="text-sm leading-relaxed text-carbon-suave">
-            Tengo 35 años y soy entrenadora física y personal de salud. Llevo
-            años acompañando procesos de bienestar, y esta tienda nace de lo
-            mismo: lo que entreno, lo que uso y lo que recomiendo con mi nombre.
+            Tengo 35 años, soy mamá de dos, empresaria y entrenadora física y
+            personal de salud. Crear contenido y acompañar procesos de bienestar
+            es lo que más disfruto — servir a otros es lo que me mueve. Esta
+            tienda nace de lo mismo: lo que entreno, lo que uso y lo que
+            recomiendo con mi nombre.
           </p>
           <p className="text-sm leading-relaxed text-carbon-suave">
             No vendo promesas vacías — comparto lo que confío.
