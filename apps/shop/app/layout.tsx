@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -20,6 +20,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Milito Life Shop",
   description: "Bienestar · Anti-edad · Rituales de piel",
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: "#FAFAF8",
 };
 
 export default function RootLayout({
