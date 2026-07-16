@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminSupabaseClient, getAdminUser } from "@diana-mile/shared/supabase/server";
+import {
+  createAdminSupabaseClient,
+  getAdminUser,
+} from "@diana-mile/shared/supabase/server";
 import { agregarTagsOrden, crearFulfillment } from "@/lib/shopify";
+import { enviarPush } from "@/lib/push";
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
 
   const user = await getAdminUser();
@@ -11,7 +18,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const body = await request.json();
-  const { transportadora, numero_guia, fecha_envio, fecha_entrega_estimada, costo_envio } = body as {
+  const {
+    transportadora,
+    numero_guia,
+    fecha_envio,
+    fecha_entrega_estimada,
+    costo_envio,
+  } = body as {
     transportadora?: string;
     numero_guia?: string;
     fecha_envio?: string;
@@ -21,8 +34,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (!transportadora || !numero_guia) {
     return NextResponse.json(
-      { error: "Los campos 'transportadora' y 'numero_guia' son obligatorios." },
-      { status: 400 }
+      {
+        error: "Los campos 'transportadora' y 'numero_guia' son obligatorios.",
+      },
+      { status: 400 },
     );
   }
 
@@ -35,7 +50,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .single();
 
   if (fetchError || !pedido) {
-    return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Pedido no encontrado." },
+      { status: 404 },
+    );
   }
 
   const { data: pedidoActualizado, error: updateError } = await supabase
@@ -56,7 +74,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (updateError) {
     return NextResponse.json(
       { error: "No se pudo asignar el envío.", detalle: updateError.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -76,6 +94,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       transportadora,
     });
     await agregarTagsOrden(pedidoActualizado.shopify_order_id, ["enviado"]);
+  }
+
+  if (pedidoActualizado.telefono) {
+    enviarPush(pedidoActualizado.telefono, {
+      titulo: "Tu pedido va en camino 🚚",
+      cuerpo: `Enviado con ${transportadora}, guía ${numero_guia}.`,
+      url: `/cuenta/pedidos/${id}`,
+    }).catch(() => {});
   }
 
   return NextResponse.json({ pedido: pedidoActualizado }, { status: 200 });

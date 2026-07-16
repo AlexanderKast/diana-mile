@@ -81,6 +81,11 @@ export const NAV_GRUPOS: NavGroup[] = [
         href: "/dashboard/contenidos",
         roles: ["superadmin", "admin"],
       },
+      {
+        label: "Notificaciones",
+        href: "/dashboard/notificaciones",
+        roles: ["superadmin", "admin"],
+      },
     ],
   },
 ];

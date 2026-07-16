@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminSupabaseClient, getAdminUser } from "@diana-mile/shared/supabase/server";
+import {
+  createAdminSupabaseClient,
+  getAdminUser,
+} from "@diana-mile/shared/supabase/server";
 import { agregarNotaOrden, agregarTagsOrden } from "@/lib/shopify";
+import { enviarPush } from "@/lib/push";
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
 
   const user = await getAdminUser();
@@ -20,12 +27,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (accion !== "entregado" && accion !== "devolucion") {
     return NextResponse.json(
       { error: "El campo 'accion' debe ser 'entregado' o 'devolucion'." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (accion === "devolucion" && !motivo) {
-    return NextResponse.json({ error: "El motivo de la devolución es obligatorio." }, { status: 400 });
+    return NextResponse.json(
+      { error: "El motivo de la devolución es obligatorio." },
+      { status: 400 },
+    );
   }
 
   const supabase = createAdminSupabaseClient();
@@ -37,7 +47,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .single();
 
   if (fetchError || !pedido) {
-    return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Pedido no encontrado." },
+      { status: 404 },
+    );
   }
 
   const update =
@@ -63,8 +76,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (updateError) {
     return NextResponse.json(
-      { error: "No se pudo actualizar la entrega.", detalle: updateError.message },
-      { status: 500 }
+      {
+        error: "No se pudo actualizar la entrega.",
+        detalle: updateError.message,
+      },
+      { status: 500 },
     );
   }
 
@@ -79,10 +95,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   if (pedidoActualizado.shopify_order_id) {
-    await agregarTagsOrden(pedidoActualizado.shopify_order_id, [pedidoActualizado.estado]);
+    await agregarTagsOrden(pedidoActualizado.shopify_order_id, [
+      pedidoActualizado.estado,
+    ]);
     if (accion === "devolucion") {
-      await agregarNotaOrden(pedidoActualizado.shopify_order_id, `Devolución: ${motivo}`);
+      await agregarNotaOrden(
+        pedidoActualizado.shopify_order_id,
+        `Devolución: ${motivo}`,
+      );
     }
+  }
+
+  if (accion === "entregado" && pedidoActualizado.telefono) {
+    enviarPush(pedidoActualizado.telefono, {
+      titulo: "¡Tu pedido llegó! 📦",
+      cuerpo: `${pedidoActualizado.producto_nombre} fue entregado. Ya puedes ver tu contenido premium en tu cuenta.`,
+      url: "/cuenta/pedidos",
+    }).catch(() => {});
   }
 
   return NextResponse.json({ pedido: pedidoActualizado }, { status: 200 });

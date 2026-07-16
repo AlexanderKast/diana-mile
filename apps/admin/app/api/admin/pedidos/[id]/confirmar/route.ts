@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminSupabaseClient, getAdminUser } from "@diana-mile/shared/supabase/server";
-import type { EstadoPedido, ResultadoConfirmacion } from "@diana-mile/shared/types";
+import {
+  createAdminSupabaseClient,
+  getAdminUser,
+} from "@diana-mile/shared/supabase/server";
+import type {
+  EstadoPedido,
+  ResultadoConfirmacion,
+} from "@diana-mile/shared/types";
 import { agregarNotaOrden, agregarTagsOrden } from "@/lib/shopify";
+import { enviarPush } from "@/lib/push";
 
 const RESULTADOS_VALIDOS: ResultadoConfirmacion[] = [
   "confirmado",
@@ -13,14 +20,20 @@ const RESULTADOS_VALIDOS: ResultadoConfirmacion[] = [
   "fraude",
 ];
 
-function estadoParaResultado(resultado: ResultadoConfirmacion): EstadoPedido | null {
+function estadoParaResultado(
+  resultado: ResultadoConfirmacion,
+): EstadoPedido | null {
   if (resultado === "confirmado") return "confirmado";
-  if (resultado === "rechazado" || resultado === "duplicado") return "cancelado";
+  if (resultado === "rechazado" || resultado === "duplicado")
+    return "cancelado";
   if (resultado === "fraude") return "fraude";
   return null;
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
 
   const user = await getAdminUser();
@@ -37,8 +50,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (!resultado || !RESULTADOS_VALIDOS.includes(resultado)) {
     return NextResponse.json(
-      { error: `Resultado invalido. Valores permitidos: ${RESULTADOS_VALIDOS.join(", ")}.` },
-      { status: 400 }
+      {
+        error: `Resultado invalido. Valores permitidos: ${RESULTADOS_VALIDOS.join(", ")}.`,
+      },
+      { status: 400 },
     );
   }
 
@@ -51,7 +66,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .single();
 
   if (fetchError || !pedido) {
-    return NextResponse.json({ error: "Pedido no encontrado." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Pedido no encontrado." },
+      { status: 404 },
+    );
   }
 
   const { data: rolRow } = await supabase
@@ -64,20 +82,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const nuevoIntento = (pedido.intentos_llamada ?? 0) + 1;
   const nuevoEstado = estadoParaResultado(resultado);
 
-  const { error: confirmacionError } = await supabase.from("confirmaciones").insert({
-    pedido_id: id,
-    usuario_id: user.id,
-    usuario_nombre: usuarioNombre,
-    intento: nuevoIntento,
-    resultado,
-    notas: notas ?? null,
-    duracion_segundos: duracion_segundos ?? null,
-  });
+  const { error: confirmacionError } = await supabase
+    .from("confirmaciones")
+    .insert({
+      pedido_id: id,
+      usuario_id: user.id,
+      usuario_nombre: usuarioNombre,
+      intento: nuevoIntento,
+      resultado,
+      notas: notas ?? null,
+      duracion_segundos: duracion_segundos ?? null,
+    });
 
   if (confirmacionError) {
     return NextResponse.json(
-      { error: "No se pudo registrar la confirmación.", detalle: confirmacionError.message },
-      { status: 500 }
+      {
+        error: "No se pudo registrar la confirmación.",
+        detalle: confirmacionError.message,
+      },
+      { status: 500 },
     );
   }
 
@@ -102,8 +125,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (updateError) {
     return NextResponse.json(
-      { error: "No se pudo actualizar el pedido.", detalle: updateError.message },
-      { status: 500 }
+      {
+        error: "No se pudo actualizar el pedido.",
+        detalle: updateError.message,
+      },
+      { status: 500 },
     );
   }
 
@@ -120,11 +146,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (pedidoActualizado.shopify_order_id) {
     await agregarNotaOrden(
       pedidoActualizado.shopify_order_id,
-      `Confirmacion (${resultado}) por ${usuarioNombre} el ${new Date().toLocaleDateString("es-CO")}${notas ? `: ${notas}` : ""}`
+      `Confirmacion (${resultado}) por ${usuarioNombre} el ${new Date().toLocaleDateString("es-CO")}${notas ? `: ${notas}` : ""}`,
     );
     if (nuevoEstado) {
       await agregarTagsOrden(pedidoActualizado.shopify_order_id, [nuevoEstado]);
     }
+  }
+
+  // Best-effort: un fallo de push nunca debe tumbar la confirmacion del pedido.
+  if (nuevoEstado === "confirmado" && pedidoActualizado.telefono) {
+    enviarPush(pedidoActualizado.telefono, {
+      titulo: "Tu pedido fue confirmado",
+      cuerpo: `Confirmamos tu pedido de ${pedidoActualizado.producto_nombre}. Pronto lo alistamos para el envío.`,
+      url: `/cuenta/pedidos/${id}`,
+    }).catch(() => {});
   }
 
   return NextResponse.json({ pedido: pedidoActualizado }, { status: 200 });
