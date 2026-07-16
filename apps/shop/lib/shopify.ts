@@ -1,4 +1,6 @@
 import {
+  Collection,
+  CollectionLandingContent,
   Product,
   ProductLandingContent,
   ProductMetafields,
@@ -215,12 +217,71 @@ const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
+/**
+ * Handles de las 4 categorias de la tienda. Deben existir como Collections
+ * custom en Shopify Admin con estos mismos handles (autogenerados por
+ * Shopify a partir del titulo al crearlas — no son arbitrarios).
+ */
+export const COLLECTION_HANDLES = [
+  "ritual-epoch",
+  "rituales-de-piel",
+  "tendencia-milito",
+  "suplementos-y-bienestar",
+] as const;
+
+const MOCK_COLLECTIONS: Collection[] = [
+  {
+    id: "mock-collection-ritual-epoch",
+    handle: "ritual-epoch",
+    title: "Ritual Epoch",
+    description: "La linea Epoch® de Nu Skin, curada por Milito Life Shop.",
+    image: {
+      url: "/images/product-epoch-hero.jpg",
+      altText: "Ritual Epoch",
+    },
+    landingContent: null,
+    products: [],
+  },
+  {
+    id: "mock-collection-rituales-de-piel",
+    handle: "rituales-de-piel",
+    title: "Rituales de Piel",
+    description:
+      "Skincare para tu ritual diario: sueros, cremas y contornos de ojos.",
+    image: { url: "/images/lifestyle-ritual.jpg", altText: "Rituales de Piel" },
+    landingContent: null,
+    products: MOCK_PRODUCTS,
+  },
+  {
+    id: "mock-collection-tendencia-milito",
+    handle: "tendencia-milito",
+    title: "Tendencia Milito",
+    description: "Lo que mas estan pidiendo esta temporada.",
+    image: null,
+    landingContent: null,
+    products: [],
+  },
+  {
+    id: "mock-collection-suplementos-y-bienestar",
+    handle: "suplementos-y-bienestar",
+    title: "Suplementos y Bienestar",
+    description: "Bienestar desde adentro, complemento de tu ritual de piel.",
+    image: null,
+    landingContent: null,
+    products: [],
+  },
+];
+
 const METAFIELD_IDENTIFIERS_GQL = `[
   {namespace: "diana_mile", key: "nuskin_direct_url"},
   {namespace: "diana_mile", key: "nuskin_direct_precio"},
   {namespace: "diana_mile", key: "ahorro_pack2"},
   {namespace: "diana_mile", key: "ahorro_pack3"},
   {namespace: "diana_mile", key: "landing_content"}
+]`;
+
+const COLLECTION_METAFIELD_IDENTIFIERS_GQL = `[
+  {namespace: "diana_mile", key: "collection_content"}
 ]`;
 
 const PRODUCTS_QUERY = `
@@ -253,6 +314,64 @@ const PRODUCT_BY_HANDLE_QUERY = `
       images(first: 6) { edges { node { url altText } } }
       variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
       metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
+    }
+  }
+`;
+
+const COLLECTIONS_QUERY = `
+  query Collections($first: Int!) {
+    collections(first: $first) {
+      edges {
+        node {
+          id
+          handle
+          title
+          description
+          image { url altText }
+          metafields(identifiers: ${COLLECTION_METAFIELD_IDENTIFIERS_GQL}) { key value }
+          products(first: 24) {
+            edges {
+              node {
+                id
+                handle
+                title
+                description
+                priceRange { minVariantPrice { amount currencyCode } }
+                images(first: 3) { edges { node { url altText } } }
+                variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
+                metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const COLLECTION_BY_HANDLE_QUERY = `
+  query CollectionByHandle($handle: String!) {
+    collectionByHandle(handle: $handle) {
+      id
+      handle
+      title
+      description
+      image { url altText }
+      metafields(identifiers: ${COLLECTION_METAFIELD_IDENTIFIERS_GQL}) { key value }
+      products(first: 24) {
+        edges {
+          node {
+            id
+            handle
+            title
+            description
+            priceRange { minVariantPrice { amount currencyCode } }
+            images(first: 3) { edges { node { url altText } } }
+            variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
+            metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
+          }
+        }
+      }
     }
   }
 `;
@@ -386,6 +505,78 @@ export async function getProductByHandle(
   }>(PRODUCT_BY_HANDLE_QUERY, { handle });
 
   return data.productByHandle ? mapNode(data.productByHandle) : null;
+}
+
+/**
+ * El metafield `diana_mile.collection_content` sigue el mismo patron que
+ * `landing_content`: JSON tolerante a errores, null si esta vacio o mal
+ * formado (la pagina de categoria nunca debe romperse por esto).
+ */
+function parseCollectionLandingContent(
+  value: string | undefined,
+): CollectionLandingContent | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object"
+      ? (parsed as CollectionLandingContent)
+      : null;
+  } catch (error) {
+    console.warn("collection_content no es un JSON valido:", error);
+    return null;
+  }
+}
+
+function mapCollectionNode(node: {
+  id: string;
+  handle: string;
+  title: string;
+  description: string;
+  image: { url: string; altText: string | null } | null;
+  metafields: ({ key: string; value: string } | null)[];
+  products: { edges: { node: Parameters<typeof mapNode>[0] }[] };
+}): Collection {
+  const byKey = new Map(
+    node.metafields.filter(Boolean).map((m) => [m!.key, m!.value]),
+  );
+
+  return {
+    id: node.id,
+    handle: node.handle,
+    title: node.title,
+    description: node.description,
+    image: node.image,
+    landingContent: parseCollectionLandingContent(
+      byKey.get("collection_content"),
+    ),
+    products: node.products.edges.map((e) => mapNode(e.node)),
+  };
+}
+
+export async function getCollections(): Promise<Collection[]> {
+  if (!isShopifyConfigured) return MOCK_COLLECTIONS;
+
+  const data = await storefrontFetch<{
+    collections: { edges: { node: Parameters<typeof mapCollectionNode>[0] }[] };
+  }>(COLLECTIONS_QUERY, { first: 10 });
+
+  return data.collections.edges.map((e) => mapCollectionNode(e.node));
+}
+
+export async function getCollectionByHandle(
+  handle: string,
+): Promise<Collection | null> {
+  if (!isShopifyConfigured) {
+    return MOCK_COLLECTIONS.find((c) => c.handle === handle) ?? null;
+  }
+
+  const data = await storefrontFetch<{
+    collectionByHandle: Parameters<typeof mapCollectionNode>[0] | null;
+  }>(COLLECTION_BY_HANDLE_QUERY, { handle });
+
+  return data.collectionByHandle
+    ? mapCollectionNode(data.collectionByHandle)
+    : null;
 }
 
 export type CreateOrderInput = {

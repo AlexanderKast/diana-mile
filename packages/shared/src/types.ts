@@ -151,6 +151,32 @@ export type Product = {
   metafields: ProductMetafields;
 };
 
+/**
+ * Contenido editorial del hero de una categoria (metafield JSON
+ * `diana_mile.collection_content`). Igual que `ProductLandingContent`, todo
+ * es opcional: sin metafield, la pagina de categoria cae a un fallback
+ * neutral derivado del titulo/descripcion de la collection.
+ */
+export type CollectionLandingContent = {
+  /** Texto pequeno sobre el titulo, ej. "Linea Epoch® · Nu Skin". */
+  eyebrow?: string;
+  /** Promesa/subtitulo bajo el titulo de la categoria. */
+  tagline?: string;
+  /** Encabezado del bloque de storytelling. */
+  storyHeading?: string;
+  storyBody?: string;
+};
+
+export type Collection = {
+  id: string;
+  handle: string;
+  title: string;
+  description: string;
+  image: { url: string; altText: string | null } | null;
+  landingContent: CollectionLandingContent | null;
+  products: Product[];
+};
+
 export type LinktreeLinkSection =
   | "hero"
   | "store"
