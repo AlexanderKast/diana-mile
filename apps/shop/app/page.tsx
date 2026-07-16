@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getProducts } from "@/lib/shopify";
+import { getProducts, getCollections } from "@/lib/shopify";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
 import { ProductCard } from "@/components/product/ProductCard";
+import { CategoryCard } from "@/components/category/CategoryCard";
+import { DianaStory } from "@/components/site/DianaStory";
+import { SocialProofSection } from "@/components/site/SocialProofSection";
+import TrustBadges from "@/components/product/TrustBadges";
 
 export const metadata: Metadata = {
   title: "Milito Life Shop — Bienestar y Anti-edad",
@@ -84,7 +88,10 @@ const STATS = [
 ];
 
 export default async function HomePage() {
-  const products = await getProducts();
+  const [products, collections] = await Promise.all([
+    getProducts(),
+    getCollections(),
+  ]);
   const destacados = products.slice(0, 3);
 
   return (
@@ -102,7 +109,10 @@ export default async function HomePage() {
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
-          <div className="order-2 md:order-1 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
+          <div
+            className="order-2 md:order-1 animate-fade-in-up"
+            style={{ animationDelay: "100ms" }}
+          >
             <h1 className="font-display text-4xl md:text-6xl leading-tight text-carbon">
               Tu version mas luminosa
             </h1>
@@ -114,9 +124,34 @@ export default async function HomePage() {
                 <Button variant="primary">Descubrir rituales →</Button>
               </Link>
             </div>
+            <div className="mt-6">
+              <TrustBadges />
+            </div>
           </div>
         </div>
       </section>
+
+      {/* Explora por categoria */}
+      {collections.length > 0 && (
+        <section className="bg-crema">
+          <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+            <h2 className="font-display text-2xl text-carbon mb-8">
+              Explora por categoría
+            </h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+              {collections.map((collection, i) => (
+                <div
+                  key={collection.id}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <CategoryCard collection={collection} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Por que Milito Life Shop */}
       <section className="bg-blanco">
@@ -164,6 +199,8 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <DianaStory />
+
       {/* Prueba social */}
       <section className="bg-blanco">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-20 grid grid-cols-3 gap-4 text-center">
@@ -177,6 +214,8 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      <SocialProofSection />
 
       {/* CTA final */}
       <section className="seccion-joya text-carbon py-12 px-6 text-center">
