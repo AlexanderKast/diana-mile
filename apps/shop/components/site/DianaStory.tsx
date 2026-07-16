@@ -1,11 +1,12 @@
 import Image from "next/image";
 
 /**
- * Copy y foto placeholder — reemplazar antes de publicar. Faltan por
- * confirmar (no inventar): anios de experiencia, especialidad de
- * entrenamiento, certificacion, y una foto real de Diana entrenando (se
- * reviso apps/linktree/public/images/diana-profile.jpg: es foto de stock
- * de producto, no sirve). Mientras tanto se usa /images/lifestyle-ritual.jpg.
+ * Copy y foto placeholder — reemplazar antes de publicar. Confirmado:
+ * Diana tiene 35 anios. Faltan por confirmar (no inventar): especialidad
+ * de entrenamiento, certificacion, y una foto real de Diana entrenando
+ * (se reviso apps/linktree/public/images/diana-profile.jpg: es foto de
+ * stock de producto, no sirve). Mientras tanto se usa
+ * /images/lifestyle-ritual.jpg.
  */
 export function DianaStory() {
   return (
@@ -30,9 +31,9 @@ export function DianaStory() {
           </h2>
           <div className="linea-dorada w-12" />
           <p className="text-sm leading-relaxed text-carbon-suave">
-            Soy entrenadora física y personal de salud. Llevo años acompañando
-            procesos de bienestar, y esta tienda nace de lo mismo: lo que
-            entreno, lo que uso y lo que recomiendo con mi nombre.
+            Tengo 35 años y soy entrenadora física y personal de salud. Llevo
+            años acompañando procesos de bienestar, y esta tienda nace de lo
+            mismo: lo que entreno, lo que uso y lo que recomiendo con mi nombre.
           </p>
           <p className="text-sm leading-relaxed text-carbon-suave">
             No vendo promesas vacías — comparto lo que confío.
