@@ -14,8 +14,8 @@
  * Env requeridas (se leen de apps/shop/.env.local si existe, o del entorno):
  *   SHOPIFY_STORE_DOMAIN        ej. milito-life.myshopify.com
  *   SHOPIFY_ADMIN_API_TOKEN     token Admin API con write_products
- *   ANTHROPIC_API_KEY           clave de la API de Claude
- *   LANDING_MODEL (opcional)    default: claude-sonnet-5
+ *   MISTRAL_API_KEY             clave de la API de Mistral
+ *   LANDING_MODEL (opcional)    default: mistral-large-latest
  */
 
 import { readFileSync, existsSync } from "node:fs";
@@ -49,8 +49,8 @@ loadEnv(join(ROOT, ".env.local"));
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const MODEL = process.env.LANDING_MODEL || "claude-sonnet-5";
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+const MODEL = process.env.LANDING_MODEL || "mistral-large-latest";
 const API_VERSION = "2024-01";
 
 const args = process.argv.slice(2);
@@ -63,7 +63,7 @@ function requireEnv() {
   const missing = [];
   if (!STORE_DOMAIN) missing.push("SHOPIFY_STORE_DOMAIN");
   if (!ADMIN_TOKEN) missing.push("SHOPIFY_ADMIN_API_TOKEN");
-  if (!ANTHROPIC_API_KEY) missing.push("ANTHROPIC_API_KEY");
+  if (!MISTRAL_API_KEY) missing.push("MISTRAL_API_KEY");
   if (missing.length) {
     console.error("Faltan variables de entorno: " + missing.join(", "));
     process.exit(1);
@@ -189,7 +189,7 @@ async function writeMetafield(ownerId, content) {
   }
 }
 
-// --- Generacion con Claude ------------------------------------------------
+// --- Generacion con Mistral ------------------------------------------------
 const SYSTEM_PROMPT = `Eres un copywriter de marca para "Milito Life Shop", una tienda de skincare/bienestar curada por Diana Mile para el mercado colombiano, con checkout contraentrega (COD).
 
 Escribes el hero editorial de una CATEGORIA de la tienda (no de un producto individual): un texto breve que le da identidad y contexto a la categoria antes de mostrar la grilla de productos. Tono calido, directo, en segunda persona, espanol neutro colombiano. Sin promesas medicas, sin superlativos vacios, sin inventar datos del catalogo que no te dieron.
@@ -220,31 +220,29 @@ REGLAS:
 }
 
 async function generateContent(collection) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${MISTRAL_API_KEY}`,
     },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(collection) }],
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: buildUserPrompt(collection) },
+      ],
     }),
   });
 
   const json = await res.json();
   if (!res.ok) {
-    throw new Error("Anthropic API error: " + JSON.stringify(json));
+    throw new Error("Mistral API error: " + JSON.stringify(json));
   }
 
-  const text = (json.content || [])
-    .filter((b) => b.type === "text")
-    .map((b) => b.text)
-    .join("")
-    .trim();
+  const text = (json.choices?.[0]?.message?.content ?? "").trim();
 
   const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   try {
