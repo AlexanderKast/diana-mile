@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@diana-mile/shared/ui/Button";
 import {
   getClienteUser,
@@ -15,7 +16,7 @@ const ETIQUETAS_TIPO: Record<TipoContenido, string> = {
 
 export default async function ContenidoPage() {
   const cliente = await getClienteUser();
-  if (!cliente) return null;
+  if (!cliente) redirect("/cuenta/login");
 
   const haComprado = await clienteHaComprado(cliente.telefono);
 

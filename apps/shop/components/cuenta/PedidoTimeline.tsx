@@ -1,5 +1,13 @@
 import type { EstadoPedido } from "@diana-mile/shared/types";
 
+function formatFecha(fecha: string): string {
+  return new Date(fecha).toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 const PASOS: { estado: EstadoPedido; titulo: string; descripcion: string }[] = [
   {
     estado: "pendiente",
@@ -113,20 +121,22 @@ export function PedidoTimeline({
                 </p>
                 <p className="text-sm text-carbon-suave">{paso.descripcion}</p>
                 {paso.estado === "enviado" && alcanzado && fechaEnvio && (
-                  <p className="text-xs text-ceniza">Enviado el {fechaEnvio}</p>
+                  <p className="text-xs text-ceniza">
+                    Enviado el {formatFecha(fechaEnvio)}
+                  </p>
                 )}
                 {paso.estado === "enviado" &&
                   alcanzado &&
                   fechaEntregaEstimada && (
                     <p className="text-xs text-ceniza">
-                      Entrega estimada: {fechaEntregaEstimada}
+                      Entrega estimada: {formatFecha(fechaEntregaEstimada)}
                     </p>
                   )}
                 {paso.estado === "entregado" &&
                   alcanzado &&
                   fechaEntregaReal && (
                     <p className="text-xs text-ceniza">
-                      Entregado el {fechaEntregaReal}
+                      Entregado el {formatFecha(fechaEntregaReal)}
                     </p>
                   )}
               </div>

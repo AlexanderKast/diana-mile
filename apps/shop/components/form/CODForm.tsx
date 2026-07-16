@@ -30,6 +30,10 @@ type CODFormProps = {
 type SuccessState = {
   orderNumber: string;
   telefono: string;
+  /** E.164 (+573001234567), capturado en el momento del envio — no se
+   * recalcula del input despues, que puede haber cambiado mientras la
+   * peticion estaba en curso. */
+  telefonoE164: string;
 };
 
 function IconPagoMini() {
@@ -364,7 +368,11 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         );
       }
 
-      setSuccess({ orderNumber: data.orderNumber, telefono: data.telefono });
+      setSuccess({
+        orderNumber: data.orderNumber,
+        telefono: data.telefono,
+        telefonoE164: telefonoNormalizado.e164,
+      });
       markOrderCompleted();
     } catch (err) {
       setError(
@@ -381,10 +389,6 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
     const whatsappNumero = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
     const mensaje = `Hola, acabo de confirmar mi pedido ${success.orderNumber} de ${product.title} (${selectedVariant.title}).`;
     const whatsappUrl = `https://wa.me/${whatsappNumero}?text=${encodeURIComponent(mensaje)}`;
-    // success.telefono viene formateado para mostrar ("+57 300 123 4567");
-    // para vincular la suscripcion push con pedidos.telefono hace falta el
-    // E.164 sin espacios, que se recalcula del input crudo (aun en estado).
-    const telefonoE164 = normalizeColombianMobile(telefono)?.e164;
 
     return (
       <div className="animate-fade-in-up flex flex-col items-start gap-4 rounded-2xl border border-arena bg-crema p-6">
@@ -472,7 +476,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           <p className="text-sm text-ceniza">Te contactaremos pronto.</p>
         )}
 
-        <PushOptIn telefono={telefonoE164} />
+        <PushOptIn telefono={success.telefonoE164} />
 
         <a
           href="/productos"

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   getClienteUser,
   createAdminSupabaseClient,
@@ -9,7 +10,7 @@ import { PushOptIn } from "@/components/site/PushOptIn";
 
 export default async function CuentaPage() {
   const cliente = await getClienteUser();
-  if (!cliente) return null;
+  if (!cliente) redirect("/cuenta/login");
 
   const admin = createAdminSupabaseClient();
   const { data: ultimoPedido } = await admin

@@ -178,7 +178,14 @@ export default function ContenidosTable({ contenidos }: ContenidosTableProps) {
         <Button
           variant="secondary"
           className="!min-h-0 !py-2 !px-4 text-sm"
-          onClick={() => (panelAbierto ? setPanelAbierto(false) : abrirCrear())}
+          onClick={() => {
+            if (panelAbierto) {
+              setPanelAbierto(false);
+              setError(null);
+            } else {
+              abrirCrear();
+            }
+          }}
         >
           {panelAbierto ? "Cancelar" : "+ Nuevo contenido"}
         </Button>

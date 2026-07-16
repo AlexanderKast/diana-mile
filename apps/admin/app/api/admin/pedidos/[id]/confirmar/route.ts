@@ -159,7 +159,9 @@ export async function POST(
       titulo: "Tu pedido fue confirmado",
       cuerpo: `Confirmamos tu pedido de ${pedidoActualizado.producto_nombre}. Pronto lo alistamos para el envío.`,
       url: `/cuenta/pedidos/${id}`,
-    }).catch(() => {});
+    }).catch((err) =>
+      console.warn("[push] fallo al notificar confirmacion:", err),
+    );
   }
 
   return NextResponse.json({ pedido: pedidoActualizado }, { status: 200 });

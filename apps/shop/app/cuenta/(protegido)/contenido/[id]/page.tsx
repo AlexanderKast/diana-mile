@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Button } from "@diana-mile/shared/ui/Button";
 import {
   getClienteUser,
@@ -23,7 +23,7 @@ export default async function ContenidoDetallePage({
 }: ContenidoDetallePageProps) {
   const { id } = await params;
   const cliente = await getClienteUser();
-  if (!cliente) return null;
+  if (!cliente) redirect("/cuenta/login");
 
   const haComprado = await clienteHaComprado(cliente.telefono);
   if (!haComprado) {

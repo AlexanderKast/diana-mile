@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   getClienteUser,
   createAdminSupabaseClient,
@@ -17,7 +17,7 @@ export default async function PedidoDetallePage({
 }: PedidoDetallePageProps) {
   const { id } = await params;
   const cliente = await getClienteUser();
-  if (!cliente) return null;
+  if (!cliente) redirect("/cuenta/login");
 
   const admin = createAdminSupabaseClient();
 

@@ -101,7 +101,7 @@ export async function POST(
       titulo: "Tu pedido va en camino 🚚",
       cuerpo: `Enviado con ${transportadora}, guía ${numero_guia}.`,
       url: `/cuenta/pedidos/${id}`,
-    }).catch(() => {});
+    }).catch((err) => console.warn("[push] fallo al notificar envio:", err));
   }
 
   return NextResponse.json({ pedido: pedidoActualizado }, { status: 200 });

@@ -111,7 +111,7 @@ export async function POST(
       titulo: "¡Tu pedido llegó! 📦",
       cuerpo: `${pedidoActualizado.producto_nombre} fue entregado. Ya puedes ver tu contenido premium en tu cuenta.`,
       url: "/cuenta/pedidos",
-    }).catch(() => {});
+    }).catch((err) => console.warn("[push] fallo al notificar entrega:", err));
   }
 
   return NextResponse.json({ pedido: pedidoActualizado }, { status: 200 });

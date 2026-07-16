@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   getClienteUser,
   createAdminSupabaseClient,
@@ -8,7 +9,7 @@ import { formatCOP } from "@diana-mile/shared/utils";
 
 export default async function PedidosPage() {
   const cliente = await getClienteUser();
-  if (!cliente) return null;
+  if (!cliente) redirect("/cuenta/login");
 
   const admin = createAdminSupabaseClient();
   const { data: pedidos } = await admin
