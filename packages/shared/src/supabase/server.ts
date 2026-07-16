@@ -16,14 +16,14 @@ export async function createServerSupabaseClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             );
           } catch {
             // Se llama desde un Server Component sin permiso de escritura; el middleware refresca la sesion.
           }
         },
       },
-    }
+    },
   );
 }
 
@@ -31,7 +31,7 @@ export function createAdminSupabaseClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    { auth: { autoRefreshToken: false, persistSession: false } },
   );
 }
 
@@ -63,4 +63,23 @@ export async function getAdminUser() {
 
 export async function requireAdminSession(): Promise<boolean> {
   return (await getAdminUser()) !== null;
+}
+
+/**
+ * Sesion de cliente final (area /cuenta del shop, login por OTP a telefono).
+ * A diferencia de getAdminUser(), cualquier sesion valida de Supabase Auth
+ * ya es un "cliente" legitimo — la verificacion OTP en si misma es el
+ * control de acceso, no hace falta una tabla whitelist como "admins".
+ * Supabase guarda user.phone SIN "+" (ej. "573001234567"); pedidos.telefono
+ * esta en E.164 CON "+" — de ahi la normalizacion aqui.
+ */
+export async function getClienteUser() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !user.phone) return null;
+
+  return { user, telefono: `+${user.phone}` };
 }
