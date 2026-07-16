@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { MobileTabBar } from "@/components/site/MobileTabBar";
+import { InstallBanner } from "@/components/site/InstallBanner";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden">
         <div className="min-h-screen flex flex-col">
           <SiteHeader />
+          <InstallBanner />
           <div className="flex-1">{children}</div>
           <SiteFooter />
           <MobileTabBar />
