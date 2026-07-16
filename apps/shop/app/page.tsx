@@ -11,14 +11,14 @@ import { SocialProofSection } from "@/components/site/SocialProofSection";
 import TrustBadges from "@/components/product/TrustBadges";
 
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Curado por Diana Mile",
+  title: "Milito Life Shop — Probado por Diana Mile",
   description:
-    "Piel, tendencia y bienestar curados por Diana Mile. Pago contraentrega en toda Colombia, productos 100% originales.",
+    "Piel, tendencia y bienestar probados por Diana Mile. Pago contraentrega en toda Colombia, productos 100% originales.",
 };
 
 const PILARES = [
   {
-    titulo: "Curaduría personal",
+    titulo: "Probado antes que tú",
     descripcion:
       "Cada producto que ves aquí pasó primero por el ritual de Diana antes de llegar a la tienda.",
     icon: (
@@ -113,7 +113,7 @@ export default async function HomePage() {
             style={{ animationDelay: "100ms" }}
           >
             <h1 className="font-display text-4xl md:text-6xl leading-tight text-carbon">
-              Curado por Diana, hecho para ti
+              Probado por Diana, hecho para ti
             </h1>
             <p className="mt-4 text-[15px] text-carbon-suave max-w-md">
               Piel, tendencia y bienestar — todo lo que uso y recomiendo, con

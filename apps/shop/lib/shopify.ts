@@ -234,7 +234,7 @@ const MOCK_COLLECTIONS: Collection[] = [
     id: "mock-collection-ritual-epoch",
     handle: "ritual-epoch",
     title: "Nuskin",
-    description: "La linea Epoch® de Nu Skin, curada por Milito Life Shop.",
+    description: "La linea Epoch® de Nu Skin, probada por Milito Life Shop.",
     image: {
       url: "/images/product-epoch-hero.jpg",
       altText: "Nuskin",
