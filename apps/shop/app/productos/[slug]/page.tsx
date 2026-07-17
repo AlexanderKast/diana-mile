@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { getProductByHandle } from "@/lib/shopify";
 import { resolveLanding } from "@/lib/product-content";
+import { getPricingConfig } from "@/lib/pricing-server";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductBenefits } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
@@ -84,7 +85,10 @@ export async function generateMetadata({
 
 export default async function ProductoPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await getProductByHandle(slug);
+  const [product, pricing] = await Promise.all([
+    getProductByHandle(slug),
+    getPricingConfig(),
+  ]);
 
   if (!product) {
     notFound();
@@ -93,8 +97,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
   const landing = resolveLanding(product);
 
   return (
-    <OrderSheetProvider product={product}>
-      <ExitIntentPopup />
+    <OrderSheetProvider product={product} pricing={pricing}>
+      {pricing.discountPopupActivo && <ExitIntentPopup />}
       <main className="flex flex-col gap-3 pb-28">
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10 min-w-0">
           <div className="md:sticky md:top-24 md:self-start min-w-0">

@@ -6,12 +6,15 @@ import {
   ProductMetafields,
 } from "@diana-mile/shared/types";
 import { splitFullName } from "@diana-mile/shared/utils";
+import { createPublicClient } from "@diana-mile/shared/supabase/client";
 import { ENVIO_PRIORITARIO_VARIANT_ID } from "@/lib/pricing";
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const STOREFRONT_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 const ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-const API_VERSION = "2024-01";
+// 2025-01: minimo requerido para leer swatches nativos de color
+// (ProductOption.optionValues.swatch, disponible desde 2024-07).
+const API_VERSION = "2025-01";
 
 const isShopifyConfigured = Boolean(STORE_DOMAIN && STOREFRONT_TOKEN);
 
@@ -34,6 +37,7 @@ const MOCK_PRODUCTS: Product[] = [
         title: "1 unidad",
         price: "289000",
         compareAtPrice: null,
+        colorSwatch: null,
       },
     ],
     metafields: {
@@ -147,6 +151,7 @@ const MOCK_PRODUCTS: Product[] = [
         title: "1 unidad",
         price: "319000",
         compareAtPrice: null,
+        colorSwatch: null,
       },
     ],
     metafields: {
@@ -204,6 +209,7 @@ const MOCK_PRODUCTS: Product[] = [
         title: "1 unidad",
         price: "199000",
         compareAtPrice: null,
+        colorSwatch: null,
       },
     ],
     metafields: {
@@ -294,7 +300,8 @@ const PRODUCT_BY_HANDLE_QUERY = `
       description
       priceRange { minVariantPrice { amount currencyCode } }
       images(first: 6) { edges { node { url altText } } }
-      variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
+      options(first: 10) { name optionValues { name swatch { color } } }
+      variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } selectedOptions { name value } } } }
       metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
     }
   }
@@ -318,7 +325,8 @@ const COLLECTION_BY_HANDLE_QUERY = `
             description
             priceRange { minVariantPrice { amount currencyCode } }
             images(first: 3) { edges { node { url altText } } }
-            variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } } } }
+            options(first: 10) { name optionValues { name swatch { color } } }
+            variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } selectedOptions { name value } } } }
             metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
           }
         }
@@ -388,6 +396,37 @@ function parseLandingContent(
   }
 }
 
+type RawProductOption = {
+  name: string;
+  optionValues: { name: string; swatch: { color: string | null } | null }[];
+};
+
+/**
+ * Cruza el nombre/valor de la opcion "Color" seleccionada por la variante
+ * contra los swatches nativos del producto (Shopify Admin > Opciones >
+ * Color, configurados por el equipo). Devuelve null si el producto no usa
+ * una opcion de color o esa opcion no tiene swatch configurado.
+ */
+function resolveColorSwatch(
+  options: RawProductOption[],
+  selectedOptions: { name: string; value: string }[],
+): string | null {
+  const colorOption = options.find(
+    (o) => o.name.trim().toLowerCase() === "color",
+  );
+  if (!colorOption) return null;
+
+  const selected = selectedOptions.find(
+    (o) => o.name.trim().toLowerCase() === "color",
+  );
+  if (!selected) return null;
+
+  const optionValue = colorOption.optionValues.find(
+    (v) => v.name === selected.value,
+  );
+  return optionValue?.swatch?.color ?? null;
+}
+
 function mapNode(node: {
   id: string;
   handle: string;
@@ -395,6 +434,7 @@ function mapNode(node: {
   description: string;
   priceRange: { minVariantPrice: { amount: string; currencyCode: string } };
   images: { edges: { node: { url: string; altText: string | null } }[] };
+  options: RawProductOption[];
   variants: {
     edges: {
       node: {
@@ -402,6 +442,7 @@ function mapNode(node: {
         title: string;
         price: { amount: string };
         compareAtPrice: { amount: string } | null;
+        selectedOptions: { name: string; value: string }[];
       };
     }[];
   };
@@ -413,6 +454,7 @@ function mapNode(node: {
       title: e.node.title,
       price: e.node.price.amount,
       compareAtPrice: e.node.compareAtPrice?.amount ?? null,
+      colorSwatch: resolveColorSwatch(node.options, e.node.selectedOptions),
     }))
     .sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
@@ -432,6 +474,43 @@ function mapNode(node: {
       ),
     ),
   };
+}
+
+/**
+ * Aplica el color propio (tabla `variante_colores`, editable desde el
+ * constructor del admin) sobre el swatch nativo de Shopify ya resuelto en
+ * mapNode. Si Supabase falla, se devuelven los productos sin modificar —
+ * nunca debe romper el render por esto.
+ */
+async function overrideVariantColors(products: Product[]): Promise<Product[]> {
+  const variantIds = products.flatMap((p) => p.variants.map((v) => v.id));
+  if (variantIds.length === 0) return products;
+
+  try {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from("variante_colores")
+      .select("variant_id, color_hex")
+      .in("variant_id", variantIds);
+
+    if (error || !data || data.length === 0) return products;
+
+    const overrides = new Map<string, string>(
+      data.map((row) => [row.variant_id as string, row.color_hex as string]),
+    );
+
+    return products.map((product) => ({
+      ...product,
+      variants: product.variants.map((variant) =>
+        overrides.has(variant.id)
+          ? { ...variant, colorSwatch: overrides.get(variant.id)! }
+          : variant,
+      ),
+    }));
+  } catch (error) {
+    console.warn("No se pudieron aplicar los colores de variante:", error);
+    return products;
+  }
 }
 
 /**
@@ -465,7 +544,12 @@ export async function getProductByHandle(
     productByHandle: Parameters<typeof mapNode>[0] | null;
   }>(PRODUCT_BY_HANDLE_QUERY, { handle });
 
-  return data.productByHandle ? mapNode(data.productByHandle) : null;
+  if (!data.productByHandle) return null;
+
+  const [product] = await overrideVariantColors([
+    mapNode(data.productByHandle),
+  ]);
+  return product;
 }
 
 /**
@@ -539,9 +623,11 @@ export async function getCollectionByHandle(
     collectionByHandle: Parameters<typeof mapCollectionNode>[0] | null;
   }>(COLLECTION_BY_HANDLE_QUERY, { handle });
 
-  return data.collectionByHandle
-    ? mapCollectionNode(data.collectionByHandle)
-    : null;
+  if (!data.collectionByHandle) return null;
+
+  const collection = mapCollectionNode(data.collectionByHandle);
+  const products = await overrideVariantColors(collection.products);
+  return { ...collection, products };
 }
 
 export type CreateOrderInput = {

@@ -42,11 +42,19 @@ function getVariantSubtitle(variant: ProductVariant, product: Product) {
   }
 
   if (pack === 2 && product.metafields.ahorroPack2) {
-    return <span className="text-xs text-ceniza">{product.metafields.ahorroPack2}</span>;
+    return (
+      <span className="text-xs text-ceniza">
+        {product.metafields.ahorroPack2}
+      </span>
+    );
   }
 
   if (pack === 3 && product.metafields.ahorroPack3) {
-    return <span className="text-xs text-ceniza">{product.metafields.ahorroPack3}</span>;
+    return (
+      <span className="text-xs text-ceniza">
+        {product.metafields.ahorroPack3}
+      </span>
+    );
   }
 
   return null;
@@ -63,7 +71,13 @@ type VariantSelectorProps = {
 };
 
 export function VariantSelector({ compact = false }: VariantSelectorProps) {
-  const { product, selectedVariantId, selectedIsNuskin, selectVariant, selectNuskin } = useOrderSheet();
+  const {
+    product,
+    selectedVariantId,
+    selectedIsNuskin,
+    selectVariant,
+    selectNuskin,
+  } = useOrderSheet();
 
   const hasNuskinDirect = Boolean(product.metafields.nuskinDirectUrl);
 
@@ -71,8 +85,11 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
   // luego Pack 2, luego 1 unidad — asi los packs chicos parecen mas baratos
   // en comparacion, en vez de ordenar por el ID/precio ascendente de Shopify.
   const orderedVariants = useMemo(
-    () => [...product.variants].sort((a, b) => parseFloat(b.price) - parseFloat(a.price)),
-    [product.variants]
+    () =>
+      [...product.variants].sort(
+        (a, b) => parseFloat(b.price) - parseFloat(a.price),
+      ),
+    [product.variants],
   );
 
   const radioIds = useMemo(() => {
@@ -92,7 +109,11 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
     radioRefs.current.get(id)?.focus();
   }
 
-  function handleCardKeyDown(e: KeyboardEvent<HTMLDivElement>, id: string, onSelect: () => void) {
+  function handleCardKeyDown(
+    e: KeyboardEvent<HTMLDivElement>,
+    id: string,
+    onSelect: () => void,
+  ) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onSelect();
@@ -102,8 +123,10 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
     if (["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"].includes(e.key)) {
       e.preventDefault();
       const currentIndex = radioIds.indexOf(id);
-      const direction = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1;
-      const nextIndex = (currentIndex + direction + radioIds.length) % radioIds.length;
+      const direction =
+        e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1;
+      const nextIndex =
+        (currentIndex + direction + radioIds.length) % radioIds.length;
       selectById(radioIds[nextIndex]);
     }
   }
@@ -113,12 +136,23 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
 
   return (
     <div>
-      {!compact && <h2 className="font-display text-lg text-carbon mb-3">Elige tu ritual</h2>}
+      {!compact && (
+        <h2 className="font-display text-lg text-carbon mb-3">
+          Elige tu ritual
+        </h2>
+      )}
 
-      <div role="radiogroup" aria-label="Elige tu ritual" className={cx("flex flex-col", gap)}>
+      <div
+        role="radiogroup"
+        aria-label="Elige tu ritual"
+        className={cx("flex flex-col", gap)}
+      >
         {orderedVariants.map((variant) => {
-          const isSelected = !selectedIsNuskin && variant.id === selectedVariantId;
-          const subtitle = !compact ? getVariantSubtitle(variant, product) : null;
+          const isSelected =
+            !selectedIsNuskin && variant.id === selectedVariantId;
+          const subtitle = !compact
+            ? getVariantSubtitle(variant, product)
+            : null;
           const pack = getPackSize(variant.title);
           const isMejorValor = pack === 3;
           const isPopular = pack === 2;
@@ -135,12 +169,17 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
               aria-checked={isSelected}
               tabIndex={variant.id === currentRadioId ? 0 : -1}
               onClick={() => selectVariant(variant.id)}
-              onKeyDown={(e) => handleCardKeyDown(e, variant.id, () => selectVariant(variant.id))}
+              onKeyDown={(e) =>
+                handleCardKeyDown(e, variant.id, () =>
+                  selectVariant(variant.id),
+                )
+              }
               className={cx(
                 "relative flex cursor-pointer flex-col gap-1.5 rounded-2xl border-[1.5px] transition-colors",
                 cardPadding,
                 isMejorValor ? "border-morado" : "border-arena",
-                isSelected && (isMejorValor ? "bg-lila-suave" : "border-morado bg-crema")
+                isSelected &&
+                  (isMejorValor ? "bg-lila-suave" : "border-morado bg-crema"),
               )}
             >
               {isMejorValor && !compact && (
@@ -163,9 +202,20 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-arena">
-                    {isSelected && <span className="h-2.5 w-2.5 rounded-full bg-morado" />}
+                    {isSelected && (
+                      <span className="h-2.5 w-2.5 rounded-full bg-morado" />
+                    )}
                   </span>
-                  <span className="text-sm font-medium text-carbon">{variant.title}</span>
+                  {variant.colorSwatch && (
+                    <span
+                      className="h-4 w-4 shrink-0 rounded-full border border-arena"
+                      style={{ backgroundColor: variant.colorSwatch }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="text-sm font-medium text-carbon">
+                    {variant.title}
+                  </span>
                 </div>
                 <span className="flex items-baseline gap-1.5">
                   {variant.compareAtPrice && (
@@ -176,7 +226,7 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
                   <span
                     className={cx(
                       "font-display font-semibold text-dorado-oscuro",
-                      compact ? "text-lg" : "text-xl"
+                      compact ? "text-lg" : "text-xl",
                     )}
                   >
                     {formatCOP(variant.price)}
@@ -213,13 +263,15 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
             className={cx(
               "flex cursor-pointer flex-col gap-1.5 rounded-2xl border-[1.5px] border-arena transition-colors",
               cardPadding,
-              selectedIsNuskin && "border-morado bg-crema"
+              selectedIsNuskin && "border-morado bg-crema",
             )}
           >
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-arena">
-                  {selectedIsNuskin && <span className="h-2.5 w-2.5 rounded-full bg-morado" />}
+                  {selectedIsNuskin && (
+                    <span className="h-2.5 w-2.5 rounded-full bg-morado" />
+                  )}
                 </span>
                 <span className="flex items-center gap-1.5 text-sm font-medium text-carbon">
                   Compra directo en Nu Skin
@@ -234,7 +286,9 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
             </div>
             {!compact && (
               <div className="pl-8">
-                <span className="text-xs text-ceniza">Precio distribuidora · Acumulas puntos Nu Skin</span>
+                <span className="text-xs text-ceniza">
+                  Precio distribuidora · Acumulas puntos Nu Skin
+                </span>
               </div>
             )}
           </div>

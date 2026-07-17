@@ -12,11 +12,6 @@ import {
   CIUDADES_POR_DEPARTAMENTO,
   getBarriosSugeridos,
 } from "@/lib/colombia";
-import {
-  DISCOUNT_PERCENT,
-  ENVIO_PRIORITARIO_LABEL,
-  ENVIO_PRIORITARIO_PRECIO,
-} from "@/lib/pricing";
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 import { PushOptIn } from "@/components/site/PushOptIn";
 
@@ -167,7 +162,7 @@ const MINI_BADGES = [
 ];
 
 export function CODForm({ product, selectedVariant }: CODFormProps) {
-  const { discountApplied, markOrderCompleted } = useOrderSheet();
+  const { discountApplied, markOrderCompleted, pricing } = useOrderSheet();
   const [step, setStep] = useState<1 | 2>(1);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -192,11 +187,11 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
 
   const precioBase = parseFloat(selectedVariant.price);
   const precioConDescuento = discountApplied
-    ? precioBase * (1 - DISCOUNT_PERCENT / 100)
+    ? precioBase * (1 - pricing.discountPercent / 100)
     : precioBase;
   const precioTotal =
     precioConDescuento +
-    (envioPrioritario ? parseFloat(ENVIO_PRIORITARIO_PRECIO) : 0);
+    (envioPrioritario ? parseFloat(pricing.envioPrioritarioPrecio) : 0);
 
   const ciudadesSugeridas = departamento
     ? (CIUDADES_POR_DEPARTAMENTO[departamento] ?? [])
@@ -688,8 +683,8 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
                 </span>
               </span>
               <span className="text-sm font-medium text-carbon">
-                Agrega {ENVIO_PRIORITARIO_LABEL} por solo{" "}
-                {formatCOP(ENVIO_PRIORITARIO_PRECIO)}
+                Agrega {pricing.envioPrioritarioLabel} por solo{" "}
+                {formatCOP(pricing.envioPrioritarioPrecio)}
               </span>
               <span className="text-xs text-carbon-suave">
                 Tu pedido se envía más rápido que los demás.
@@ -728,7 +723,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
             <p>
               ✓ Envío a {ciudad}, {departamento}
             </p>
-            {envioPrioritario && <p>✓ {ENVIO_PRIORITARIO_LABEL}</p>}
+            {envioPrioritario && <p>✓ {pricing.envioPrioritarioLabel}</p>}
             {discountApplied && <p>✓ 10% de descuento aplicado</p>}
             <p>✓ Pago al recibir tu pedido</p>
           </div>

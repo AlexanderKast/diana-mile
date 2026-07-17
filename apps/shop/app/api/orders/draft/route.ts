@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { upsertCheckoutDraftOrder, getProductByHandle } from "@/lib/shopify";
 import { normalizeColombianMobile } from "@/lib/phone";
-import { DISCOUNT_PERCENT } from "@/lib/pricing";
+import { getPricingConfig } from "@/lib/pricing-server";
 
 /**
  * Paso "Realizar pedido": crea o actualiza (si viene draftOrderId) el
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { mensaje: "Faltan campos requeridos para procesar el pedido." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (!telefonoNormalizado) {
       return NextResponse.json(
         { mensaje: "Ingresa un celular colombiano valido de 10 digitos." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,18 +60,24 @@ export async function POST(request: NextRequest) {
     if (!product || !variant) {
       return NextResponse.json(
         { mensaje: "El producto o la variante seleccionada ya no existe." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const lat =
-      ubicacion && typeof ubicacion.lat === "number" && Number.isFinite(ubicacion.lat)
+      ubicacion &&
+      typeof ubicacion.lat === "number" &&
+      Number.isFinite(ubicacion.lat)
         ? ubicacion.lat
         : null;
     const lng =
-      ubicacion && typeof ubicacion.lng === "number" && Number.isFinite(ubicacion.lng)
+      ubicacion &&
+      typeof ubicacion.lng === "number" &&
+      Number.isFinite(ubicacion.lng)
         ? ubicacion.lng
         : null;
+
+    const pricing = await getPricingConfig();
 
     const result = await upsertCheckoutDraftOrder(
       {
@@ -86,25 +92,30 @@ export async function POST(request: NextRequest) {
         ciudad,
         lat,
         lng,
-        discountPercent: descuentoAplicado ? DISCOUNT_PERCENT : undefined,
+        discountPercent: descuentoAplicado
+          ? pricing.discountPercent
+          : undefined,
         envioPrioritario: Boolean(envioPrioritario),
       },
-      draftOrderId || null
+      draftOrderId || null,
     );
 
     if (!result) {
       return NextResponse.json(
         { mensaje: "No pudimos guardar tu pedido. Intenta de nuevo." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json({ draftOrderId: result.draftOrderId });
   } catch (error) {
-    console.error("Error al crear/actualizar el draft order del pedido:", error);
+    console.error(
+      "Error al crear/actualizar el draft order del pedido:",
+      error,
+    );
     return NextResponse.json(
       { mensaje: "No pudimos guardar tu pedido. Intenta de nuevo." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

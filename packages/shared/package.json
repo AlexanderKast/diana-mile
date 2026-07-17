@@ -5,6 +5,7 @@
   "exports": {
     "./utils": "./src/utils.ts",
     "./types": "./src/types.ts",
+    "./landing-ai": "./src/landing-ai.js",
     "./ui/*": "./src/ui/*.tsx",
     "./supabase/client": "./src/supabase/client.ts",
     "./supabase/server": "./src/supabase/server.ts"

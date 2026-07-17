@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { completeDraftOrder, deleteDraftOrder, getProductByHandle } from "@/lib/shopify";
+import {
+  completeDraftOrder,
+  deleteDraftOrder,
+  getProductByHandle,
+} from "@/lib/shopify";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { normalizeColombianMobile } from "@/lib/phone";
-import { DISCOUNT_PERCENT, ENVIO_PRIORITARIO_PRECIO } from "@/lib/pricing";
+import { getPricingConfig } from "@/lib/pricing-server";
 
 /**
  * Paso "Confirmar pedido": convierte el draft order (creado/actualizado en
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (!draftOrderId || !nombre || !telefono || !variantId || !slug) {
       return NextResponse.json(
         { mensaje: "Faltan datos para confirmar el pedido." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!telefonoNormalizado) {
       return NextResponse.json(
         { mensaje: "Ingresa un celular colombiano valido de 10 digitos." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (!product || !variant) {
       return NextResponse.json(
         { mensaje: "El producto o la variante seleccionada ya no existe." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,19 +65,26 @@ export async function POST(request: NextRequest) {
       const nombreProducto = `${product.title} — ${variant.title}`;
 
       const lat =
-        ubicacion && typeof ubicacion.lat === "number" && Number.isFinite(ubicacion.lat)
+        ubicacion &&
+        typeof ubicacion.lat === "number" &&
+        Number.isFinite(ubicacion.lat)
           ? ubicacion.lat
           : null;
       const lng =
-        ubicacion && typeof ubicacion.lng === "number" && Number.isFinite(ubicacion.lng)
+        ubicacion &&
+        typeof ubicacion.lng === "number" &&
+        Number.isFinite(ubicacion.lng)
           ? ubicacion.lng
           : null;
 
+      const pricing = await getPricingConfig();
       const precioBase = parseFloat(variant.price);
       const precioConDescuento = descuentoAplicado
-        ? precioBase * (1 - DISCOUNT_PERCENT / 100)
+        ? precioBase * (1 - pricing.discountPercent / 100)
         : precioBase;
-      const precioTotal = precioConDescuento + (envioPrioritario ? parseFloat(ENVIO_PRIORITARIO_PRECIO) : 0);
+      const precioTotal =
+        precioConDescuento +
+        (envioPrioritario ? parseFloat(pricing.envioPrioritarioPrecio) : 0);
 
       const { error: insertError } = await supabase.from("pedidos").insert({
         shopify_order_id: orderId,
@@ -95,7 +106,10 @@ export async function POST(request: NextRequest) {
       });
 
       if (insertError) {
-        console.error("Error al guardar el pedido en Supabase:", insertError.message);
+        console.error(
+          "Error al guardar el pedido en Supabase:",
+          insertError.message,
+        );
       }
 
       // El pedido se completo: si habia quedado un carrito abandonado con
@@ -110,7 +124,10 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (carritoAbandonado) {
-        await supabase.from("leads").update({ convertido: true }).eq("id", carritoAbandonado.id);
+        await supabase
+          .from("leads")
+          .update({ convertido: true })
+          .eq("id", carritoAbandonado.id);
 
         if (carritoAbandonado.shopify_draft_order_id) {
           await deleteDraftOrder(carritoAbandonado.shopify_draft_order_id);
@@ -120,12 +137,15 @@ export async function POST(request: NextRequest) {
       console.error("Error al sincronizar el pedido con Supabase:", syncError);
     }
 
-    return NextResponse.json({ orderNumber, telefono: telefonoNormalizado.display });
+    return NextResponse.json({
+      orderNumber,
+      telefono: telefonoNormalizado.display,
+    });
   } catch (error) {
     console.error("Error al confirmar el pedido:", error);
     return NextResponse.json(
       { mensaje: "No pudimos confirmar tu pedido. Intenta de nuevo." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

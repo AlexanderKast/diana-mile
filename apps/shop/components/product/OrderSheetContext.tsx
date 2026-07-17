@@ -1,15 +1,42 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Product, ProductVariant } from "@diana-mile/shared/types";
-import { DISCOUNT_PERCENT } from "@/lib/pricing";
+import {
+  DISCOUNT_PERCENT,
+  ENVIO_PRIORITARIO_LABEL,
+  ENVIO_PRIORITARIO_PRECIO,
+} from "@/lib/pricing";
 
 export { DISCOUNT_PERCENT };
 const DISCOUNT_DURATION_MS = 5 * 60 * 1000;
 const DISCOUNT_STORAGE_KEY = "milito_descuento_expira";
 
+export type OrderSheetPricing = {
+  discountPercent: number;
+  discountPopupActivo: boolean;
+  envioPrioritarioPrecio: string;
+  envioPrioritarioLabel: string;
+};
+
+const PRICING_DEFAULT: OrderSheetPricing = {
+  discountPercent: DISCOUNT_PERCENT,
+  discountPopupActivo: true,
+  envioPrioritarioPrecio: ENVIO_PRIORITARIO_PRECIO,
+  envioPrioritarioLabel: ENVIO_PRIORITARIO_LABEL,
+};
+
 type OrderSheetContextValue = {
   product: Product;
+  pricing: OrderSheetPricing;
   isOpen: boolean;
   selectedVariantId: string;
   selectedIsNuskin: boolean;
@@ -28,13 +55,17 @@ const OrderSheetContext = createContext<OrderSheetContextValue | null>(null);
 
 export function OrderSheetProvider({
   product,
+  pricing = PRICING_DEFAULT,
   children,
 }: {
   product: Product;
+  pricing?: OrderSheetPricing;
   children: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedVariantId, setSelectedVariantId] = useState(product.variants[0]?.id ?? "");
+  const [selectedVariantId, setSelectedVariantId] = useState(
+    product.variants[0]?.id ?? "",
+  );
   const [selectedIsNuskin, setSelectedIsNuskin] = useState(false);
   const [discountApplied, setDiscountApplied] = useState(false);
   const [orderCompleted, setOrderCompleted] = useState(false);
@@ -49,7 +80,10 @@ export function OrderSheetProvider({
     const remaining = Number(expiresAtRaw) - Date.now();
     if (remaining > 0) {
       setDiscountApplied(true);
-      discountTimeoutRef.current = setTimeout(() => setDiscountApplied(false), remaining);
+      discountTimeoutRef.current = setTimeout(
+        () => setDiscountApplied(false),
+        remaining,
+      );
     } else {
       sessionStorage.removeItem(DISCOUNT_STORAGE_KEY);
     }
@@ -65,10 +99,15 @@ export function OrderSheetProvider({
     setDiscountApplied(true);
 
     if (discountTimeoutRef.current) clearTimeout(discountTimeoutRef.current);
-    discountTimeoutRef.current = setTimeout(() => setDiscountApplied(false), DISCOUNT_DURATION_MS);
+    discountTimeoutRef.current = setTimeout(
+      () => setDiscountApplied(false),
+      DISCOUNT_DURATION_MS,
+    );
   }, []);
 
-  const selectedVariant = product.variants.find((v) => v.id === selectedVariantId) ?? product.variants[0];
+  const selectedVariant =
+    product.variants.find((v) => v.id === selectedVariantId) ??
+    product.variants[0];
 
   const selectVariant = useCallback((variantId: string) => {
     setSelectedVariantId(variantId);
@@ -79,17 +118,20 @@ export function OrderSheetProvider({
     setSelectedIsNuskin(true);
   }, []);
 
-  const openOrderSheet = useCallback((variantId?: string) => {
-    if (variantId) selectVariant(variantId);
-    setIsOpen(true);
+  const openOrderSheet = useCallback(
+    (variantId?: string) => {
+      if (variantId) selectVariant(variantId);
+      setIsOpen(true);
 
-    if (typeof window !== "undefined" && window.innerWidth >= 768) {
-      document.getElementById("order-form-desktop")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
-  }, [selectVariant]);
+      if (typeof window !== "undefined" && window.innerWidth >= 768) {
+        document.getElementById("order-form-desktop")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    },
+    [selectVariant],
+  );
 
   const closeOrderSheet = useCallback(() => {
     setIsOpen(false);
@@ -102,6 +144,7 @@ export function OrderSheetProvider({
   const value = useMemo<OrderSheetContextValue>(
     () => ({
       product,
+      pricing,
       isOpen,
       selectedVariantId,
       selectedIsNuskin,
@@ -117,6 +160,7 @@ export function OrderSheetProvider({
     }),
     [
       product,
+      pricing,
       isOpen,
       selectedVariantId,
       selectedIsNuskin,
@@ -129,10 +173,14 @@ export function OrderSheetProvider({
       selectNuskin,
       orderCompleted,
       markOrderCompleted,
-    ]
+    ],
   );
 
-  return <OrderSheetContext.Provider value={value}>{children}</OrderSheetContext.Provider>;
+  return (
+    <OrderSheetContext.Provider value={value}>
+      {children}
+    </OrderSheetContext.Provider>
+  );
 }
 
 export function useOrderSheet(): OrderSheetContextValue {

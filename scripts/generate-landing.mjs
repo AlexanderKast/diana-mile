@@ -23,6 +23,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { generateProductLandingContent } from "../packages/shared/src/landing-ai.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -203,118 +204,6 @@ async function writeMetafield(ownerId, content) {
   }
 }
 
-// --- Generacion con Mistral ------------------------------------------------
-const SYSTEM_PROMPT = `Eres un copywriter de respuesta directa experto en e-commerce de skincare/belleza para el mercado colombiano, especializado en landing pages de venta contraentrega (COD) de alta conversion y en psicologia de la persuasion (Cialdini, economia conductual, social funnels).
-
-Tu copy aplica deliberadamente gatillos mentales y sesgos cognitivos, cada uno en la seccion de la landing donde mas convierte:
-- ANCLAJE: el tagline y los beneficios anclan el valor antes de que el lector procese el precio.
-- AVERSION A LA PERDIDA: "withoutRitual" agita el costo de NO actuar (columna "sin") antes de mostrar la solucion (columna "con"). Es la seccion PAS (problema-agitacion-solucion) del funnel.
-- AUTORIDAD + CONCRECION: en "benefits", el campo "ciencia" explica el mecanismo con datos concretos y especificos (numeros, nombres de activos reales) — la especificidad genera credibilidad.
-- STORYTELLING: "ingredientStory" cuenta el origen del ingrediente estrella como narrativa (efecto de transporte narrativo).
-- MICRO-COMPROMISO (consistencia): "skinType" hace que el lector se auto-seleccione; cada opcion responde con un mensaje que confirma que el producto es para el/ella (efecto de personalizacion).
-- VISUALIZACION DEL YO FUTURO (efecto dotacion anticipada): "resultsTimeline" hace que el lector se imagine ya usando el producto, semana a semana, con lenguaje sensorial en segunda persona.
-- PRUEBA SOCIAL: "ugc" y "testimonials" muestran patrones de uso de otras personas. PROHIBIDO inventar personas con nombre, cifras de ventas o resenas falsas: describe formas de uso y experiencias del MODELO de compra (contraentrega, WhatsApp) que son verificables.
-- COMPARACION ASIMETRICA: "comparison" enmarca la oferta contra la alternativa generica (nosotros vs otros) para facilitar la decision (efecto de contraste).
-- REVERSION DE RIESGO: el pago contraentrega ES el gatillo estrella del COD — "no pagas hasta tenerlo en tus manos" debe aparecer en tagline o FAQs y en el cierre.
-- RECIPROCIDAD: "freeGuide" regala valor real antes de pedir la compra.
-- URGENCIA/ESCASEZ honesta: solo la que el negocio puede cumplir (despacho 24-72h, corte de despacho diario). PROHIBIDO stock falso o contadores inventados.
-- FAQS = MANEJO DE OBJECIONES: cada FAQ neutraliza una objecion real de compra (desconfianza, tiempo de envio, tipo de piel, garantia), ordenadas de la objecion mas fuerte a la mas debil.
-
-La ESTRUCTURA de la landing sigue un social funnel: hook emocional (eyebrow+tagline) → micro-compromiso → agitacion del problema → solucion con mecanismo → prueba social → proyeccion de resultados → justificacion racional → reversion de riesgo → regalo → objeciones → cierre con urgencia honesta.
-
-Escribes en espanol neutro colombiano, calido, directo, en segunda persona ("tu piel", "vas a notar"). Sin promesas medicas, sin certificaciones inventadas, sin superlativos vacios. Adaptas todo al producto real: si es un serum hablas de serum, si es crema de crema. Si recibes un brief de investigacion, usas SU lenguaje de audiencia (las palabras exactas con las que la clienta describe su dolor) en hooks y beneficios.
-
-Respondes SIEMPRE y UNICAMENTE con un objeto JSON valido, sin texto adicional ni bloques de codigo markdown.`;
-
-function buildUserPrompt(product) {
-  const briefBlock = BRIEF
-    ? `
-BRIEF DE INVESTIGACION (usa este lenguaje de audiencia, dolores, deseos y angulos — tiene prioridad sobre suposiciones):
-"""
-${BRIEF.trim()}
-"""
-`
-    : "";
-
-  return `Genera el contenido de la landing para este producto de la tienda "Milito Life Shop".
-
-PRODUCTO:
-- Titulo: ${product.title}
-- Descripcion: ${product.description || "(sin descripcion)"}
-- Tipo: ${product.productType || "(no especificado)"}
-- Tags: ${(product.tags || []).join(", ") || "(ninguno)"}
-${briefBlock}
-
-Devuelve un JSON con EXACTAMENTE esta forma (todos los campos son opcionales, pero llena la mayor cantidad posible con contenido especifico y creible para ESTE producto):
-
-{
-  "eyebrow": "texto corto sobre el titulo, ej. 'Ritual Milito Life Shop · Anti-edad'",
-  "tagline": "promesa/subtitulo de una linea",
-  "benefitsHeading": "titulo de la seccion de beneficios",
-  "benefits": [
-    { "icon": "gota|mineral|hoja|sol|escudo|planeta", "title": "...", "description": "...", "ciencia": "(opcional) por que funciona" }
-  ],
-  "ingredientStory": { "title": "...", "body": "historia del ingrediente estrella (2-4 frases)" },
-  "ingredients": { "inci": "lista INCI si se conoce, si no omite este bloque", "freeFrom": "Sin parabenos · Sin sulfatos ..." },
-  "skinType": { "question": "¿Cual es tu tipo de piel?", "options": [ { "id": "normal", "label": "...", "message": "..." } ] },
-  "usageHeading": "titulo de la seccion de pasos",
-  "usageSteps": [ { "numero": "1", "titulo": "...", "descripcion": "..." } ],
-  "withoutRitual": { "title": "...", "conLabel": "Con el ${product.title}", "sin": ["..."], "con": ["..."] },
-  "resultsHeading": "titulo de la linea de tiempo",
-  "resultsTimeline": [ { "momento": "Semana 1", "titulo": "...", "descripcion": "..." } ],
-  "testimonialsHeading": "titulo de la seccion de experiencias",
-  "testimonials": [ { "title": "...", "text": "..." } ],
-  "comparison": { "title": "...", "rows": ["fila 1", "fila 2"] },
-  "faqs": [ { "question": "...", "answer": "..." } ],
-  "ugcHeading": "...", "ugcSubheading": "...",
-  "ugc": [ { "emoji": "🌙", "title": "...", "text": "..." } ],
-  "freeGuide": { "title": "...", "description": "...", "sections": [ { "title": "...", "body": "..." } ] },
-  "closingHeading": "titulo del cierre final",
-  "authenticity": false
-}
-
-REGLAS:
-- 3 a 6 beneficios. 3 pasos de uso (sin campo imagen). 4 a 6 FAQs (incluye siempre pago contraentrega, tiempo de envio y garantia). 3 a 4 etapas en resultsTimeline. 3 experiencias en testimonials.
-- Los "icon" solo pueden ser: gota, mineral, hoja, sol, escudo, planeta.
-- Omite "ingredients.inci", "ingredientStory" o "skinType" si no aplican al producto (ej. producto no facial). No inventes ingredientes.
-- "authenticity": pon true solo si el titulo/tags indican que es un producto de una marca reconocida revendida (ej. Nu Skin, Epoch); si no, false.
-- Todo el texto en espanol. No uses markdown.`;
-}
-
-async function generateContent(product) {
-  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${MISTRAL_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 4096,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: buildUserPrompt(product) },
-      ],
-    }),
-  });
-
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error("Mistral API error: " + JSON.stringify(json));
-  }
-
-  const text = (json.choices?.[0]?.message?.content ?? "").trim();
-
-  // Por si el modelo envuelve en ```json ... ```
-  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    throw new Error("La respuesta del modelo no es JSON valido:\n" + text.slice(0, 500));
-  }
-}
-
 async function processOne(product) {
   const hasContent = Boolean(product.metafield?.value);
   if (hasContent && !FORCE) {
@@ -322,7 +211,11 @@ async function processOne(product) {
     return;
   }
   console.log(`✨ Generando: ${product.title} ...`);
-  const content = await generateContent(product);
+  const content = await generateProductLandingContent(product, {
+    apiKey: MISTRAL_API_KEY,
+    model: MODEL,
+    brief: BRIEF,
+  });
 
   if (DRY) {
     console.log(JSON.stringify(content, null, 2));

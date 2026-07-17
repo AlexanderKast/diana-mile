@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { MobileTabBar } from "@/components/site/MobileTabBar";
 import { InstallBanner } from "@/components/site/InstallBanner";
+import { getPricingConfig } from "@/lib/pricing-server";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -28,11 +29,13 @@ export const viewport: Viewport = {
   themeColor: "#FAFAF8",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pricing = await getPricingConfig();
+
   return (
     <html
       lang="es"
@@ -42,7 +45,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden">
         <div className="min-h-screen flex flex-col">
           <SiteHeader />
-          <InstallBanner />
+          <InstallBanner activo={pricing.pwaBannerActivo} />
           <div className="flex-1">{children}</div>
           <SiteFooter />
           <MobileTabBar />

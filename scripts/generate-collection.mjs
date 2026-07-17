@@ -21,6 +21,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { generateCollectionLandingContent } from "../packages/shared/src/landing-ai.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -189,73 +190,6 @@ async function writeMetafield(ownerId, content) {
   }
 }
 
-// --- Generacion con Mistral ------------------------------------------------
-const SYSTEM_PROMPT = `Eres un copywriter de marca para "Milito Life Shop", una tienda de skincare/bienestar probada y recomendada por Diana Mile para el mercado colombiano, con checkout contraentrega (COD).
-
-IMPORTANTE: nunca uses las palabras "curado", "curaduria" ni "curada" — usa "probado por Diana", "elegido por Diana" o equivalentes.
-
-Escribes el hero editorial de una CATEGORIA de la tienda (no de un producto individual): un texto breve que le da identidad y contexto a la categoria antes de mostrar la grilla de productos. Tono calido, directo, en segunda persona, espanol neutro colombiano. Sin promesas medicas, sin superlativos vacios, sin inventar datos del catalogo que no te dieron.
-
-Respondes SIEMPRE y UNICAMENTE con un objeto JSON valido, sin texto adicional ni bloques de codigo markdown.`;
-
-function buildUserPrompt(collection) {
-  return `Genera el contenido editorial del hero para esta categoria de "Milito Life Shop".
-
-CATEGORIA:
-- Titulo: ${collection.title}
-- Descripcion actual: ${collection.description || "(sin descripcion)"}
-- Cantidad de productos: ${collection.productsCount?.count ?? "desconocida"}
-
-Devuelve un JSON con EXACTAMENTE esta forma (todos los campos opcionales, pero llena la mayor cantidad posible):
-
-{
-  "eyebrow": "texto corto sobre el titulo, ej. 'Probado por Diana · Milito Life Shop'",
-  "tagline": "promesa/subtitulo de una linea para esta categoria",
-  "storyHeading": "titulo corto de un bloque de storytelling debajo del hero (opcional)",
-  "storyBody": "2-4 frases de storytelling sobre por que esta categoria existe o que la hace especial (opcional)"
-}
-
-REGLAS:
-- No inventes ingredientes, cifras de ventas ni resenas.
-- Si la categoria es "Nuskin", puedes mencionar que es la linea Epoch de Nu Skin, probada por Milito Life Shop.
-- Todo el texto en espanol. No uses markdown.`;
-}
-
-async function generateContent(collection) {
-  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${MISTRAL_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1024,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: buildUserPrompt(collection) },
-      ],
-    }),
-  });
-
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error("Mistral API error: " + JSON.stringify(json));
-  }
-
-  const text = (json.choices?.[0]?.message?.content ?? "").trim();
-
-  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    throw new Error(
-      "La respuesta del modelo no es JSON valido:\n" + text.slice(0, 500),
-    );
-  }
-}
-
 async function processOne(collection) {
   const hasContent = Boolean(collection.metafield?.value);
   if (hasContent && !FORCE) {
@@ -265,7 +199,14 @@ async function processOne(collection) {
     return;
   }
   console.log(`✨ Generando: ${collection.title} ...`);
-  const content = await generateContent(collection);
+  const content = await generateCollectionLandingContent(
+    {
+      title: collection.title,
+      description: collection.description,
+      productCount: collection.productsCount?.count ?? null,
+    },
+    { apiKey: MISTRAL_API_KEY, model: MODEL },
+  );
 
   if (DRY) {
     console.log(JSON.stringify(content, null, 2));

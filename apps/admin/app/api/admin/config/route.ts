@@ -12,6 +12,11 @@ const CLAVES_PERMITIDAS = new Set([
   "linktree_subtitulo",
   "linktree_foto_url",
   "whatsapp_numero",
+  "descuento_popup_porcentaje",
+  "descuento_popup_activo",
+  "envio_prioritario_precio",
+  "envio_prioritario_label",
+  "pwa_banner_activo",
 ]);
 
 export async function GET() {

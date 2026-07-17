@@ -46,6 +46,13 @@ export default function ConfiguracionPage() {
   const [linktreeSubtitulo, setLinktreeSubtitulo] = useState("");
   const [linktreeFotoUrl, setLinktreeFotoUrl] = useState("");
   const [links, setLinks] = useState<LinktreeLink[]>([]);
+  const [descuentoPorcentaje, setDescuentoPorcentaje] = useState("10");
+  const [descuentoActivo, setDescuentoActivo] = useState(true);
+  const [envioPrecio, setEnvioPrecio] = useState("12000");
+  const [envioLabel, setEnvioLabel] = useState(
+    "Envío Prioritario + Seguro Adicional",
+  );
+  const [pwaBannerActivo, setPwaBannerActivo] = useState(true);
   const [showToast, setShowToast] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,11 +76,33 @@ export default function ConfiguracionPage() {
           (fila) => fila.clave === "linktree_foto_url",
         );
         const linksRaw = filas.find((fila) => fila.clave === "linktree_links");
+        const descuentoPct = filas.find(
+          (fila) => fila.clave === "descuento_popup_porcentaje",
+        );
+        const descuentoAct = filas.find(
+          (fila) => fila.clave === "descuento_popup_activo",
+        );
+        const envioPrecioFila = filas.find(
+          (fila) => fila.clave === "envio_prioritario_precio",
+        );
+        const envioLabelFila = filas.find(
+          (fila) => fila.clave === "envio_prioritario_label",
+        );
+        const pwaBannerFila = filas.find(
+          (fila) => fila.clave === "pwa_banner_activo",
+        );
 
         setWhatsappNumero(numero?.valor ?? "");
         setLinktreeTitulo(titulo?.valor ?? "");
         setLinktreeSubtitulo(subtitulo?.valor ?? "");
         setLinktreeFotoUrl(fotoUrl?.valor ?? "");
+        if (descuentoPct?.valor) setDescuentoPorcentaje(descuentoPct.valor);
+        if (descuentoAct?.valor)
+          setDescuentoActivo(descuentoAct.valor !== "false");
+        if (envioPrecioFila?.valor) setEnvioPrecio(envioPrecioFila.valor);
+        if (envioLabelFila?.valor) setEnvioLabel(envioLabelFila.valor);
+        if (pwaBannerFila?.valor)
+          setPwaBannerActivo(pwaBannerFila.valor !== "false");
 
         if (linksRaw?.valor) {
           try {
@@ -139,6 +168,17 @@ export default function ConfiguracionPage() {
           { clave: "linktree_subtitulo", valor: linktreeSubtitulo },
           { clave: "linktree_foto_url", valor: linktreeFotoUrl },
           { clave: "linktree_links", valor: JSON.stringify(links) },
+          {
+            clave: "descuento_popup_porcentaje",
+            valor: descuentoPorcentaje,
+          },
+          {
+            clave: "descuento_popup_activo",
+            valor: String(descuentoActivo),
+          },
+          { clave: "envio_prioritario_precio", valor: envioPrecio },
+          { clave: "envio_prioritario_label", valor: envioLabel },
+          { clave: "pwa_banner_activo", valor: String(pwaBannerActivo) },
         ]),
       });
       if (!res.ok) throw new Error("No se pudo guardar la configuracion.");
@@ -206,6 +246,55 @@ export default function ConfiguracionPage() {
             className="h-16 w-16 rounded-full object-cover border border-arena"
           />
         )}
+      </div>
+
+      <div className="bg-blanco border border-arena rounded-[4px] p-5 mb-6 flex flex-col gap-4 max-w-xl">
+        <h2 className="font-display text-xl text-carbon">Tienda</h2>
+
+        <div className="flex flex-col gap-3">
+          <label className="flex items-center gap-2 text-sm text-carbon">
+            <input
+              type="checkbox"
+              checked={descuentoActivo}
+              onChange={(e) => setDescuentoActivo(e.target.checked)}
+              className="h-4 w-4 accent-dorado"
+            />
+            Popup de descuento por abandono activo
+          </label>
+          <Input
+            label="Porcentaje de descuento del popup"
+            type="number"
+            min={0}
+            max={100}
+            value={descuentoPorcentaje}
+            onChange={(e) => setDescuentoPorcentaje(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-3 pt-2 border-t border-arena">
+          <Input
+            label="Precio del envío prioritario (COP)"
+            type="number"
+            min={0}
+            value={envioPrecio}
+            onChange={(e) => setEnvioPrecio(e.target.value)}
+          />
+          <Input
+            label="Etiqueta del envío prioritario"
+            value={envioLabel}
+            onChange={(e) => setEnvioLabel(e.target.value)}
+          />
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-carbon pt-2 border-t border-arena">
+          <input
+            type="checkbox"
+            checked={pwaBannerActivo}
+            onChange={(e) => setPwaBannerActivo(e.target.checked)}
+            className="h-4 w-4 accent-dorado"
+          />
+          Banner de instalación de la PWA activo
+        </label>
       </div>
 
       <div className="bg-blanco border border-arena rounded-[4px] p-5 mb-6">

@@ -3,6 +3,12 @@ export type ProductVariant = {
   title: string;
   price: string;
   compareAtPrice: string | null;
+  /**
+   * Hex del swatch nativo de Shopify para la opcion "Color" de esta
+   * variante (Admin > Opciones del producto). Null si el producto no usa
+   * una opcion de color o esa opcion no tiene swatch configurado.
+   */
+  colorSwatch: string | null;
 };
 
 export type ProductMetafields = {

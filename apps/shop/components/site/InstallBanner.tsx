@@ -41,7 +41,7 @@ function esIOS(): boolean {
  * ni en el checkout (no competir con la conversion), ni si ya esta
  * instalada, ni si el usuario ya la cerro en los ultimos 14 dias.
  */
-export function InstallBanner() {
+export function InstallBanner({ activo = true }: { activo?: boolean }) {
   const pathname = usePathname();
   const [promptEvent, setPromptEvent] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -49,7 +49,7 @@ export function InstallBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (esStandalone() || estaDismisseado()) return;
+    if (!activo || esStandalone() || estaDismisseado()) return;
 
     if (esIOS()) {
       setMostrarIOS(true);
@@ -66,13 +66,13 @@ export function InstallBanner() {
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     return () =>
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-  }, []);
+  }, [activo]);
 
   const isProductoDetalle =
     pathname.startsWith("/productos/") && pathname !== "/productos";
   const isCheckout = pathname.startsWith("/pedido/");
 
-  if (!visible || isProductoDetalle || isCheckout) return null;
+  if (!activo || !visible || isProductoDetalle || isCheckout) return null;
 
   async function instalar() {
     if (!promptEvent) return;
