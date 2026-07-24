@@ -17,6 +17,7 @@ const CLAVES_PERMITIDAS = new Set([
   "envio_prioritario_precio",
   "envio_prioritario_label",
   "pwa_banner_activo",
+  "comunidad_whatsapp_link",
 ]);
 
 export async function GET() {

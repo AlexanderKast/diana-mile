@@ -12,28 +12,26 @@ function scrollToSection(id: string) {
 export function ProductQuickNav({ showIngredientes }: { showIngredientes: boolean }) {
   const items: QuickNavItem[] = [
     { label: "Beneficios", targetId: "beneficios" },
-    ...(showIngredientes ? [{ label: "Ingredientes", targetId: "ingredientes" }] : []),
     { label: "Cómo usarlo", targetId: "como-usarlo" },
+    ...(showIngredientes ? [{ label: "Ingredientes", targetId: "ingredientes" }] : []),
     { label: "Preguntas", targetId: "preguntas" },
   ];
 
   return (
     <nav
       aria-label="Navegación rápida del producto"
-      className="flex items-center gap-4 overflow-x-auto px-6 py-2 md:px-10"
+      className="flex items-center justify-center gap-2 overflow-x-auto px-6 py-2 md:px-10"
       style={{ scrollbarWidth: "none" }}
     >
-      {items.map((item, index) => (
-        <span key={item.targetId} className="flex shrink-0 items-center gap-4">
-          {index > 0 && <span className="text-arena">·</span>}
-          <button
-            type="button"
-            onClick={() => scrollToSection(item.targetId)}
-            className="text-[12px] font-medium text-carbon-suave underline-offset-4 transition-colors hover:text-dorado-oscuro hover:underline"
-          >
-            {item.label}
-          </button>
-        </span>
+      {items.map((item) => (
+        <button
+          key={item.targetId}
+          type="button"
+          onClick={() => scrollToSection(item.targetId)}
+          className="shrink-0 rounded-full border-[1.5px] border-arena bg-blanco px-3.5 py-1.5 text-[12px] font-medium text-carbon-suave shadow-[0_1px_3px_rgba(26,23,20,0.12)] transition-colors hover:border-morado/50 hover:text-morado-oscuro"
+        >
+          {item.label}
+        </button>
       ))}
     </nav>
   );

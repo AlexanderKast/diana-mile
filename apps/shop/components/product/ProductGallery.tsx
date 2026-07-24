@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { cx } from "@diana-mile/shared/utils";
+import { useOrderSheet } from "./OrderSheetContext";
 
 type GalleryImage = { url: string; altText: string | null };
 
@@ -12,26 +13,73 @@ const FALLBACK_IMAGE: GalleryImage = {
 };
 
 export function ProductGallery({ images }: { images: GalleryImage[] }) {
+  const { selectedVariant } = useOrderSheet();
   const gallery = images.length > 0 ? images : [FALLBACK_IMAGE];
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeImage = gallery[activeIndex];
+  const variantImageUrl = selectedVariant?.image?.url;
+
+  // Si la variante elegida (ej. un color) tiene su propia foto en Shopify,
+  // la galeria salta a esa imagen en vez de quedarse en la generica. Se
+  // ajusta durante el render (no en un efecto) para no parpadear la foto
+  // vieja antes de saltar a la nueva.
+  const [lastVariantImageUrl, setLastVariantImageUrl] = useState(variantImageUrl);
+  if (variantImageUrl !== lastVariantImageUrl) {
+    setLastVariantImageUrl(variantImageUrl);
+    const index = variantImageUrl
+      ? gallery.findIndex((img) => img.url === variantImageUrl)
+      : -1;
+    if (index !== -1) setActiveIndex(index);
+  }
+
+  const activeImage = gallery[activeIndex] ?? gallery[0];
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative mx-auto aspect-square w-[62%] max-w-[280px] rounded-2xl overflow-hidden bg-crema md:mx-0 md:aspect-[4/5] md:w-full md:max-w-none">
+    <div className="flex gap-2 -mx-6 md:mx-0 md:flex-col md:gap-3">
+      {/* Miniaturas verticales, a la izquierda — solo mobile, full-bleed */}
+      {gallery.length > 1 && (
+        <div
+          className="flex md:hidden flex-col gap-2 overflow-y-auto shrink-0 w-16 py-1 pl-2"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {gallery.map((image, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Ver imagen ${index + 1}`}
+              className={cx(
+                "relative shrink-0 w-14 h-14 rounded-lg overflow-hidden border transition-colors duration-200",
+                index === activeIndex ? "border-dorado" : "border-arena"
+              )}
+            >
+              <Image
+                src={image.url}
+                alt={image.altText ?? `Miniatura ${index + 1}`}
+                fill
+                className="object-cover"
+                sizes="56px"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Imagen principal — full-bleed a la derecha en mobile, columna con esquinas redondeadas en desktop */}
+      <div className="relative flex-1 aspect-[5/4] overflow-hidden bg-crema md:aspect-[4/5] md:w-full md:rounded-2xl">
         <Image
           key={activeIndex}
           src={activeImage.url}
           alt={activeImage.altText ?? "Imagen del producto"}
           fill
           className="object-cover transition-opacity duration-200 ease-out"
-          sizes="(min-width: 768px) 50vw, 62vw"
+          sizes="(min-width: 768px) 50vw, 84vw"
           priority={activeIndex === 0}
         />
       </div>
 
-      {gallery.length > 1 ? (
-        <div className="flex justify-center gap-2 overflow-x-auto md:justify-start" style={{ scrollbarWidth: "none" }}>
+      {/* Miniaturas horizontales — solo desktop */}
+      {gallery.length > 1 && (
+        <div className="hidden md:flex gap-2 overflow-x-auto md:justify-start" style={{ scrollbarWidth: "none" }}>
           {gallery.map((image, index) => (
             <button
               key={index}
@@ -53,7 +101,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
             </button>
           ))}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

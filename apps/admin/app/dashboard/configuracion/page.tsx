@@ -53,6 +53,7 @@ export default function ConfiguracionPage() {
     "Envío Prioritario + Seguro Adicional",
   );
   const [pwaBannerActivo, setPwaBannerActivo] = useState(true);
+  const [comunidadWhatsappLink, setComunidadWhatsappLink] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,8 +92,12 @@ export default function ConfiguracionPage() {
         const pwaBannerFila = filas.find(
           (fila) => fila.clave === "pwa_banner_activo",
         );
+        const comunidadLinkFila = filas.find(
+          (fila) => fila.clave === "comunidad_whatsapp_link",
+        );
 
         setWhatsappNumero(numero?.valor ?? "");
+        setComunidadWhatsappLink(comunidadLinkFila?.valor ?? "");
         setLinktreeTitulo(titulo?.valor ?? "");
         setLinktreeSubtitulo(subtitulo?.valor ?? "");
         setLinktreeFotoUrl(fotoUrl?.valor ?? "");
@@ -179,6 +184,10 @@ export default function ConfiguracionPage() {
           { clave: "envio_prioritario_precio", valor: envioPrecio },
           { clave: "envio_prioritario_label", valor: envioLabel },
           { clave: "pwa_banner_activo", valor: String(pwaBannerActivo) },
+          {
+            clave: "comunidad_whatsapp_link",
+            valor: comunidadWhatsappLink,
+          },
         ]),
       });
       if (!res.ok) throw new Error("No se pudo guardar la configuracion.");
@@ -220,6 +229,12 @@ export default function ConfiguracionPage() {
           value={whatsappNumero}
           onChange={(e) => setWhatsappNumero(e.target.value)}
           placeholder="57XXXXXXXXXX"
+        />
+        <Input
+          label="Link del grupo de WhatsApp (Comunidad Milito Life)"
+          value={comunidadWhatsappLink}
+          onChange={(e) => setComunidadWhatsappLink(e.target.value)}
+          placeholder="https://chat.whatsapp.com/... (vacio = usa un chat directo por WhatsApp)"
         />
         <Input
           label="Titulo del Linktree"

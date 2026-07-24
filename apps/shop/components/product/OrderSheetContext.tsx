@@ -15,6 +15,7 @@ import {
   ENVIO_PRIORITARIO_LABEL,
   ENVIO_PRIORITARIO_PRECIO,
 } from "@/lib/pricing";
+import { trackInitiateCheckout } from "@/lib/tracking/client-events";
 
 export { DISCOUNT_PERCENT };
 const DISCOUNT_DURATION_MS = 5 * 60 * 1000;
@@ -49,6 +50,11 @@ type OrderSheetContextValue = {
   selectNuskin: () => void;
   orderCompleted: boolean;
   markOrderCompleted: () => void;
+  /** Id de la opcion elegida en "¿Cual es tu tipo de piel?" (ej. "grasa").
+   * Compartido para que cualquier seccion de la pagina pueda personalizarse
+   * segun la respuesta. Null si todavia no elige. */
+  selectedSkinTypeId: string | null;
+  selectSkinType: (id: string) => void;
 };
 
 const OrderSheetContext = createContext<OrderSheetContextValue | null>(null);
@@ -69,6 +75,19 @@ export function OrderSheetProvider({
   const [selectedIsNuskin, setSelectedIsNuskin] = useState(false);
   const [discountApplied, setDiscountApplied] = useState(false);
   const [orderCompleted, setOrderCompleted] = useState(false);
+  const [selectedSkinTypeId, setSelectedSkinTypeId] = useState<string | null>(null);
+
+  const selectSkinType = useCallback((id: string) => {
+    setSelectedSkinTypeId(id);
+    // Deja ver el mensaje de confirmacion un momento antes de bajar a la
+    // tarjeta personalizada de Beneficios — asi se siente que la pagina
+    // reacciona a la respuesta, no un salto brusco.
+    setTimeout(() => {
+      document
+        .getElementById("beneficio-personalizado")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 700);
+  }, []);
   const discountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restaura el descuento del popup exit-intent si la persona sigue dentro
@@ -123,6 +142,15 @@ export function OrderSheetProvider({
       if (variantId) selectVariant(variantId);
       setIsOpen(true);
 
+      const targetVariant =
+        product.variants.find((v) => v.id === (variantId ?? selectedVariantId)) ??
+        product.variants[0];
+      trackInitiateCheckout({
+        contentId: product.handle,
+        contentName: product.title,
+        value: targetVariant ? parseFloat(targetVariant.price) : undefined,
+      });
+
       if (typeof window !== "undefined" && window.innerWidth >= 768) {
         document.getElementById("order-form-desktop")?.scrollIntoView({
           behavior: "smooth",
@@ -130,7 +158,7 @@ export function OrderSheetProvider({
         });
       }
     },
-    [selectVariant],
+    [selectVariant, product, selectedVariantId],
   );
 
   const closeOrderSheet = useCallback(() => {
@@ -157,6 +185,8 @@ export function OrderSheetProvider({
       selectNuskin,
       orderCompleted,
       markOrderCompleted,
+      selectedSkinTypeId,
+      selectSkinType,
     }),
     [
       product,
@@ -173,6 +203,8 @@ export function OrderSheetProvider({
       selectNuskin,
       orderCompleted,
       markOrderCompleted,
+      selectedSkinTypeId,
+      selectSkinType,
     ],
   );
 

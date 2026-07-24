@@ -63,9 +63,12 @@ export function ScarcityBar() {
 
   return (
     <div className="rounded-2xl border border-arena bg-crema p-3 text-sm text-carbon">
-      <p>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {despacho.modo === "countdown" && (
           <>
+            <span className="rounded bg-rojo-alerta px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blanco">
+              Hoy
+            </span>
             Pide antes de las {DESPACHO_HORA}:00 AM (faltan{" "}
             <span className="font-mono font-semibold">{formatCountdown(despacho.ms)}</span>) y sale hoy
             mismo desde Bogotá

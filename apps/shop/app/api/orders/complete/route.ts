@@ -7,6 +7,9 @@ import {
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { normalizeColombianMobile } from "@/lib/phone";
 import { getPricingConfig } from "@/lib/pricing-server";
+import { signTelefonoToken } from "@/lib/push-token";
+import { sendMetaCapiEvent } from "@/lib/tracking/meta-capi";
+import { sendTikTokEvent } from "@/lib/tracking/tiktok-events";
 
 /**
  * Paso "Confirmar pedido": convierte el draft order (creado/actualizado en
@@ -60,6 +63,8 @@ export async function POST(request: NextRequest) {
 
     const { orderId, orderNumber } = await completeDraftOrder(draftOrderId);
 
+    let precioTotal: number | undefined;
+
     try {
       const supabase = createAdminSupabaseClient();
       const nombreProducto = `${product.title} — ${variant.title}`;
@@ -82,7 +87,7 @@ export async function POST(request: NextRequest) {
       const precioConDescuento = descuentoAplicado
         ? precioBase * (1 - pricing.discountPercent / 100)
         : precioBase;
-      const precioTotal =
+      precioTotal =
         precioConDescuento +
         (envioPrioritario ? parseFloat(pricing.envioPrioritarioPrecio) : 0);
 
@@ -112,6 +117,28 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const eventId = `order-${orderNumber}`;
+      const eventSourceUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/productos/${slug}`;
+      await Promise.allSettled([
+        sendMetaCapiEvent({
+          eventName: "Purchase",
+          eventId,
+          eventSourceUrl,
+          telefonoE164: telefonoNormalizado.e164,
+          value: precioTotal,
+          fbp: request.cookies.get("_fbp")?.value,
+          fbc: request.cookies.get("_fbc")?.value,
+        }),
+        sendTikTokEvent({
+          eventName: "CompletePayment",
+          eventId,
+          eventSourceUrl,
+          telefonoE164: telefonoNormalizado.e164,
+          value: precioTotal,
+          ttp: request.cookies.get("_ttp")?.value,
+        }),
+      ]);
+
       // El pedido se completo: si habia quedado un carrito abandonado con
       // este telefono, ya no aplica para remarketing — se marca convertido
       // y se borra el draft order de Shopify (la orden real ya existe).
@@ -140,6 +167,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       orderNumber,
       telefono: telefonoNormalizado.display,
+      telefonoToken: signTelefonoToken(telefonoNormalizado.e164),
+      total: precioTotal ?? parseFloat(variant.price),
     });
   } catch (error) {
     console.error("Error al confirmar el pedido:", error);

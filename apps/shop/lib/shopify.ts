@@ -12,9 +12,10 @@ import { ENVIO_PRIORITARIO_VARIANT_ID } from "@/lib/pricing";
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const STOREFRONT_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 const ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-// 2025-01: minimo requerido para leer swatches nativos de color
-// (ProductOption.optionValues.swatch, disponible desde 2024-07).
-const API_VERSION = "2025-01";
+// Shopify retira versiones ~12 meses despues de publicadas — hay que subir
+// esto periodicamente o la API empieza a responder 401. Minimo 2024-07 para
+// leer swatches nativos de color (ProductOption.optionValues.swatch).
+const API_VERSION = "2026-04";
 
 const isShopifyConfigured = Boolean(STORE_DOMAIN && STOREFRONT_TOKEN);
 
@@ -25,6 +26,8 @@ const MOCK_PRODUCTS: Product[] = [
     title: "Serum Luminoso 24H",
     description:
       "Serum anti-edad de accion prolongada. Ilumina, firma y reduce lineas de expresion con uso constante en tu ritual nocturno.",
+    descriptionHtml:
+      "<p>Serum anti-edad de accion prolongada. Ilumina, firma y reduce lineas de expresion con uso constante en tu ritual nocturno.</p>",
     price: "289000",
     currencyCode: "COP",
     images: [
@@ -38,8 +41,10 @@ const MOCK_PRODUCTS: Product[] = [
         price: "289000",
         compareAtPrice: null,
         colorSwatch: null,
+        image: null,
       },
     ],
+    resultadosReales: [],
     metafields: {
       nuskinDirectUrl: null,
       nuskinDirectPrecio: null,
@@ -139,6 +144,8 @@ const MOCK_PRODUCTS: Product[] = [
     title: "Crema Ritual Nocturno",
     description:
       "Textura envolvente con tecnologia regeneradora. Trabaja mientras duermes para devolver firmeza y luminosidad a tu piel.",
+    descriptionHtml:
+      "<p>Textura envolvente con tecnologia regeneradora. Trabaja mientras duermes para devolver firmeza y luminosidad a tu piel.</p>",
     price: "319000",
     currencyCode: "COP",
     images: [
@@ -152,8 +159,10 @@ const MOCK_PRODUCTS: Product[] = [
         price: "319000",
         compareAtPrice: null,
         colorSwatch: null,
+        image: null,
       },
     ],
+    resultadosReales: [],
     metafields: {
       nuskinDirectUrl: null,
       nuskinDirectPrecio: null,
@@ -197,6 +206,8 @@ const MOCK_PRODUCTS: Product[] = [
     title: "Contorno de Ojos Dorado",
     description:
       "Formula concentrada para la zona mas delicada del rostro. Reduce ojeras y lineas finas con particulas de oro coloidal.",
+    descriptionHtml:
+      "<p>Formula concentrada para la zona mas delicada del rostro. Reduce ojeras y lineas finas con particulas de oro coloidal.</p>",
     price: "199000",
     currencyCode: "COP",
     images: [
@@ -210,8 +221,10 @@ const MOCK_PRODUCTS: Product[] = [
         price: "199000",
         compareAtPrice: null,
         colorSwatch: null,
+        image: null,
       },
     ],
+    resultadosReales: [],
     metafields: {
       nuskinDirectUrl: null,
       nuskinDirectPrecio: null,
@@ -298,11 +311,17 @@ const PRODUCT_BY_HANDLE_QUERY = `
       handle
       title
       description
+      descriptionHtml
       priceRange { minVariantPrice { amount currencyCode } }
-      images(first: 6) { edges { node { url altText } } }
+      images(first: 20) { edges { node { url altText } } }
       options(first: 10) { name optionValues { name swatch { color } } }
-      variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } selectedOptions { name value } } } }
+      variants(first: 20) { edges { node { id title price { amount } compareAtPrice { amount } selectedOptions { name value } image { url altText } } } }
       metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
+      resultadosReales: metafield(namespace: "diana_mile", key: "resultados_reales") {
+        references(first: 20) {
+          edges { node { ... on MediaImage { image { url altText } } } }
+        }
+      }
     }
   }
 `;
@@ -323,10 +342,11 @@ const COLLECTION_BY_HANDLE_QUERY = `
             handle
             title
             description
+            descriptionHtml
             priceRange { minVariantPrice { amount currencyCode } }
             images(first: 3) { edges { node { url altText } } }
             options(first: 10) { name optionValues { name swatch { color } } }
-            variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } selectedOptions { name value } } } }
+            variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } selectedOptions { name value } image { url altText } } } }
             metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
           }
         }
@@ -432,6 +452,7 @@ function mapNode(node: {
   handle: string;
   title: string;
   description: string;
+  descriptionHtml: string;
   priceRange: { minVariantPrice: { amount: string; currencyCode: string } };
   images: { edges: { node: { url: string; altText: string | null } }[] };
   options: RawProductOption[];
@@ -443,10 +464,16 @@ function mapNode(node: {
         price: { amount: string };
         compareAtPrice: { amount: string } | null;
         selectedOptions: { name: string; value: string }[];
+        image: { url: string; altText: string | null } | null;
       };
     }[];
   };
   metafields: ({ key: string; value: string } | null)[];
+  resultadosReales?: {
+    references: {
+      edges: { node: { image: { url: string; altText: string | null } } }[];
+    };
+  } | null;
 }): Product {
   const variants = node.variants.edges
     .map((e) => ({
@@ -455,6 +482,7 @@ function mapNode(node: {
       price: e.node.price.amount,
       compareAtPrice: e.node.compareAtPrice?.amount ?? null,
       colorSwatch: resolveColorSwatch(node.options, e.node.selectedOptions),
+      image: e.node.image,
     }))
     .sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
@@ -463,6 +491,7 @@ function mapNode(node: {
     handle: node.handle,
     title: node.title,
     description: node.description,
+    descriptionHtml: node.descriptionHtml,
     price: node.priceRange.minVariantPrice.amount,
     currencyCode: node.priceRange.minVariantPrice.currencyCode,
     images: node.images.edges.map((e) => e.node),
@@ -472,6 +501,9 @@ function mapNode(node: {
       node.metafields.filter(
         (m): m is { key: string; value: string } => m !== null,
       ),
+    ),
+    resultadosReales: (node.resultadosReales?.references.edges ?? []).map(
+      (e) => e.node.image,
     ),
   };
 }

@@ -9,6 +9,8 @@ export type ProductVariant = {
    * una opcion de color o esa opcion no tiene swatch configurado.
    */
   colorSwatch: string | null;
+  /** Imagen propia de esta variante (Shopify Admin > Variante > Imagen). Null si no tiene una asignada. */
+  image: { url: string; altText: string | null } | null;
 };
 
 export type ProductMetafields = {
@@ -149,12 +151,17 @@ export type Product = {
   handle: string;
   title: string;
   description: string;
+  /** Descripcion con formato (HTML) tal como se escribe en Shopify Admin — bullets, negritas, parrafos. */
+  descriptionHtml: string;
   price: string;
   currencyCode: string;
   images: { url: string; altText: string | null }[];
   variantId: string;
   variants: ProductVariant[];
   metafields: ProductMetafields;
+  /** Fotos reales de antes/despues de clientas (metafield `diana_mile.resultados_reales`,
+   * list.file_reference) — administrable desde Shopify Admin, sin tocar codigo. */
+  resultadosReales: { url: string; altText: string | null }[];
 };
 
 /**

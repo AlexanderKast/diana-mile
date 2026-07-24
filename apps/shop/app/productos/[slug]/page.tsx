@@ -2,26 +2,37 @@ import { Metadata } from "next";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import { getProductByHandle } from "@/lib/shopify";
 import { resolveLanding } from "@/lib/product-content";
 import { getPricingConfig } from "@/lib/pricing-server";
+import { getPedidosCount } from "@/lib/social-proof";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductBenefits } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
+import { AuthenticitySeals } from "@/components/product/AuthenticitySeals";
 import { ProductHeroCTA } from "@/components/product/ProductHeroCTA";
 import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
 import { RatingBar } from "@/components/product/RatingBar";
 import TrustBadges from "@/components/product/TrustBadges";
+import { DesktopTrustRow } from "@/components/product/DesktopTrustRow";
 import { UGCSection } from "@/components/product/UGCSection";
 import { GuaranteeSection } from "@/components/product/GuaranteeSection";
+import { CommunitySection } from "@/components/product/CommunitySection";
 import { NuskinSection } from "@/components/product/NuskinSection";
 import { ProductQuickNav } from "@/components/product/ProductQuickNav";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
 import { ExitIntentPopup } from "@/components/product/ExitIntentPopup";
+import { BackToTopButton } from "@/components/product/BackToTopButton";
+import { ProductViewTracking } from "@/components/product/ProductViewTracking";
 import { ComparisonSection } from "@/components/product/ComparisonSection";
 import { ResultsTimeline } from "@/components/product/ResultsTimeline";
+import { PersonalizedHeadingSuffix } from "@/components/product/PersonalizedHeadingSuffix";
+import { PersonalizedBenefitCard } from "@/components/product/PersonalizedBenefitCard";
+import { ResultadosRealesGallery } from "@/components/product/ResultadosRealesGallery";
 import { WithoutRitualSection } from "@/components/product/WithoutRitualSection";
+import { SectionDivider } from "@/components/ui/SectionDivider";
 
 // Client components condicionales (no siempre se renderizan segun el
 // producto) — se cargan en un chunk separado para no engordar el bundle
@@ -51,6 +62,25 @@ const FreeGuide = dynamic(() =>
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+// Shopify devuelve "<p></p>" para una descripcion vacia — sin este chequeo
+// se renderizaria una seccion en blanco.
+function hasHtmlContent(html: string): boolean {
+  return html.replace(/<[^>]*>/g, "").trim().length > 0;
+}
+
+/**
+ * Estructura fija de slots de imagen: el orden en que se suben las fotos en
+ * Shopify (product.images, 0-indexado) decide que seccion de la PDP las usa.
+ * 0-2 (las primeras 3) van siempre a la galeria del hero. De ahi en
+ * adelante cada indice es opcional — si el producto no tiene esa foto, la
+ * seccion simplemente no muestra imagen (nunca rompe el render).
+ */
+const IMAGE_SLOT = {
+  beneficios: 3, // 4ta foto subida
+  resultados: 4, // 5ta foto subida
+  ritual: 5, // 6ta foto subida
+} as const;
 
 export async function generateMetadata({
   params,
@@ -85,9 +115,10 @@ export async function generateMetadata({
 
 export default async function ProductoPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const [product, pricing] = await Promise.all([
+  const [product, pricing, pedidosCount] = await Promise.all([
     getProductByHandle(slug),
     getPricingConfig(),
+    getPedidosCount(slug),
   ]);
 
   if (!product) {
@@ -95,10 +126,19 @@ export default async function ProductoPage({ params }: ProductPageProps) {
   }
 
   const landing = resolveLanding(product);
+  // Contenido escrito en Shopify Admin por el equipo — se sanitiza antes de
+  // inyectarlo igual, por si algun dia se agrega mas gente con acceso.
+  const descriptionHtml = DOMPurify.sanitize(product.descriptionHtml);
 
   return (
     <OrderSheetProvider product={product} pricing={pricing}>
       {pricing.discountPopupActivo && <ExitIntentPopup />}
+      <BackToTopButton />
+      <ProductViewTracking
+        contentId={product.handle}
+        contentName={product.title}
+        value={product.variants[0] ? parseFloat(product.variants[0].price) : undefined}
+      />
       <main className="flex flex-col gap-3 pb-28">
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10 min-w-0">
           <div className="md:sticky md:top-24 md:self-start min-w-0">
@@ -107,24 +147,31 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
           <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
             <div className="flex flex-col gap-2">
-              <RatingBar />
-              <TrustBadges showAuthenticity={landing.authenticity} />
+              <RatingBar pedidosCount={pedidosCount} />
+              <div className="md:hidden">
+                <TrustBadges />
+              </div>
+              <DesktopTrustRow showAuthenticity={landing.authenticity} />
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
               <p className="text-[11px] text-ceniza uppercase tracking-wide">
                 {landing.eyebrow}
               </p>
               <h1 className="font-display text-[26px] md:text-[32px] text-carbon leading-tight">
                 {product.title}
               </h1>
-              <div className="linea-dorada w-12" />
               <p className="text-sm text-carbon-suave">{landing.tagline}</p>
             </div>
 
-            {landing.skinType && <SkinTypeSelector data={landing.skinType} />}
+            {landing.skinType && (
+              <>
+                <SectionDivider compact />
+                <SkinTypeSelector data={landing.skinType} />
+              </>
+            )}
 
-            <ProductHeroCTA />
+            <ProductHeroCTA showAuthenticity={landing.authenticity} skinType={landing.skinType} />
 
             <OrderBottomSheet />
           </div>
@@ -132,30 +179,14 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
         <ProductQuickNav showIngredientes={landing.ingredients !== null} />
 
+        {/* Dolor: por que el ritual actual no basta */}
         {landing.withoutRitual && (
           <WithoutRitualSection data={landing.withoutRitual} />
         )}
 
-        {landing.ingredientStory && (
-          <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">
-            <h2 className="font-display text-[28px] text-carbon max-w-md">
-              {landing.ingredientStory.title}
-            </h2>
-            <p className="text-sm text-carbon-suave leading-relaxed max-w-md">
-              {landing.ingredientStory.body}
-            </p>
-            <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden max-w-md">
-              <Image
-                src="/images/lifestyle-ritual.jpg"
-                alt={`Ritual ${product.title}`}
-                fill
-                className="object-cover"
-                sizes="(min-width: 768px) 448px, 100vw"
-              />
-            </div>
-          </section>
-        )}
+        {landing.withoutRitual && landing.benefits.length > 0 && <SectionDivider />}
 
+        {/* Solucion */}
         {landing.benefits.length > 0 && (
           <section
             id="beneficios"
@@ -163,21 +194,30 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           >
             <h2 className="font-display text-2xl text-carbon text-center">
               {landing.benefitsHeading}
+              <PersonalizedHeadingSuffix skinType={landing.skinType} />
             </h2>
+            <PersonalizedBenefitCard skinType={landing.skinType} />
+            {product.images[IMAGE_SLOT.beneficios] && (
+              <div className="relative mx-auto w-full max-w-md aspect-[16/9] rounded-2xl overflow-hidden">
+                <Image
+                  src={product.images[IMAGE_SLOT.beneficios].url}
+                  alt={
+                    product.images[IMAGE_SLOT.beneficios].altText ??
+                    `${product.title} — beneficios`
+                  }
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 448px, 100vw"
+                />
+              </div>
+            )}
             <ProductBenefits benefits={landing.benefits} />
           </section>
         )}
 
-        <SocialCTABand tone="outline-morado" buttonLabel="Quiero probarlo" />
+        {landing.benefits.length > 0 && landing.usageSteps.length > 0 && <SectionDivider />}
 
-        {landing.ugc && (
-          <UGCSection
-            heading={landing.ugcHeading}
-            subheading={landing.ugcSubheading}
-            posts={landing.ugc}
-          />
-        )}
-
+        {/* Prueba de que es facil de usar */}
         {landing.usageSteps.length > 0 && (
           <section
             id="como-usarlo"
@@ -229,35 +269,56 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </section>
         )}
 
+        {/* Prueba de resultado */}
         {landing.resultsTimeline && (
           <ResultsTimeline
             heading={landing.resultsHeading}
+            headingSuffix={<PersonalizedHeadingSuffix skinType={landing.skinType} />}
             stages={landing.resultsTimeline}
+            image={product.images[IMAGE_SLOT.resultados]}
           />
         )}
 
-        <TestimonialsSection
-          productName={product.title}
-          items={landing.testimonials}
-          heading={landing.testimonialsHeading}
-          showUsageStats={landing.authenticity}
-        />
+        {/* Fotos reales de clientas — administradas desde Shopify (metafield resultados_reales) */}
+        <ResultadosRealesGallery fotos={product.resultadosReales} />
 
-        {landing.comparison && <ComparisonSection data={landing.comparison} />}
+        {product.resultadosReales.length > 0 && hasHtmlContent(descriptionHtml) && (
+          <SectionDivider />
+        )}
 
-        <GuaranteeSection />
+        {/* Sustancia del producto: descripcion real de Shopify + historia de ingredientes + ficha tecnica, agrupadas */}
+        {hasHtmlContent(descriptionHtml) && (
+          <section id="descripcion" className="px-6 py-8 scroll-mt-20">
+            <div
+              className="max-w-md mx-auto text-sm text-carbon-suave leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_strong]:text-carbon [&_a]:underline"
+              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+            />
+          </section>
+        )}
 
-        {landing.freeGuide && <FreeGuide data={landing.freeGuide} />}
-
-        <SocialCTABand
-          tone="lila-band"
-          title="Lista para transformar tu ritual de cuidado?"
-          buttonLabel="Reservar el mío · Contraentrega"
-        />
-
-        {landing.faqs.length > 0 && (
-          <section id="preguntas" className="px-6 py-12 scroll-mt-20">
-            <FAQAccordion faqs={landing.faqs} />
+        {landing.ingredientStory && (
+          <section className="bg-lila-suave py-12 px-6 flex flex-col items-center gap-6 text-center">
+            <h2 className="font-display text-[28px] text-carbon max-w-md">
+              {landing.ingredientStory.title}
+            </h2>
+            <p className="text-sm text-carbon-suave leading-relaxed max-w-md">
+              {landing.ingredientStory.body}
+            </p>
+            <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden max-w-md">
+              <Image
+                src={
+                  (
+                    product.images[IMAGE_SLOT.ritual] ??
+                    product.images[1] ??
+                    product.images[0]
+                  )?.url ?? "/images/lifestyle-ritual.jpg"
+                }
+                alt={`Ritual ${product.title}`}
+                fill
+                className="object-cover"
+                sizes="(min-width: 768px) 448px, 100vw"
+              />
+            </div>
           </section>
         )}
 
@@ -267,14 +328,92 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           </section>
         )}
 
+        {landing.ingredients && <SectionDivider />}
+
+        {/* Prueba social */}
+        <TestimonialsSection
+          productName={product.title}
+          items={landing.testimonials}
+          heading={landing.testimonialsHeading}
+          showUsageStats={landing.authenticity}
+        />
+
+        {landing.ugc && <SectionDivider />}
+
+        {landing.ugc && (
+          <UGCSection
+            heading={landing.ugcHeading}
+            subheading={landing.ugcSubheading}
+            posts={landing.ugc}
+          />
+        )}
+
+        {landing.ugc && product.images.length > IMAGE_SLOT.ritual + 1 && (
+          <SectionDivider />
+        )}
+
+        {/* Fotos reales sobrantes (todo lo que quede despues de los slots fijos) como mosaico */}
+        {product.images.length > IMAGE_SLOT.ritual + 1 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 pb-2">
+            {product.images.slice(IMAGE_SLOT.ritual + 1).map((image, index) => (
+              <div
+                key={image.url}
+                className="relative aspect-square rounded-xl overflow-hidden"
+              >
+                <Image
+                  src={image.url}
+                  alt={image.altText ?? `${product.title} — foto ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Diferenciacion */}
+        {landing.comparison && <ComparisonSection data={landing.comparison} />}
+
+        {landing.comparison && <SectionDivider />}
+
+        {/* Reversion de riesgo -> pedir */}
+        <GuaranteeSection />
+
+        {/* Comunidad como motivo extra para recibir el pedido */}
+        <CommunitySection />
+
+        <SocialCTABand
+          tone="lila-band"
+          title="Lista para transformar tu ritual de cuidado?"
+          buttonLabel="Reservar el mío · Contraentrega"
+        />
+
+        {/* Objeciones */}
+        {landing.faqs.length > 0 && (
+          <section id="preguntas" className="px-6 py-12 scroll-mt-20">
+            <FAQAccordion faqs={landing.faqs} />
+          </section>
+        )}
+
+        {landing.faqs.length > 0 && landing.freeGuide && <SectionDivider />}
+
+        {landing.freeGuide && <FreeGuide data={landing.freeGuide} />}
+
+        <SectionDivider />
+
         <NuskinSection />
 
+        {/* Cierre */}
         <section className="seccion-joya text-carbon py-12 px-6 text-center flex flex-col items-center gap-4">
           <h2 className="font-display text-[28px]">{landing.closingHeading}</h2>
           <p className="text-sm text-carbon-suave">
             Envio contraentrega - Pagas al recibir
           </p>
           <SocialCTABand tone="gold-solid" buttonLabel="Empezar mi ritual" />
+          <div className="self-stretch md:self-auto">
+            <AuthenticitySeals showAuthenticity={landing.authenticity} />
+          </div>
         </section>
 
         <ProductPurchaseFlow />

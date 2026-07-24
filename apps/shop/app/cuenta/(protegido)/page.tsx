@@ -6,6 +6,7 @@ import {
 } from "@diana-mile/shared/supabase/server";
 import type { Pedido } from "@diana-mile/shared/types";
 import { clienteHaComprado } from "@/lib/cuenta";
+import { clienteTieneComunidad } from "@/lib/community";
 import { PushOptIn } from "@/components/site/PushOptIn";
 
 export default async function CuentaPage() {
@@ -22,6 +23,7 @@ export default async function CuentaPage() {
     .maybeSingle<Pedido>();
 
   const haComprado = await clienteHaComprado(cliente.telefono);
+  const tieneComunidad = await clienteTieneComunidad(cliente.telefono);
 
   return (
     <div className="flex flex-col gap-6">
@@ -52,6 +54,18 @@ export default async function CuentaPage() {
             {haComprado
               ? "Rutinas, guías y planes de Diana."
               : "Se desbloquea con tu primera compra."}
+          </p>
+        </Link>
+
+        <Link
+          href="/cuenta/comunidad"
+          className="flex flex-col gap-1 rounded-2xl border border-arena bg-blanco p-5 transition-colors hover:bg-crema"
+        >
+          <p className="font-display text-lg text-carbon">Comunidad Milito Life</p>
+          <p className="text-sm text-carbon-suave">
+            {tieneComunidad
+              ? "Ya eres parte — entra al grupo de WhatsApp."
+              : "Se desbloquea cuando tu pedido sea entregado."}
           </p>
         </Link>
       </div>

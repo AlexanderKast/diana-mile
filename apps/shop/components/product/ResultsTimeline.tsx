@@ -1,11 +1,18 @@
+import Image from "next/image";
 import type { LandingTimelineStage } from "@diana-mile/shared/types";
 
 export function ResultsTimeline({
   heading,
+  headingSuffix,
   stages,
+  image,
 }: {
   heading: string;
+  /** Nodo opcional para personalizar el encabezado (ej. segun tipo de piel elegido) sin romper el layout server-rendered. */
+  headingSuffix?: React.ReactNode;
   stages: LandingTimelineStage[];
+  /** Foto de resultado (slot fijo de Shopify) — opcional, la seccion funciona igual sin ella. */
+  image?: { url: string; altText: string | null } | null;
 }) {
   if (stages.length === 0) return null;
 
@@ -13,7 +20,20 @@ export function ResultsTimeline({
     <section className="bg-crema py-12 px-6">
       <h2 className="font-display text-[26px] text-carbon text-center mb-10">
         {heading}
+        {headingSuffix}
       </h2>
+
+      {image && (
+        <div className="relative mx-auto mb-10 w-full max-w-md aspect-[16/9] rounded-2xl overflow-hidden">
+          <Image
+            src={image.url}
+            alt={image.altText ?? heading}
+            fill
+            className="object-cover"
+            sizes="(min-width: 768px) 448px, 100vw"
+          />
+        </div>
+      )}
 
       <div className="mx-auto flex max-w-4xl flex-col gap-8 md:flex-row md:gap-4">
         {stages.map((etapa, index) => (

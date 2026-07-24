@@ -3,24 +3,27 @@ import {
   createAdminSupabaseClient,
   getClienteUser,
 } from "@diana-mile/shared/supabase/server";
+import { verifyTelefonoToken } from "@/lib/push-token";
 
 type SubscriptionBody = {
   subscription?: {
     endpoint?: string;
     keys?: { p256dh?: string; auth?: string };
   };
-  telefono?: string;
+  telefonoToken?: string;
 };
 
 /**
  * Guarda una suscripcion de push. El telefono es opcional: si hay sesion
- * de cliente activa se usa ese; si no, se acepta el que venga del body
- * (ej. justo despues de completar un pedido, sin login todavia).
+ * de cliente activa se usa ese; si no, solo se acepta uno si viene
+ * respaldado por telefonoToken (firmado por orders/complete al confirmar
+ * un pedido) — nunca se confia un telefono suelto del body, cualquiera
+ * podria mandar el numero de otra persona.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SubscriptionBody;
-    const { subscription, telefono: telefonoBody } = body;
+    const { subscription, telefonoToken } = body;
 
     if (
       !subscription?.endpoint ||
@@ -34,7 +37,9 @@ export async function POST(request: NextRequest) {
     }
 
     const cliente = await getClienteUser();
-    const telefono = cliente?.telefono ?? telefonoBody ?? null;
+    const telefono =
+      cliente?.telefono ??
+      (telefonoToken ? verifyTelefonoToken(telefonoToken) : null);
 
     const admin = createAdminSupabaseClient();
     const { error } = await admin.from("push_suscripciones").upsert(

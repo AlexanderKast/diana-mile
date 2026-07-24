@@ -109,8 +109,8 @@ export async function POST(
   if (accion === "entregado" && pedidoActualizado.telefono) {
     enviarPush(pedidoActualizado.telefono, {
       titulo: "¡Tu pedido llegó! 📦",
-      cuerpo: `${pedidoActualizado.producto_nombre} fue entregado. Ya puedes ver tu contenido premium en tu cuenta.`,
-      url: "/cuenta/pedidos",
+      cuerpo: `${pedidoActualizado.producto_nombre} fue entregado. Ya puedes ver tu contenido premium y entrar a la Comunidad Milito Life.`,
+      url: "/cuenta",
     }).catch((err) => console.warn("[push] fallo al notificar entrega:", err));
   }
 

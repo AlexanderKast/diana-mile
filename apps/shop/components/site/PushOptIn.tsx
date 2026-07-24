@@ -12,8 +12,12 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 type PushOptInProps = {
-  /** Telefono E.164 a vincular con la suscripcion, si se conoce (ej. justo tras completar un pedido). */
+  /** Telefono E.164 del cliente con sesion activa — el servidor lo vuelve a
+   * verificar via cookie de sesion, esto es solo informativo. */
   telefono?: string;
+  /** Token firmado por orders/complete que ata un telefono a esta
+   * suscripcion cuando todavia no hay sesion (justo tras el checkout). */
+  telefonoToken?: string;
   titulo?: string;
   descripcion?: string;
 };
@@ -24,6 +28,7 @@ type PushOptInProps = {
  */
 export function PushOptIn({
   telefono,
+  telefonoToken,
   titulo = "Recibe el estado de tu pedido",
   descripcion = "Te avisamos por notificacion cuando tu pedido cambie de estado.",
 }: PushOptInProps) {
@@ -75,7 +80,11 @@ export function PushOptIn({
       const res = await fetch("/api/push/suscribir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: subscription.toJSON(), telefono }),
+        body: JSON.stringify({
+          subscription: subscription.toJSON(),
+          telefono,
+          telefonoToken,
+        }),
       });
 
       if (!res.ok) throw new Error("No se pudo registrar la suscripcion.");

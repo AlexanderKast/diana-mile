@@ -353,7 +353,7 @@ function epochLanding(product: Product): ResolvedLanding {
       {
         question: "¿Qué pasa si no quedo satisfecha?",
         answer:
-          "Escríbenos por WhatsApp. Si el producto llega en mal estado o hay algún inconveniente con tu pedido, lo solucionamos sin complicaciones.",
+          "Escríbenos por WhatsApp. Si el producto llega malo, no te funciona o hay algún inconveniente con tu pedido, lo solucionamos sin complicaciones.",
       },
     ],
     ugc: [

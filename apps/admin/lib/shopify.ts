@@ -2,7 +2,9 @@ import { splitFullName } from "@diana-mile/shared/utils";
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-const API_VERSION = "2024-01";
+// Shopify retira versiones ~12 meses despues de publicadas — hay que subir
+// esto periodicamente o la API empieza a responder 401.
+const API_VERSION = "2026-04";
 
 const isShopifyConfigured = Boolean(STORE_DOMAIN && ADMIN_TOKEN);
 

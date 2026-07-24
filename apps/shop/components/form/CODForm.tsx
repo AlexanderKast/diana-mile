@@ -14,6 +14,7 @@ import {
 } from "@/lib/colombia";
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 import { PushOptIn } from "@/components/site/PushOptIn";
+import { trackPurchase } from "@/lib/tracking/client-events";
 
 type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
 
@@ -29,6 +30,9 @@ type SuccessState = {
    * recalcula del input despues, que puede haber cambiado mientras la
    * peticion estaba en curso. */
   telefonoE164: string;
+  /** Token firmado por el servidor (orders/complete) que ata ese telefono
+   * a esta suscripcion push sin sesion todavia. */
+  telefonoToken: string;
 };
 
 function IconPagoMini() {
@@ -367,8 +371,15 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         orderNumber: data.orderNumber,
         telefono: data.telefono,
         telefonoE164: telefonoNormalizado.e164,
+        telefonoToken: data.telefonoToken,
       });
       markOrderCompleted();
+      trackPurchase({
+        eventId: `order-${data.orderNumber}`,
+        contentId: product.handle,
+        contentName: product.title,
+        value: data.total ?? parseFloat(selectedVariant.price),
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -471,7 +482,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           <p className="text-sm text-ceniza">Te contactaremos pronto.</p>
         )}
 
-        <PushOptIn telefono={success.telefonoE164} />
+        <PushOptIn telefonoToken={success.telefonoToken} />
 
         <a
           href="/productos"

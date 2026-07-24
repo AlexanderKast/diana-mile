@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { MobileTabBar } from "@/components/site/MobileTabBar";
 import { InstallBanner } from "@/components/site/InstallBanner";
+import { TrackingScripts } from "@/components/tracking/TrackingScripts";
 import { getPricingConfig } from "@/lib/pricing-server";
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default async function RootLayout({
       className={`${cormorant.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden">
+        <TrackingScripts />
         <div className="min-h-screen flex flex-col">
           <SiteHeader />
           <InstallBanner activo={pricing.pwaBannerActivo} />

@@ -1,30 +1,35 @@
 "use client";
 
-import { useState } from "react";
 import { cx } from "@diana-mile/shared/utils";
 import type { LandingSkinType } from "@diana-mile/shared/types";
+import { useOrderSheet } from "@/components/product/OrderSheetContext";
 
+/**
+ * La seleccion se guarda en OrderSheetContext (no estado local) para que el
+ * resto de la pagina (titulo, beneficios, resultados) pueda personalizarse
+ * segun la respuesta — ver page.tsx.
+ */
 export function SkinTypeSelector({ data }: { data: LandingSkinType }) {
-  const [seleccion, setSeleccion] = useState<string | null>(null);
+  const { selectedSkinTypeId, selectSkinType } = useOrderSheet();
 
   if (data.options.length === 0) return null;
 
-  const mensaje = data.options.find((op) => op.id === seleccion)?.message;
+  const mensaje = data.options.find((op) => op.id === selectedSkinTypeId)?.message;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
       <p className="text-sm font-medium text-carbon">{data.question}</p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-center gap-2 md:justify-start">
         {data.options.map((op) => (
           <button
             key={op.id}
             type="button"
-            onClick={() => setSeleccion(op.id)}
+            onClick={() => selectSkinType(op.id)}
             className={cx(
-              "rounded-full border-[1.5px] px-3.5 py-1.5 text-xs font-medium transition-colors",
-              seleccion === op.id
+              "rounded-md border-[1.5px] px-3.5 py-1.5 text-xs font-medium shadow-[0_1px_3px_rgba(26,23,20,0.12)] transition-colors",
+              selectedSkinTypeId === op.id
                 ? "border-morado bg-lila-suave text-morado-oscuro"
-                : "border-arena text-carbon-suave hover:border-morado/50",
+                : "border-arena bg-blanco text-carbon-suave hover:border-morado/50",
             )}
           >
             {op.label}

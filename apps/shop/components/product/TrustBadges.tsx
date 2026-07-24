@@ -1,89 +1,44 @@
-function IconEntrega() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path
-        d="M2 5.5h9v8.5H2v-8.5zM11 8.5h4l3 3v2.5h-7v-5.5z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="6" cy="15.5" r="1.7" />
-      <circle cx="14.5" cy="15.5" r="1.7" />
-    </svg>
-  );
-}
+import Image from "next/image";
 
-function IconPago() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="2" y="5" width="16" height="10.5" rx="1.5" strokeLinejoin="round" />
-      <circle cx="10" cy="10.25" r="2.5" />
-      <path d="M9 10.25l0.7 0.7 1.3-1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconCaja() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path
-        d="M10 2.5l7.5 3.75V13.75L10 17.5l-7.5-3.75V6.25L10 2.5z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M2.5 6.25L10 10l7.5-3.75M10 10v7.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconCandado() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="4" y="9" width="12" height="8.5" rx="1.5" strokeLinejoin="round" />
-      <path d="M6.5 9V6a3.5 3.5 0 017 0v3" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="10" cy="13" r="1.2" />
-    </svg>
-  );
-}
-
-function IconSello() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="10" cy="8.5" r="5.5" strokeLinejoin="round" />
-      <path d="M7 13.5 6 17.5l4-2 4 2-1-4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M7.5 8.5 9 10l3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-type TrustBadge = {
-  icon: () => React.JSX.Element;
-  label: string;
-};
-
-const badges: TrustBadge[] = [
-  { icon: IconEntrega, label: "Contraentrega Colombia" },
-  { icon: IconPago, label: "Pago al recibir" },
-  { icon: IconCaja, label: "Envío en 24-72h" },
-  { icon: IconCandado, label: "Compra segura" },
+/**
+ * Sellos generados con Magnific (gpt-2), subidos a Shopify Files — icono +
+ * texto ya vienen dibujados dentro de la imagen, no son datos de un
+ * producto especifico asi que se referencian fijos aqui (no en un
+ * metafield). Si se necesita regenerar alguno, ver la conversacion donde se
+ * crearon para los prompts exactos.
+ *
+ * Solo 3 aqui a proposito — "Compra segura" y "100% original" viven en
+ * ProductHeroCTA (otro punto de la pagina) para no apilar 2 filas de sellos
+ * juntas en el mismo lugar.
+ */
+export const TRUST_BADGES = [
+  {
+    src: "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/F_Descargas_magnific_flat-trust-badge-for-a-pr_rlkBtcextc.png",
+    label: "Contraentrega Colombia",
+  },
+  {
+    src: "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/F_Descargas_magnific_flat-trust-badge-for-a-pr_gJshCl2SXO.png",
+    label: "Pago al recibir",
+  },
+  {
+    src: "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/F_Descargas_magnific_flat-trust-badge-for-a-pr_J9wEq4wOq4.png",
+    label: "Envío en 24-72h",
+  },
 ];
 
-export default function TrustBadges({ showAuthenticity = false }: { showAuthenticity?: boolean }) {
-  const items = showAuthenticity
-    ? [...badges, { icon: IconSello, label: "100% original Nu Skin" }]
-    : badges;
-
+export default function TrustBadges() {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-carbon-suave">
-      {items.map(({ icon: Icon, label }, index) => (
-        <span key={label} className="flex items-center gap-3">
-          {index > 0 && <span className="text-arena">·</span>}
-          <span className="flex items-center gap-1.5 whitespace-nowrap">
-            <span className="shrink-0 text-dorado-oscuro">
-              <Icon />
-            </span>
-            {label}
-          </span>
-        </span>
+    <div className="flex items-center -mx-6 md:mx-0 md:max-w-sm">
+      {TRUST_BADGES.map(({ src, label }) => (
+        <div key={label} className="relative flex-1 aspect-[100/81]" title={label}>
+          <Image
+            src={src}
+            alt={label}
+            fill
+            className="object-cover"
+            sizes="33vw"
+          />
+        </div>
       ))}
     </div>
   );
