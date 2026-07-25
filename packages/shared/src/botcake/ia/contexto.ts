@@ -70,10 +70,24 @@ export async function catalogoResumen(): Promise<string | null> {
     return cacheCatalogo.texto;
   }
 
-  const dominio = process.env.SHOPIFY_STORE_DOMAIN;
+  // El dominio se normaliza: si viene con protocolo o barra final, la URL
+  // quedaria malformada y el fetch fallaria sin una causa evidente.
+  const dominio = process.env.SHOPIFY_STORE_DOMAIN?.replace(
+    /^https?:\/\//,
+    "",
+  ).replace(/\/+$/, "");
   const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
   const sitio = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  if (!dominio || !token) return null;
+
+  // Sin catalogo el agente no puede dar precios, asi que cada motivo de
+  // fallo se registra: si no, la unica senal es que Milito responde
+  // "dejame confirmarte el precio" para todo, sin explicacion.
+  if (!dominio || !token) {
+    console.warn(
+      `[wa-contexto] sin catalogo: falta ${!dominio ? "SHOPIFY_STORE_DOMAIN" : "SHOPIFY_STOREFRONT_ACCESS_TOKEN"}`,
+    );
+    return null;
+  }
 
   try {
     const res = await fetch(`https://${dominio}/api/2026-04/graphql.json`, {
@@ -84,7 +98,12 @@ export async function catalogoResumen(): Promise<string | null> {
       },
       body: JSON.stringify({ query: QUERY_CATALOGO }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(
+        `[wa-contexto] sin catalogo: Shopify respondio ${res.status} para ${dominio}`,
+      );
+      return null;
+    }
 
     const json = (await res.json()) as {
       data?: {
@@ -104,7 +123,12 @@ export async function catalogoResumen(): Promise<string | null> {
     };
 
     const productos = json.data?.products?.edges ?? [];
-    if (!productos.length) return null;
+    if (!productos.length) {
+      console.warn(
+        `[wa-contexto] sin catalogo: Shopify no devolvio productos (${JSON.stringify(json).slice(0, 200)})`,
+      );
+      return null;
+    }
 
     const lineas = productos.map(({ node }) => {
       const precio = Math.round(
