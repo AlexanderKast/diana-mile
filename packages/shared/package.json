@@ -8,7 +8,11 @@
     "./landing-ai": "./src/landing-ai.js",
     "./ui/*": "./src/ui/*.tsx",
     "./supabase/client": "./src/supabase/client.ts",
-    "./supabase/server": "./src/supabase/server.ts"
+    "./supabase/server": "./src/supabase/server.ts",
+    "./botcake/client": "./src/botcake/client.ts",
+    "./botcake/plantillas": "./src/botcake/plantillas.ts",
+    "./botcake/outbox": "./src/botcake/outbox.ts",
+    "./botcake/agentes": "./src/botcake/agentes.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

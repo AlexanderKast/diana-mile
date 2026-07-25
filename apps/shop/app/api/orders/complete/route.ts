@@ -5,6 +5,7 @@ import {
   getProductByHandle,
 } from "@/lib/shopify";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
+import { encolarConfirmacionPedido } from "@diana-mile/shared/botcake/agentes";
 import { normalizeColombianMobile } from "@/lib/phone";
 import { getPricingConfig } from "@/lib/pricing-server";
 import { signTelefonoToken } from "@/lib/push-token";
@@ -91,24 +92,28 @@ export async function POST(request: NextRequest) {
         precioConDescuento +
         (envioPrioritario ? parseFloat(pricing.envioPrioritarioPrecio) : 0);
 
-      const { error: insertError } = await supabase.from("pedidos").insert({
-        shopify_order_id: orderId,
-        nombre,
-        telefono: telefonoNormalizado.e164,
-        direccion,
-        barrio,
-        ciudad,
-        departamento,
-        latitud: lat,
-        longitud: lng,
-        producto_nombre: nombreProducto,
-        producto_sku: slug,
-        variant_id: variantId,
-        cantidad: 1,
-        precio_total: precioTotal,
-        estado: "pendiente",
-        notas: notas || null,
-      });
+      const { data: pedidoInsertado, error: insertError } = await supabase
+        .from("pedidos")
+        .insert({
+          shopify_order_id: orderId,
+          nombre,
+          telefono: telefonoNormalizado.e164,
+          direccion,
+          barrio,
+          ciudad,
+          departamento,
+          latitud: lat,
+          longitud: lng,
+          producto_nombre: nombreProducto,
+          producto_sku: slug,
+          variant_id: variantId,
+          cantidad: 1,
+          precio_total: precioTotal,
+          estado: "pendiente",
+          notas: notas || null,
+        })
+        .select("id")
+        .single();
 
       if (insertError) {
         console.error(
@@ -136,6 +141,15 @@ export async function POST(request: NextRequest) {
           telefonoE164: telefonoNormalizado.e164,
           value: precioTotal,
           ttp: request.cookies.get("_ttp")?.value,
+        }),
+        encolarConfirmacionPedido(supabase, {
+          pedidoId: pedidoInsertado?.id ?? null,
+          nombre,
+          telefonoE164: telefonoNormalizado.e164,
+          telefonoDisplay: telefonoNormalizado.display,
+          direccion: [direccion, barrio, ciudad].filter(Boolean).join(", "),
+          producto: nombreProducto,
+          precioTotal: precioTotal ?? parseFloat(variant.price),
         }),
       ]);
 

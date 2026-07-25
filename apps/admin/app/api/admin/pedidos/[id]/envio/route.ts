@@ -5,6 +5,7 @@ import {
 } from "@diana-mile/shared/supabase/server";
 import { agregarTagsOrden, crearFulfillment } from "@/lib/shopify";
 import { enviarPush } from "@/lib/push";
+import { encolarPedidoEnviado } from "@diana-mile/shared/botcake/agentes";
 
 export async function POST(
   request: NextRequest,
@@ -102,6 +103,15 @@ export async function POST(
       cuerpo: `Enviado con ${transportadora}, guía ${numero_guia}.`,
       url: `/cuenta/pedidos/${id}`,
     }).catch((err) => console.warn("[push] fallo al notificar envio:", err));
+
+    await encolarPedidoEnviado(supabase, {
+      pedidoId: id,
+      nombre: pedidoActualizado.nombre ?? "cliente",
+      telefonoE164: pedidoActualizado.telefono,
+      producto: pedidoActualizado.producto_nombre ?? "tu pedido",
+      numeroGuia: numero_guia,
+      precioTotal: Number(pedidoActualizado.precio_total ?? 0),
+    });
   }
 
   return NextResponse.json({ pedido: pedidoActualizado }, { status: 200 });
