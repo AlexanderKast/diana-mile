@@ -1,131 +1,180 @@
-# Agentes de WhatsApp — Arquitectura Milito Life
+# Agentes de WhatsApp — Milito Life
 
-Ecosistema: **app (este repo) + Botcake (WABA Sanavi) + Supabase + Shopify militolife**.
-Sin n8n ni servicios externos de automatización: todo es código del repo.
+Ecosistema: **la app de este repo + Botcake (WABA) + Supabase + Shopify**.
+Sin n8n ni servicios de automatización externos: todo es código del repo.
 
-## La idea en una frase
+Hay dos cosas distintas trabajando sobre el mismo número de WhatsApp:
 
-Hoy la confirmación de pedidos es un call center manual en `apps/admin/dashboard/confirmacion`.
-Los agentes de WhatsApp automatizan ese trabajo: la app envía plantillas por Botcake en cada
-evento del pedido, el cliente responde con botones, y Botcake devuelve la respuesta a la app
-por webhook para actualizar el estado en Supabase y Shopify.
+1. **Agentes transaccionales** — mandan plantillas aprobadas cuando pasa algo
+   con un pedido (se creó, no lo confirman, se despachó).
+2. **Agente de IA conversacional** — cuando una persona escribe, le responde
+   Milito con conocimiento del área que le están preguntando.
 
 ```
-┌─────────────┐  pedido nuevo   ┌──────────────────┐   plantilla    ┌──────────┐
-│  apps/shop   │ ──────────────▶ │  Outbox Supabase │ ─────────────▶ │ Botcake  │
-│ (checkout)   │                 │ whatsapp_mensajes│    (API)       │  (WABA)  │
-└─────────────┘                 └──────────────────┘                └────┬─────┘
-      ▲                                  ▲                               │ botones
-      │                                  │ cron reintentos               ▼ cliente
-┌─────┴────────┐  actualiza estado  ┌────┴─────────────────────────────────────┐
-│   Supabase   │ ◀───────────────── │ apps/admin/api/admin/webhooks/botcake    │
-│ pedidos etc. │                    │ (webhook entrante desde flows de Botcake)│
-└──────────────┘                    └──────────────────────────────────────────┘
+        pedido nuevo / guía          ┌──────────────────┐   plantilla   ┌─────────┐
+ app ──────────────────────────────▶ │ whatsapp_mensajes│ ────────────▶ │         │
+                                     │     (outbox)     │ ◀── cron ──   │ Botcake │
+                                     └──────────────────┘  reintentos   │  (WABA) │
+                                                                        │         │
+        ┌──────────────────────────────────────────────────────────┐    └────┬────┘
+        │  /api/admin/webhooks/botcake                             │ ◀───────┘
+        │  · botón de plantilla → estado en Supabase + Shopify     │  respuesta
+        │  · mensaje libre      → agente de IA responde            │  del cliente
+        └──────────────────────────────────────────────────────────┘
 ```
 
-## Componentes
+---
 
-### 1. Cliente Botcake — `packages/shared/src/botcake/client.ts`
+## Parte 1 — Agentes transaccionales
 
-Wrapper del API público (`https://botcake.io/api/public_api/v1/pages/{PAGE_ID}/…`,
-header `access-token`, mismo patrón que `scripts/test-botcake.mjs`). Funciones:
+| Agente | Se dispara en | Qué manda |
+|---|---|---|
+| **Confirmación** | `apps/shop/app/api/orders/complete/route.ts` (junto a Meta CAPI/TikTok) | `confirmacion_de_pedido_nuevo` con nombre, dirección, producto y valor. Botones: confirmar / modificar / asesor |
+| **Recordatorio** | cron, pedidos `pendiente` de más de 24h | `recordatorio_confirmacion_milito`. Máximo 2 por pedido, nunca si el cliente ya respondió algo |
+| **Envío** | `apps/admin/.../pedidos/[id]/envio` | `pedido_enviado_milito` con número de guía y valor a pagar |
 
-- `buscarClientePorTelefono(telefono)` — resuelve el customer de Botcake
-- `enviarPlantilla(customerId, plantilla, variables)` — envía template aprobado
-- `enviarFlow(customerId, flowId)`
-- `etiquetar(customerId, tagId)` / `actualizarCampos(customerId, campos)`
+### El outbox (`whatsapp_mensajes`)
 
-Se exporta desde `@diana-mile/shared` igual que los clientes de Supabase, para que
-shop y admin lo usen sin duplicar código.
+Nunca se llama a Botcake directo desde el request del usuario. Se inserta una
+fila, se intenta enviar de una, y si falla queda en `fallido` para que el cron
+reintente (hasta 3 veces). El API de Botcake devuelve 500 con frecuencia, así
+que esto no es opcional. Además deja trazabilidad de todo lo enviado.
 
-### 2. Outbox — tabla `whatsapp_mensajes` (migración nueva)
+**Cron**: `apps/shop/app/api/cron/whatsapp/route.ts`, cada 15 minutos
+(`apps/shop/vercel.json`), autenticado con `CRON_SECRET`.
 
-Nunca se llama a Botcake directo desde el request del usuario: se inserta un registro
-en la cola y se intenta enviar. Si Botcake falla (su API devuelve 500 con frecuencia),
-un cron reintenta. Trazabilidad completa de todo lo enviado.
+---
 
-```sql
-whatsapp_mensajes (
-  id, pedido_id?, lead_id?, telefono, tipo,        -- confirmacion | recordatorio | envio | remarketing
-  plantilla, variables jsonb, estado,               -- pendiente | enviado | fallido | descartado
-  intentos, ultimo_error, enviado_at, created_at
-)
-whatsapp_eventos (
-  id, pedido_id?, telefono, evento,                 -- confirmado | modificar | anulado | mensaje
-  payload jsonb, created_at
-)
+## Parte 2 — El agente de IA
+
+Vive en `packages/shared/src/botcake/ia/`. Un solo cerebro con varias
+especialidades, no varios bots: la persona siempre habla con Milito.
+
+| Archivo | Qué hace |
+|---|---|
+| `voz.ts` | El ADN de Milito: tono, límites y los tres objetivos (cierre, comunidad, valor). Lo comparten todos los expertos |
+| `expertos.ts` | Las 8 especialidades, con sus pistas de detección |
+| `conocimiento/` | Las bases de conocimiento por área |
+| `router.ts` | Elige el experto: primero por palabras clave (gratis e instantáneo), y solo si hay duda le pregunta a un modelo chico |
+| `contexto.ts` | Inyecta datos **reales**: el pedido de esa persona, el catálogo vivo de Shopify (cache 10 min) y el link de comunidad |
+| `conversacion.ts` | Memoria (últimos 12 mensajes), ventana de 24h, interruptor de IA por persona |
+| `agente.ts` | Orquesta todo y responde |
+
+### Los expertos
+
+| id | Cuándo entra |
+|---|---|
+| `general` | Saludos y mensajes ambiguos |
+| `tienda` | Precios, productos, cómo comprar, envíos |
+| `pedido` | Pedido ya hecho, reclamos → **no vende, escala a un humano** |
+| `entrenamiento` | Ejercicio, rutinas, bajar de peso, hábitos |
+| `nuskin_negocio` | La oportunidad de negocio, ser afiliada |
+| `nuskin_productos` | Epoch, ageLOC, Pharmanex, rutinas de piel |
+| `contenido` | Crear contenido, UGC, redes, conseguir marcas |
+| `agencia` | Marca que busca creadores, o creadora que se postula |
+
+Agregar un experto nuevo = un archivo en `conocimiento/` y una entrada en
+`EXPERTOS`. El router lo toma solo.
+
+### Por qué no alucina
+
+Es el riesgo real de poner una IA a hablar con clientes. Tres barreras:
+
+1. **Los datos duros nunca salen del modelo.** Precios, disponibilidad y estado
+   de pedidos se inyectan desde Shopify y Supabase en cada mensaje. Si el dato
+   no está, el prompt le ordena decir "lo confirmo y te escribo" en vez de
+   inventar.
+2. **Límites explícitos en la voz**: no promete curar nada, no da consejo
+   médico, no promete ganancias, no inventa promociones. Si alguien menciona
+   embarazo, medicación o una condición médica, remite al médico.
+3. **Escala en vez de improvisar.** Reclamos, "quiero hablar con alguien" o
+   cualquier error del sistema → responde una persona, y le llega push al
+   equipo. Ante la duda, humano.
+
+### Ventana de 24 horas
+
+WhatsApp solo permite texto libre dentro de las 24h siguientes al último
+mensaje **del cliente**. Fuera de esa ventana solo van plantillas aprobadas.
+`ultimo_entrante_at` guarda el reloj y el panel muestra si está abierta.
+Como el cliente abre la ventana al pulsar un botón de la plantilla de
+confirmación, en la práctica casi siempre hay ventana con quien compró.
+
+### Apagar la IA para una persona
+
+En `/dashboard/whatsapp`, botón **Apagar IA**. Cuando alguien del equipo entra
+a atender a un cliente, el bot se calla en esa conversación y no vuelve a
+escribir hasta que lo prendan.
+
+---
+
+## Panel
+
+`/dashboard/whatsapp` (roles superadmin, admin, confirmador): conversaciones
+activas con su tema y ventana, mensajes enviados con estado y error, y las
+respuestas de los clientes.
+
+---
+
+## Configuración
+
+### Variables de entorno
+
+| Var | Dónde | Para qué |
+|---|---|---|
+| `BOTCAKE_WABA_PAGE_ID` | shop + admin | `waba_168254866381327` |
+| `BOTCAKE_ACCESS_TOKEN` | shop + admin | Token de página (Botcake → Settings → API) |
+| `BOTCAKE_WEBHOOK_SECRET` | admin | Secret propio del webhook entrante |
+| `CRON_SECRET` | shop | Autentica el cron de Vercel |
+| `MISTRAL_API_KEY` | admin | El agente de IA. **Sin esto la IA no responde** y todo escala a humano |
+| `MISTRAL_CHAT_MODEL` | admin | Por defecto `mistral-large-latest` |
+| `MISTRAL_ROUTER_MODEL` | admin | Por defecto `mistral-small-latest` (clasificar es barato) |
+| `SHOPIFY_STORE_DOMAIN` + `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | admin | Catálogo real para el agente |
+
+### Lo que hay que configurar en Botcake (única parte fuera del repo)
+
+En el flow de la página, agregar un bloque de webhook que haga `POST` a
+`https://<dominio-admin>/api/admin/webhooks/botcake` con header
+`x-webhook-secret: <BOTCAKE_WEBHOOK_SECRET>` y cuerpo:
+
+```json
+{ "telefono": "{{psid}}", "evento": "confirmado", "nombre": "{{full_name}}" }
 ```
 
-### 3. Agentes (automatizaciones)
+- Botones de plantilla → `evento`: `confirmado`, `modificar`, `anulado` o `asesor`.
+- Mensaje libre del cliente → `evento`: `mensaje` más `"texto": "{{last_message}}"`.
 
-| Agente | Trigger | Acción |
+---
+
+## Plantillas
+
+| Plantilla | Estado | Agente |
 |---|---|---|
-| **Confirmación** | `POST /api/orders/complete` (junto a Meta CAPI/TikTok, mismo `Promise.allSettled`) | Envía `confirmacion_de_pedido_nuevo` con datos del pedido. Botones: confirmar / modificar / asesor |
-| **Recordatorio** | Vercel Cron (cada 6h) | Pedidos `pendiente` sin respuesta >24h → `recordatorio_confirmacion_milito` (máx. 2) |
-| **Envío** | `POST /api/admin/pedidos/[id]/envio` + webhook Shopify `fulfillments/create` | Envía `pedido_enviado_milito` con número de guía y valor COD |
-| **Carrito abandonado** (fase 2) | Vercel Cron | Leads `convertido=false` >2h con teléfono → plantilla MARKETING de remarketing |
-| **Recompra** (fase 2) | Vercel Cron | Pedidos `entregado` hace 30 días → oferta de recompra |
+| `confirmacion_de_pedido_nuevo` | APPROVED | Confirmación (marca va como variable → "Milito Life") |
+| `recordatorio_confirmacion_milito` | PENDING | Recordatorio |
+| `pedido_enviado_milito` | PENDING | Envío |
+| `disculpas` | APPROVED | Manual |
 
-Cada agente es un módulo en `apps/admin/lib/agentes/` (o `packages/shared`) con una
-sola función pública, activable/desactivable por clave en la tabla `config`
-(editable desde el admin, igual que `whatsapp_numero`).
+Los `template_id` viven en `packages/shared/src/botcake/ia/../plantillas.ts`.
+Si se recrea una plantilla en Botcake, hay que actualizar el id ahí.
 
-### 4. Webhook entrante — `apps/admin/app/api/admin/webhooks/botcake/route.ts`
+**Ojo**: crear plantillas por API no funciona (Botcake devuelve HTTP 500
+siempre). Se crean en la UI de Botcake o en WhatsApp Manager.
 
-Calcado del webhook de Shopify (responder 200 inmediato, procesar en async, verificación
-por secret `BOTCAKE_WEBHOOK_SECRET`). Los flows de Botcake (bloques de botones) hacen
-POST aquí con `{telefono, evento, pedido}`. Efectos:
+---
 
-- `confirmado` → `pedidos.estado`, fila en `confirmaciones`, tag + nota en la orden Shopify (`agregarTagsOrden`/`agregarNotaOrden` ya existen)
-- `modificar` / `anulado` → estado + notificación al admin (web push ya existente)
-- Todo evento queda en `whatsapp_eventos`
+## Validado con pruebas reales (2026-07-25)
 
-### 5. Configuración en Botcake (única parte fuera del repo)
+- Se puede **iniciar conversación** con cualquier teléfono usando plantilla: el
+  psid es determinístico, `wa_` + número sin `+`. No hace falta que el cliente
+  escriba primero.
+- El envío de **texto libre** funciona dentro de la ventana de 24h.
+- El clasificador por palabras clave acierta el área en los mensajes típicos
+  sin gastar un solo token.
 
-- Flow "Confirmación Milito": recibe los botones de las plantillas, etiqueta
-  (`CONFIRMADO`, `Modificar Datos`, `Anular Pedido` — tags ya existen) y dispara el
-  POST al webhook de la app.
-- Los tags y custom fields actuales (Nombre, Dirección, Teléfono, Producto…) se reutilizan.
+## Pendiente
 
-### 6. Visibilidad en admin
-
-Sección `dashboard/whatsapp`: historial de `whatsapp_mensajes` y `whatsapp_eventos`,
-toggles de agentes, y botón de reenvío manual.
-
-## Plantillas WhatsApp (estado 2026-07-25)
-
-| Plantilla | Estado | Uso |
-|---|---|---|
-| `confirmacion_de_pedido_nuevo` | APPROVED | Agente Confirmación (marca es variable → pasar "Milito Life") |
-| `recordatorio_confirmacion_milito` | PENDING | Agente Recordatorio |
-| `pedido_enviado_milito` | PENDING | Agente Envío |
-| `disculpas` | APPROVED | Manual / recuperación |
-| (remarketing carrito) | no existe | Fase 2 — crear en UI de Botcake (su API de creación está rota, HTTP 500) |
-
-## Riesgo técnico a validar primero (spike)
-
-El API público de Botcake opera sobre **customers existentes** (gente que ya escribió).
-Para pedidos de la tienda el cliente puede no tener conversación previa. Validar con
-la API real si se puede iniciar conversación por teléfono con una plantilla; si no,
-el fallback es enviar la plantilla vía el flujo interno de Botcake (bloque "enviar
-template" disparado por webhook/integración) o pedirle el número al cliente en el
-paso post-checkout ("escríbenos al WhatsApp" con deep-link `wa.me` que ya existe en
-`CODForm.tsx` — el primer mensaje del cliente crea el customer y de ahí todo es automático).
-
-## Orden de implementación
-
-1. **Spike**: probar envío de plantilla por teléfono contra la API real (1 pedido de prueba).
-2. Migración `whatsapp_mensajes` + `whatsapp_eventos` + cliente Botcake en `packages/shared`.
-3. Agente Confirmación enganchado a `orders/complete` + outbox + cron de reintentos.
-4. Webhook Botcake entrante + flow de botones en Botcake UI → estados en Supabase/Shopify.
-5. Agentes Recordatorio y Envío (cuando Meta apruebe las 2 plantillas PENDING).
-6. Sección `dashboard/whatsapp` en admin.
-7. Fase 2: carrito abandonado + recompra (plantillas MARKETING nuevas).
-
-## Env vars
-
-| Var | Dónde | Estado |
-|---|---|---|
-| `BOTCAKE_WABA_PAGE_ID` | shop + admin | existe (`waba_168254866381327`) |
-| `BOTCAKE_ACCESS_TOKEN` | shop + admin | existe (token de página) |
-| `BOTCAKE_WEBHOOK_SECRET` | admin | **crear** (secret propio para el webhook entrante) |
+- Que Meta apruebe las 2 plantillas en PENDING.
+- Cargar `MISTRAL_API_KEY` para encender la IA.
+- Configurar el flow de webhook en la UI de Botcake.
+- Fase 2: agente de carrito abandonado y de recompra (necesitan plantillas
+  MARKETING nuevas).

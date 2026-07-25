@@ -12,7 +12,12 @@
     "./botcake/client": "./src/botcake/client.ts",
     "./botcake/plantillas": "./src/botcake/plantillas.ts",
     "./botcake/outbox": "./src/botcake/outbox.ts",
-    "./botcake/agentes": "./src/botcake/agentes.ts"
+    "./botcake/agentes": "./src/botcake/agentes.ts",
+    "./botcake/recordatorios": "./src/botcake/recordatorios.ts",
+    "./botcake/ia/agente": "./src/botcake/ia/agente.ts",
+    "./botcake/ia/expertos": "./src/botcake/ia/expertos.ts",
+    "./botcake/ia/conversacion": "./src/botcake/ia/conversacion.ts",
+    "./botcake/ia/router": "./src/botcake/ia/router.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
