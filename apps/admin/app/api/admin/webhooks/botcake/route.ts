@@ -140,17 +140,44 @@ async function procesar(payload: PayloadBotcake): Promise<void> {
   }
 }
 
+/**
+ * Botcake valida la URL antes de dejar guardar el bloque de webhook, y esa
+ * comprobacion no manda el header del secret. Un 200 aqui no revela nada ni
+ * ejecuta nada: solo confirma que la ruta existe.
+ */
+export async function GET(request: NextRequest) {
+  // Algunas integraciones verifican al estilo Meta, devolviendo el challenge.
+  const challenge = request.nextUrl.searchParams.get("hub.challenge");
+  if (challenge) return new NextResponse(challenge, { status: 200 });
+  return NextResponse.json({ ok: true }, { status: 200 });
+}
+
 export async function POST(request: NextRequest) {
   const secret = process.env.BOTCAKE_WEBHOOK_SECRET;
-  if (!secret || request.headers.get("x-webhook-secret") !== secret) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  }
+  // El secret puede venir por header o por query string: no todos los
+  // constructores de flows permiten agregar headers propios.
+  const provisto =
+    request.headers.get("x-webhook-secret") ??
+    request.nextUrl.searchParams.get("secret");
 
-  let payload: PayloadBotcake;
+  let payload: PayloadBotcake | null;
   try {
     payload = (await request.json()) as PayloadBotcake;
   } catch {
-    return NextResponse.json({ error: "JSON invalido." }, { status: 400 });
+    payload = null;
+  }
+
+  // Ping de verificacion: viene sin credenciales y sin datos de nadie. Se
+  // responde 200 para que Botcake acepte la URL, pero no se procesa nada —
+  // sin destinatario no hay accion posible.
+  if (!payload || (!payload.telefono && !payload.psid)) {
+    return NextResponse.json({ ok: true }, { status: 200 });
+  }
+  const evento = payload;
+
+  // A partir de aqui hay datos de una persona real: exige el secret.
+  if (!secret || provisto !== secret) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
   // Responder ya; procesar despues (Botcake reintenta si tardamos).
@@ -160,7 +187,7 @@ export async function POST(request: NextRequest) {
   // trabajo nunca llega a correr. waitUntil mantiene viva la invocacion
   // hasta que la promesa termina.
   waitUntil(
-    procesar(payload).catch((err) => {
+    procesar(evento).catch((err) => {
       console.error("[webhook-botcake] fallo al procesar:", err);
     }),
   );
