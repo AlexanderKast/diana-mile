@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { getProductByHandle } from "@/lib/shopify";
 import { resolveLanding } from "@/lib/product-content";
 import { getPricingConfig } from "@/lib/pricing-server";
@@ -128,7 +128,13 @@ export default async function ProductoPage({ params }: ProductPageProps) {
   const landing = resolveLanding(product);
   // Contenido escrito en Shopify Admin por el equipo — se sanitiza antes de
   // inyectarlo igual, por si algun dia se agrega mas gente con acceso.
-  const descriptionHtml = DOMPurify.sanitize(product.descriptionHtml);
+  const descriptionHtml = sanitizeHtml(product.descriptionHtml, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ["src", "alt", "width", "height"],
+    },
+  });
 
   return (
     <OrderSheetProvider product={product} pricing={pricing}>
