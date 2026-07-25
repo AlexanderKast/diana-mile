@@ -48,3 +48,4 @@ supabase/.branches/
 next-env.d.ts
 
 .vercel
+.env*

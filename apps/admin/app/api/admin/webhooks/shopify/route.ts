@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 
 const WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET;
@@ -138,19 +139,25 @@ export async function POST(request: NextRequest) {
 
   // Shopify reintenta si no responde 200 rapido — el procesamiento real no
   // debe bloquear la respuesta ni tumbar el webhook si algo falla.
-  (async () => {
-    try {
-      if (topic === "orders/create") {
-        await procesarOrdenCreada(payload);
-      } else if (topic === "orders/updated") {
-        await procesarOrdenActualizada(payload);
-      } else if (topic === "fulfillments/create") {
-        await procesarFulfillmentCreado(payload);
+  //
+  // waitUntil es obligatorio: sin el, la promesa suelta se corta en cuanto
+  // la funcion serverless devuelve la respuesta y el pedido nunca se
+  // guarda (Shopify recibe su 200 y no reintenta, asi que se pierde).
+  waitUntil(
+    (async () => {
+      try {
+        if (topic === "orders/create") {
+          await procesarOrdenCreada(payload);
+        } else if (topic === "orders/updated") {
+          await procesarOrdenActualizada(payload);
+        } else if (topic === "fulfillments/create") {
+          await procesarFulfillmentCreado(payload);
+        }
+      } catch (error) {
+        console.error(`Error procesando webhook Shopify (${topic}):`, error);
       }
-    } catch (error) {
-      console.error(`Error procesando webhook Shopify (${topic}):`, error);
-    }
-  })();
+    })(),
+  );
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }

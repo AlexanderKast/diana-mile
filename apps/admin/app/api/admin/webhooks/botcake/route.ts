@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { responderMensaje } from "@diana-mile/shared/botcake/ia/agente";
 import { agregarNotaOrden, agregarTagsOrden } from "@/lib/shopify";
@@ -153,13 +154,16 @@ export async function POST(request: NextRequest) {
   }
 
   // Responder ya; procesar despues (Botcake reintenta si tardamos).
-  void (async () => {
-    try {
-      await procesar(payload);
-    } catch (err) {
+  //
+  // waitUntil es obligatorio aqui: en serverless, un `void (async () => …)()`
+  // suelto se corta en cuanto la funcion devuelve la respuesta, asi que el
+  // trabajo nunca llega a correr. waitUntil mantiene viva la invocacion
+  // hasta que la promesa termina.
+  waitUntil(
+    procesar(payload).catch((err) => {
       console.error("[webhook-botcake] fallo al procesar:", err);
-    }
-  })();
+    }),
+  );
 
   return NextResponse.json({ recibido: true }, { status: 200 });
 }
