@@ -34,45 +34,16 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
   const activeImage = gallery[activeIndex] ?? gallery[0];
 
   return (
-    <div className="flex gap-2 -mx-6 md:mx-0 md:flex-col md:gap-3">
-      {/* Miniaturas verticales, a la izquierda — solo mobile, full-bleed */}
-      {gallery.length > 1 && (
-        <div
-          className="flex md:hidden flex-col gap-2 overflow-y-auto shrink-0 w-16 py-1 pl-2"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {gallery.map((image, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              aria-label={`Ver imagen ${index + 1}`}
-              className={cx(
-                "relative shrink-0 w-14 h-14 rounded-lg overflow-hidden border transition-colors duration-200",
-                index === activeIndex ? "border-dorado" : "border-arena"
-              )}
-            >
-              <Image
-                src={image.url}
-                alt={image.altText ?? `Miniatura ${index + 1}`}
-                fill
-                className="object-cover"
-                sizes="56px"
-              />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Imagen principal — full-bleed a la derecha en mobile, columna con esquinas redondeadas en desktop */}
-      <div className="relative flex-1 aspect-[5/4] overflow-hidden bg-crema md:aspect-[4/5] md:w-full md:rounded-2xl">
+    <div className="flex flex-col gap-2 -mx-6 md:mx-0 md:gap-3">
+      {/* Imagen principal — full-bleed en mobile, columna con esquinas redondeadas en desktop */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-crema md:aspect-[4/5] md:w-full md:rounded-2xl">
         <Image
           key={activeIndex}
           src={activeImage.url}
           alt={activeImage.altText ?? "Imagen del producto"}
           fill
           className="object-cover transition-opacity duration-200 ease-out"
-          sizes="(min-width: 768px) 50vw, 84vw"
+          sizes="(min-width: 768px) 50vw, 100vw"
           priority={activeIndex === 0}
         />
       </div>

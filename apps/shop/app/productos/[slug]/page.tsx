@@ -6,7 +6,6 @@ import sanitizeHtml from "sanitize-html";
 import { getProductByHandle } from "@/lib/shopify";
 import { resolveLanding } from "@/lib/product-content";
 import { getPricingConfig } from "@/lib/pricing-server";
-import { getPedidosCount } from "@/lib/social-proof";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductBenefits } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
@@ -14,7 +13,6 @@ import { AuthenticitySeals } from "@/components/product/AuthenticitySeals";
 import { ProductHeroCTA } from "@/components/product/ProductHeroCTA";
 import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
-import { RatingBar } from "@/components/product/RatingBar";
 import TrustBadges from "@/components/product/TrustBadges";
 import { DesktopTrustRow } from "@/components/product/DesktopTrustRow";
 import { UGCSection } from "@/components/product/UGCSection";
@@ -115,10 +113,9 @@ export async function generateMetadata({
 
 export default async function ProductoPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const [product, pricing, pedidosCount] = await Promise.all([
+  const [product, pricing] = await Promise.all([
     getProductByHandle(slug),
     getPricingConfig(),
-    getPedidosCount(slug),
   ]);
 
   if (!product) {
@@ -153,7 +150,6 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
           <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
             <div className="flex flex-col gap-2">
-              <RatingBar pedidosCount={pedidosCount} />
               <div className="md:hidden">
                 <TrustBadges />
               </div>
