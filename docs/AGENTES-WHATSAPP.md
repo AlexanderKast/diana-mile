@@ -142,6 +142,14 @@ respuestas de los clientes.
 | `MISTRAL_ROUTER_MODEL` | admin | Por defecto `mistral-small-latest` (clasificar es barato) |
 | `SHOPIFY_STORE_DOMAIN` + `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | admin | Catálogo real para el agente |
 
+### ⚠️ waitUntil en los webhooks
+
+El trabajo posterior a la respuesta va dentro de `waitUntil` de
+`@vercel/functions`. Una promesa suelta (`void (async () => …)()`) **se corta**
+cuando la función serverless devuelve la respuesta: el webhook contesta 200 y
+no procesa nada. Si algún día un webhook responde bien pero no deja rastro en
+base de datos ni en logs, mirar esto antes que la lógica de negocio.
+
 ### Lo que hay que configurar en Botcake (única parte fuera del repo)
 
 En el flow de la página, agregar un bloque de webhook que haga `POST` a
