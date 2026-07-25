@@ -91,6 +91,18 @@ Es el riesgo real de poner una IA a hablar con clientes. Tres barreras:
    cualquier error del sistema → responde una persona, y le llega push al
    equipo. Ante la duda, humano.
 
+### Probar el agente sin gastar un WhatsApp
+
+```bash
+npm run wa:probar                       # 8 casos típicos, uno por área
+npm run wa:probar -- "tu mensaje aquí"  # un mensaje puntual
+```
+
+Usa el router, los expertos y la voz reales, y muestra qué respondería
+Milito y qué experto entró. Es la forma de calibrar el entrenamiento: si
+una respuesta no suena a Milito, se pasa de larga o inventa algo, se
+ajusta `voz.ts` o el conocimiento de esa área y se vuelve a correr.
+
 ### Ventana de 24 horas
 
 WhatsApp solo permite texto libre dentro de las 24h siguientes al último
@@ -170,11 +182,15 @@ siempre). Se crean en la UI de Botcake o en WhatsApp Manager.
 - El envío de **texto libre** funciona dentro de la ventana de 24h.
 - El clasificador por palabras clave acierta el área en los mensajes típicos
   sin gastar un solo token.
+- El agente responde con la voz correcta en las 8 áreas (`npm run wa:probar`).
+  Dos fugas encontradas y cerradas en esa prueba: inventaba anécdotas
+  personales de Diana para conectar, y afirmaba que existían productos que
+  no están en el catálogo. Vale la pena volver a correr la prueba cada vez
+  que se toque `voz.ts` o el conocimiento.
 
 ## Pendiente
 
 - Que Meta apruebe las 2 plantillas en PENDING.
-- Cargar `MISTRAL_API_KEY` para encender la IA.
 - Configurar el flow de webhook en la UI de Botcake.
 - Fase 2: agente de carrito abandonado y de recompra (necesitan plantillas
   MARKETING nuevas).
