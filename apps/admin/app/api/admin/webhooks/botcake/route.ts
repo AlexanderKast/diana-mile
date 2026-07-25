@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
@@ -152,13 +153,23 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ ok: true }, { status: 200 });
 }
 
+/**
+ * Comparacion en tiempo constante para que la respuesta no filtre cuantos
+ * caracteres del secret acerto quien lo intenta.
+ */
+function secretValido(provisto: string | null, esperado: string): boolean {
+  if (!provisto) return false;
+  const a = Buffer.from(provisto);
+  const b = Buffer.from(esperado);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 export async function POST(request: NextRequest) {
   const secret = process.env.BOTCAKE_WEBHOOK_SECRET;
-  // El secret puede venir por header o por query string: no todos los
-  // constructores de flows permiten agregar headers propios.
-  const provisto =
-    request.headers.get("x-webhook-secret") ??
-    request.nextUrl.searchParams.get("secret");
+  // Solo por header: un secret en la query string queda escrito en los logs
+  // de acceso de Vercel y de cualquier proxy intermedio.
+  const provisto = request.headers.get("x-webhook-secret");
 
   let payload: PayloadBotcake | null;
   try {
@@ -176,7 +187,7 @@ export async function POST(request: NextRequest) {
   const evento = payload;
 
   // A partir de aqui hay datos de una persona real: exige el secret.
-  if (!secret || provisto !== secret) {
+  if (!secret || !secretValido(provisto, secret)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
