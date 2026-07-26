@@ -17,6 +17,19 @@ import {
   obtenerOCrearConversacion,
 } from "./conversacion";
 import { FALLBACK_HUMANO, FORMATO_WHATSAPP, VOZ_MILITO } from "./voz";
+import { TECNICAS_CIERRE } from "./cierre";
+import {
+  detectarEscalada,
+  escalarAHumano,
+  MARCA_ESCALAR,
+  type MotivoEscalado,
+} from "./escalamiento";
+import {
+  limpiarFormato,
+  pareceDespedida,
+  problemasDeFormato,
+  type OpcionesFormato,
+} from "./formato";
 
 export type ResultadoAgente = {
   respondido: boolean;
@@ -34,18 +47,40 @@ export type ResultadoAgente = {
 const PIDE_HUMANO =
   /\b(asesor|humano|persona real|hablar con alguien|operador|agente real|reclamo|demanda|abogado|estafa|estafaron|fraude)\b/i;
 
+/**
+ * Instruccion para que el modelo prefiera callarse antes que inventar. Es
+ * la regla mas importante del sistema: un dato inventado sobre un precio o
+ * un pedido le cuesta la confianza a la marca.
+ */
+const REGLA_NO_INVENTAR = `SI NO SABES, NO RESPONDAS.
+
+Cuando te pregunten algo que no puedas responder con lo que tienes arriba —un precio que no esta en el catalogo, el estado de un pedido que no aparece, una fecha de entrega, una condicion medica, una promocion, una politica que no conoces, cualquier dato duro que no tengas— NO improvises, NO estimes, NO respondas "creo que" ni "normalmente".
+
+En ese caso tu respuesta completa debe ser exactamente:
+${MARCA_ESCALAR} seguido de una frase corta diciendo que te falta.
+
+Ejemplo: ${MARCA_ESCALAR} pregunta si el producto sirve durante el embarazo
+
+Ese texto NUNCA lo ve la clienta: el sistema lo intercepta, le avisa a Diana y le responde a ella que le confirmas en un momento. Escalar no es fallar, es lo correcto. Inventar si es fallar.`;
+
 function construirSystemPrompt(
   experto: (typeof EXPERTOS)[ExpertoId],
   contexto: string,
 ): string {
   const instruccionesExtra = experto.escalaAHumano
-    ? `\n\nATENCION — ESTA CONVERSACION ES DE SOPORTE: la persona esta preguntando por un pedido o tiene un problema. Aqui NO vendes ni invitas a la comunidad. Respondes solo con los datos reales del pedido que tienes arriba, con empatia. Si no tienes el dato o hay un reclamo, le dices con claridad que ya le pasas el caso a una persona del equipo. Nunca inventes fechas de entrega.`
+    ? `\n\nATENCION — ESTA CONVERSACION ES DE SOPORTE: la persona esta preguntando por un pedido o tiene un problema.
+- CERO EMOJIS. Ninguno, ni siquiera uno de empatia. A alguien preocupado por su plata o su pedido un emoji le suena a que no lo estan tomando en serio.
+- NO vendes, NO recomiendas otro producto, NO invitas a la comunidad.
+- Respondes solo con los datos reales del pedido que tienes arriba.
+- Nunca inventes una fecha de entrega. Si no la tienes, escalas.`
     : "";
 
   return [
     VOZ_MILITO,
     `TU ESPECIALIDAD EN ESTE MOMENTO:\n${experto.conocimiento}`,
+    experto.vende ? TECNICAS_CIERRE : "",
     contexto,
+    REGLA_NO_INVENTAR,
     instruccionesExtra,
     FORMATO_WHATSAPP,
   ]
@@ -83,16 +118,27 @@ export async function responderMensaje(
       return { respondido: false, escalar: true, motivo: "ia_silenciada" };
     }
 
+    const datosBase = {
+      telefonoE164,
+      nombre: conversacion.nombre ?? nombre ?? null,
+      pregunta: texto,
+    };
+
     if (PIDE_HUMANO.test(texto)) {
-      const aviso =
-        "Claro que si 💚 Ya le paso tu mensaje a una persona del equipo para que te escriba.";
-      await enviarTexto(telefonoE164, aviso);
-      await guardarRespuesta(supabase, conversacion.id, aviso, "pedido", 0);
+      const motivo: MotivoEscalado = /reclamo|estafa|fraude|demanda|abogado/i.test(
+        texto,
+      )
+        ? "reclamo"
+        : "pidio_humano";
+      const res = await escalarAHumano(
+        supabase,
+        { ...datosBase, motivo },
+        "la persona lo pidio explicitamente",
+      );
       return {
-        respondido: true,
-        respuesta: aviso,
+        respondido: res.mensajeEnviado,
         escalar: true,
-        motivo: "pidio_humano",
+        motivo,
       };
     }
 
@@ -122,11 +168,67 @@ export async function responderMensaje(
       comunidad,
     });
 
+    const system = construirSystemPrompt(experto, contexto);
+    const opcionesFormato: OpcionesFormato = {
+      soporte: experto.escalaAHumano,
+      despedida: pareceDespedida(texto),
+    };
+
     // El historial ya incluye el mensaje que acabamos de guardar.
-    const { texto: respuesta, tokens } = await chat([
-      { role: "system", content: construirSystemPrompt(experto, contexto) },
+    let { texto: respuesta, tokens } = await chat([
+      { role: "system", content: system },
       ...previos,
     ]);
+    respuesta = limpiarFormato(respuesta, opcionesFormato);
+
+    // Lo que no se puede arreglar sin cambiar el sentido (mensaje muy
+    // largo, dos preguntas) se le devuelve al modelo una vez. Un reintento
+    // sale mas barato que mandarle a la clienta un mensaje mal formado.
+    const problemas = problemasDeFormato(respuesta, opcionesFormato);
+    if (problemas.length) {
+      try {
+        const reintento = await chat([
+          { role: "system", content: system },
+          ...previos,
+          { role: "assistant", content: respuesta },
+          {
+            role: "user",
+            content: `[CORRECCION DE FORMATO — no es la clienta quien escribe esto] Tu mensaje anterior ${problemas.join(" y ")}. Reescribelo respetando eso. Responde solo con el mensaje corregido.`,
+          },
+        ]);
+        const corregido = limpiarFormato(reintento.texto, opcionesFormato);
+        // Solo se acepta si de verdad quedo mejor.
+        if (!problemasDeFormato(corregido, opcionesFormato).length) {
+          respuesta = corregido;
+        }
+        tokens += reintento.tokens;
+      } catch (err) {
+        console.warn("[wa-agente] fallo el reintento de formato:", err);
+      }
+    }
+
+    // El modelo dijo que no sabe: esa marca jamas llega a la clienta.
+    const razonEscalada = detectarEscalada(respuesta);
+    if (razonEscalada) {
+      const res = await escalarAHumano(
+        supabase,
+        { ...datosBase, motivo: "no_sabe" },
+        razonEscalada,
+      );
+      await guardarRespuesta(
+        supabase,
+        conversacion.id,
+        `(escalado a Diana: ${razonEscalada})`,
+        expertoId,
+        tokens,
+      );
+      return {
+        respondido: res.mensajeEnviado,
+        experto: expertoId,
+        escalar: true,
+        motivo: `no_sabe: ${razonEscalada}`,
+      };
+    }
 
     const envio = await enviarTexto(telefonoE164, respuesta);
     if (!envio.success) {

@@ -53,6 +53,9 @@ especialidades, no varios bots: la persona siempre habla con Milito.
 | Archivo | Qué hace |
 |---|---|
 | `voz.ts` | El ADN de Milito: tono, límites y los tres objetivos (cierre, comunidad, valor). Lo comparten todos los expertos |
+| `cierre.ts` | Técnicas de venta y manejo de objeciones. Solo para los expertos con `vende: true` |
+| `formato.ts` | Aplica las reglas duras sobre lo que responde el modelo |
+| `escalamiento.ts` | Qué pasa cuando el agente no sabe algo |
 | `expertos.ts` | Las 8 especialidades, con sus pistas de detección |
 | `conocimiento/` | Las bases de conocimiento por área |
 | `router.ts` | Elige el experto: primero por palabras clave (gratis e instantáneo), y solo si hay duda le pregunta a un modelo chico |
@@ -76,6 +79,43 @@ especialidades, no varios bots: la persona siempre habla con Milito.
 Agregar un experto nuevo = un archivo en `conocimiento/` y una entrada en
 `EXPERTOS`. El router lo toma solo.
 
+### Las reglas de conversación
+
+| Regla | Cómo se garantiza |
+|---|---|
+| Máximo 3 líneas | Se pide en el prompt y **se verifica en código** |
+| 1 o 2 emojis · cero en soporte | Los sobrantes se recortan automáticamente |
+| Una sola pregunta por mensaje | Se verifica; si hay dos, se pide reescritura |
+| Siempre termina en pregunta… | …salvo si la persona se está despidiendo |
+| Sin markdown | Se limpia automáticamente (`**` → `*`) |
+
+Un modelo incumple estas reglas cada tantas respuestas por más que el prompt las
+repita. Por eso `formato.ts` no confía en el prompt: lo que se puede arreglar sin
+cambiar el sentido (markdown, emojis de más) se corrige solo, y lo que no
+(mensaje largo, dos preguntas) se le devuelve al modelo **una vez** para que lo
+reescriba. Si el reintento tampoco cumple, se manda el primero — nunca se deja a
+la persona sin respuesta por un tema de formato.
+
+Las técnicas de venta vienen de prácticas de cierre por chat: preguntas
+calibradas y etiquetado de emoción (Chris Voss), SPIN (Rackham),
+micro-compromisos (Belfort, Blount) y los principios de Cialdini. Están en
+`cierre.ts` traducidas a cómo se ven en un WhatsApp real, no como teoría.
+
+### Cuando el agente no sabe: escala, no inventa
+
+El modelo tiene instrucción de responder `[[ESCALAR]]` más una razón corta
+cuando le falte un dato. **Ese texto nunca llega a la clienta**: la app lo
+intercepta y en su lugar:
+
+1. Le responde a ella que se lo confirman en un momento.
+2. Apaga la IA en ese chat (`ia_activa = false`).
+3. Le manda push al panel y **WhatsApp a Diana** con la pregunta.
+4. Dispara el flow de Botcake que aplica la etiqueta de "hablar con humano".
+5. Marca la fila en `/dashboard/whatsapp` con 🔔.
+
+El aviso sale por dos canales a propósito: si la plantilla aún no está aprobada
+o Botcake falla, el push del panel garantiza que Diana se entere igual.
+
 ### Por qué no alucina
 
 Es el riesgo real de poner una IA a hablar con clientes. Tres barreras:
@@ -94,9 +134,14 @@ Es el riesgo real de poner una IA a hablar con clientes. Tres barreras:
 ### Probar el agente sin gastar un WhatsApp
 
 ```bash
-npm run wa:probar                       # 8 casos típicos, uno por área
+npm run wa:probar                       # 12 casos, uno por área y por regla
 npm run wa:probar -- "tu mensaje aquí"  # un mensaje puntual
+npx tsx scripts/ver-catalogo-wa.mts     # el catálogo tal como lo ve el agente
 ```
+
+Cada respuesta trae su chequeo: `[tienda · 4480 tok · 1L · 1emoji · 1?]  ✓`.
+Si algo no cumple, sale con ⚠️ y el motivo. `ver-catalogo-wa.mts` es la forma
+rápida de confirmar que los precios que va a citar coinciden con la tienda.
 
 Usa el router, los expertos y la voz reales, y muestra qué respondería
 Milito y qué experto entró. Es la forma de calibrar el entrenamiento: si
@@ -140,6 +185,9 @@ respuestas de los clientes.
 | `MISTRAL_API_KEY` | admin | El agente de IA. **Sin esto la IA no responde** y todo escala a humano |
 | `MISTRAL_CHAT_MODEL` | admin | Por defecto `mistral-large-latest` |
 | `MISTRAL_ROUTER_MODEL` | admin | Por defecto `mistral-small-latest` (clasificar es barato) |
+| `WHATSAPP_ADMIN_NUMERO` | admin | Número de Diana para los avisos de escalamiento |
+| `BOTCAKE_TEMPLATE_AVISO_ASESOR` | admin | Id de la plantilla del aviso (tras crearla) |
+| `BOTCAKE_FLOW_HABLAR_HUMANO` | admin | Id del flow que aplica la etiqueta |
 | `SHOPIFY_STORE_DOMAIN` + `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | admin | Catálogo real para el agente |
 
 ### ⚠️ waitUntil en los webhooks

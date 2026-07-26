@@ -108,6 +108,49 @@ export async function enviarPlantilla({
 }
 
 /**
+ * Ejecuta un flow existente de Botcake sobre un cliente.
+ *
+ * Se usa para acciones que el API publico no expone directamente: por
+ * ejemplo aplicar una etiqueta, que solo se puede hacer desde dentro de un
+ * flow. El flow se arma una vez en la UI de Botcake y aqui solo se dispara.
+ */
+export async function enviarFlow(
+  telefonoE164: string,
+  flowId: number,
+): Promise<BotcakeResultado> {
+  const config = getConfig();
+  if (!config) {
+    return { success: false, error: "Faltan BOTCAKE_WABA_PAGE_ID / BOTCAKE_ACCESS_TOKEN" };
+  }
+
+  try {
+    const res = await fetch(
+      `${BOTCAKE_BASE}/pages/${config.pageId}/flows/send_flow`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "access-token": config.accessToken,
+        },
+        body: JSON.stringify({
+          psid: telefonoAPsid(telefonoE164),
+          flow_id: flowId,
+        }),
+      },
+    );
+    const json = (await res.json().catch(() => null)) as
+      | { success?: boolean; message?: string }
+      | null;
+    if (!res.ok || !json?.success) {
+      return { success: false, error: json?.message ?? `HTTP ${res.status}` };
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
  * Envia un mensaje de texto libre (solo valido dentro de la ventana de 24h
  * desde el ultimo mensaje del cliente). Base para el agente de IA
  * conversacional.

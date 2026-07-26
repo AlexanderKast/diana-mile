@@ -47,6 +47,10 @@ type CacheCatalogo = { texto: string; expira: number };
 let cacheCatalogo: CacheCatalogo | null = null;
 const TTL_CATALOGO_MS = 10 * 60 * 1000;
 
+// Se piden TODAS las variantes, no solo minVariantPrice: la tienda vende
+// packs (1, 2, 3 unidades) a precios distintos y el minimo es la unidad
+// suelta. Si el agente cita solo el minimo, le dice un precio mas bajo del
+// que la clienta esta viendo en pantalla.
 const QUERY_CATALOGO = `{
   products(first: 40, sortKey: BEST_SELLING) {
     edges {
@@ -54,7 +58,15 @@ const QUERY_CATALOGO = `{
         title
         handle
         availableForSale
-        priceRange { minVariantPrice { amount currencyCode } }
+        variants(first: 20) {
+          edges {
+            node {
+              title
+              availableForSale
+              price { amount }
+            }
+          }
+        }
       }
     }
   }
@@ -113,8 +125,14 @@ export async function catalogoResumen(): Promise<string | null> {
               title: string;
               handle: string;
               availableForSale: boolean;
-              priceRange: {
-                minVariantPrice: { amount: string; currencyCode: string };
+              variants: {
+                edges: {
+                  node: {
+                    title: string;
+                    availableForSale: boolean;
+                    price: { amount: string };
+                  };
+                }[];
               };
             };
           }[];
@@ -131,12 +149,54 @@ export async function catalogoResumen(): Promise<string | null> {
     }
 
     const lineas = productos.map(({ node }) => {
-      const precio = Math.round(
-        parseFloat(node.priceRange.minVariantPrice.amount),
-      ).toLocaleString("es-CO");
+      const disponibles = node.variants.edges
+        .map((v) => v.node)
+        .filter((v) => v.availableForSale);
+
+      const precios = new Set(
+        disponibles.map((v) => Math.round(parseFloat(v.price.amount))),
+      );
+
+      let detalle: string;
+      if (!disponibles.length) {
+        detalle = "sin presentaciones disponibles";
+      } else if (precios.size === 1) {
+        // Todas valen lo mismo (tonos, colores, tallas): un solo precio. Se
+        // repetiria seis veces la misma cifra y el agente terminaria
+        // recitando una lista en vez de recomendar.
+        const precio = [...precios][0].toLocaleString("es-CO");
+        const nombrada = disponibles[0].title !== "Default Title";
+
+        if (disponibles.length === 1 && nombrada) {
+          // Una sola presentacion con nombre propio: se conserva, porque
+          // "Pack 2 unidades $161.500" le dice a la clienta que son dos y
+          // "$161.500" a secas la deja creyendo que es una.
+          detalle = `${disponibles[0].title} $${precio}`;
+        } else {
+          const opciones =
+            disponibles.length > 1 && nombrada
+              ? ` (${disponibles.length} opciones para elegir)`
+              : "";
+          detalle = `$${precio}${opciones}`;
+        }
+      } else {
+        // Precios distintos = presentaciones reales (unidad, pack de 2...).
+        // De menor a mayor: se nombra primero la mas accesible.
+        detalle = disponibles
+          .slice()
+          .sort((a, b) => parseFloat(a.price.amount) - parseFloat(b.price.amount))
+          .map((v) => {
+            const precio = Math.round(
+              parseFloat(v.price.amount),
+            ).toLocaleString("es-CO");
+            return `${v.title} $${precio}`;
+          })
+          .join(" · ");
+      }
+
       const estado = node.availableForSale ? "" : " (AGOTADO)";
       const link = sitio ? ` — ${sitio}/productos/${node.handle}` : "";
-      return `- ${node.title}: $${precio}${estado}${link}`;
+      return `- ${node.title}: ${detalle}${estado}${link}`;
     });
 
     const texto = lineas.join("\n");
@@ -192,7 +252,21 @@ export function formatearContexto(ctx: ContextoConversacion): string {
 
   if (ctx.catalogo) {
     partes.push(
-      `CATALOGO REAL (precios en pesos colombianos, unico origen de verdad para precios):\n${ctx.catalogo}`,
+      `CATALOGO REAL (pesos colombianos, unico origen de verdad para precios):
+${ctx.catalogo}
+
+COMO CITAR PRECIOS (para no decirle una cifra distinta a la que ve en la web):
+- Cada producto puede tener varias presentaciones con precios distintos. NUNCA des una cifra suelta sin decir a que presentacion corresponde.
+- Si el producto tiene varias presentaciones, mencionas la MAS BARATA PRIMERO y despues la otra, en la misma linea: "la unidad esta en $89.700 y el pack de 2 en $161.500". Empezar por la mas cara la espanta; mostrar solo la barata deja plata sobre la mesa.
+- El envio es gratis. El "envio prioritario" es un adicional OPCIONAL de $12.000 que ella marca si quiere en el formulario: no viene incluido y no lo menciones salvo que pregunte.
+- En la pagina puede aparecer un precio tachado mas alto: eso es precio de referencia, no lo que paga. Lo que paga es el precio del catalogo de arriba.
+- Si te nombra un producto que NO esta en esta lista, no inventes precio ni digas que lo tienes. Escala (ver mas abajo).
+
+DESCUENTO DEL 10% (tienes permitido ofrecerlo, pero con criterio):
+- Es tu ultima carta, no la primera. Solo despues de haber construido valor y si el precio sigue siendo el freno real. Si lo sueltas de entrada, quemas margen y le ensenas a esperar rebaja.
+- Cuando lo ofrezcas, mandale el link del producto con "?d=1" al final (ej: ${ctx.catalogo.includes("http") ? "el link del catalogo" : "el link del producto"} + "?d=1"). Ese link activa el descuento solo, sin que ella tenga que hacer nada mas.
+- Si le mandas el link normal, NO tiene descuento. Nunca le prometas el 10% sin el "?d=1", porque llegaria a pagar precio completo.
+- Dura 5 minutos desde que abre el link: diselo con naturalidad, es urgencia honesta.`,
     );
   } else {
     partes.push(

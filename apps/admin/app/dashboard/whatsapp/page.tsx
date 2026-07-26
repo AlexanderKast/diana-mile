@@ -22,6 +22,8 @@ type Conversacion = {
   ultimo_experto: string | null;
   ia_activa: boolean;
   ultimo_entrante_at: string | null;
+  escalado_at: string | null;
+  motivo_escalado: string | null;
 };
 
 type Evento = {
@@ -94,8 +96,9 @@ export default function WhatsAppPage() {
         <h1 className="font-display text-2xl text-carbon mb-2">WhatsApp</h1>
         <p className="text-sm text-carbon-suave">
           Mensajes que los agentes envían automáticamente y conversaciones que
-          está atendiendo la IA. Si vas a responderle tú a alguien, apaga la IA
-          en esa conversación para que el bot no siga escribiendo.
+          está atendiendo la IA. Las filas marcadas con 🔔 son personas que
+          preguntaron algo que la IA no supo responder: ya se apagó sola en ese
+          chat y están esperando que les respondas tú.
         </p>
       </div>
 
@@ -116,12 +119,27 @@ export default function WhatsAppPage() {
             </thead>
             <tbody>
               {conversaciones.map((c) => (
-                <tr key={c.id} className="border-b border-arena/50">
+                <tr
+                  key={c.id}
+                  className={`border-b border-arena/50 ${
+                    c.escalado_at ? "bg-amber-50" : ""
+                  }`}
+                >
                   <td className="p-3">
+                    {c.escalado_at && (
+                      <span className="mr-1" title="Está esperando respuesta tuya">
+                        🔔
+                      </span>
+                    )}
                     {c.nombre ?? "—"}
                     <span className="block text-xs text-carbon-suave">
                       {c.telefono}
                     </span>
+                    {c.motivo_escalado && (
+                      <span className="block text-xs text-amber-800">
+                        {c.motivo_escalado}
+                      </span>
+                    )}
                   </td>
                   <td className="p-3">{c.ultimo_experto ?? "—"}</td>
                   <td className="p-3">{fecha(c.ultimo_entrante_at)}</td>

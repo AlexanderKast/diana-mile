@@ -124,6 +124,14 @@ export function OrderSheetProvider({
     );
   }, []);
 
+  // Descuento por link (?d=1): lo usa la asesora de WhatsApp cuando se lo
+  // ofrece a alguien en el chat. Sin esto, el descuento solo existe en el
+  // popup de salida y la promesa hecha por WhatsApp no se podria cumplir.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("d") === "1") applyDiscount();
+  }, [applyDiscount]);
+
   const selectedVariant =
     product.variants.find((v) => v.id === selectedVariantId) ??
     product.variants[0];

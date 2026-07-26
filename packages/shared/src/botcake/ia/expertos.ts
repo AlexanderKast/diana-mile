@@ -25,6 +25,11 @@ export type Experto = {
   necesitaCatalogo?: boolean;
   /** Si debe escalar a un humano en vez de conversar. */
   escalaAHumano?: boolean;
+  /**
+   * Si recibe las tecnicas de cierre y manejo de objeciones. Se excluye
+   * en soporte: a quien tiene un problema con su pedido no se le vende.
+   */
+  vende?: boolean;
   /** Palabras que disparan este experto sin gastar una llamada al router. */
   pistas: string[];
 };
@@ -35,6 +40,9 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
     cuando:
       "Saludos, mensajes sueltos o ambiguos, preguntas sobre quien es Milito, o interes en la comunidad.",
     conocimiento: COMUNIDAD,
+    // Recepcion tambien vende: a este experto llegan mensajes ambiguos que
+    // muchas veces traen una objecion o una intencion de compra encubierta.
+    vende: true,
     pistas: ["hola", "buenas", "buenos dias", "buenas tardes", "info", "comunidad"],
   },
   tienda: {
@@ -43,6 +51,7 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
       "Pregunta por productos de la tienda, precios, disponibilidad, como comprar, envios o pago contra entrega. Tambien cuando quiere una recomendacion de producto para su piel o su caso.",
     conocimiento: `${TIENDA_MILITO}\n\n${COMUNIDAD}`,
     necesitaCatalogo: true,
+    vende: true,
     pistas: [
       "precio",
       "cuanto vale",
@@ -55,6 +64,15 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
       "disponible",
       "tienen",
       "catalogo",
+      // Objeciones de precio: sin esto caen en "general", que no tiene ni
+      // el catalogo ni las tecnicas para manejarlas.
+      "caro",
+      "costoso",
+      "descuento",
+      "promocion",
+      "oferta",
+      "rebaja",
+      "muy alto",
     ],
   },
   pedido: {
@@ -82,6 +100,7 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
     cuando:
       "Pregunta sobre ejercicio, rutinas, gimnasio, bajar de peso, tonificar, habitos, alimentacion general o energia.",
     conocimiento: `${ENTRENAMIENTO_PERSONAL}\n\n${COMUNIDAD}`,
+    vende: true,
     pistas: [
       "entrenar",
       "entreno",
@@ -102,6 +121,7 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
     cuando:
       "Pregunta por la oportunidad de negocio, ser distribuidora o afiliada, ganar dinero, trabajar con Milito, emprender o el plan de compensacion.",
     conocimiento: NUSKIN_NEGOCIO,
+    vende: true,
     pistas: [
       "negocio",
       "oportunidad",
@@ -123,6 +143,7 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
       "Pregunta por productos Nu Skin en concreto (Epoch, ageLOC, Pharmanex, dispositivos), rutinas de piel, o que producto le sirve para un problema de piel o bienestar.",
     conocimiento: `${NUSKIN_PRODUCTOS}\n\n${TIENDA_MILITO}`,
     necesitaCatalogo: true,
+    vende: true,
     pistas: [
       "nuskin",
       "nu skin",
@@ -144,6 +165,7 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
     cuando:
       "Pregunta como crear contenido, empezar en redes, UGC, ganchos, camara, o como conseguir marcas siendo creadora.",
     conocimiento: `${CONTENIDO_MARCAS}\n\n${COMUNIDAD}`,
+    vende: true,
     // "creadora"/"creador" a secas son ambiguas: las usa tanto quien quiere
     // serlo como la marca que busca una. Se dejan solo en frases largas.
     pistas: [
@@ -165,6 +187,7 @@ export const EXPERTOS: Record<ExpertoId, Experto> = {
     cuando:
       "Es una MARCA que busca contenido o creadores, o una creadora que quiere postularse a la agencia para que le consigan trabajo con marcas.",
     conocimiento: `${AGENCIA_CREADORES}\n\n${CONTENIDO_MARCAS}`,
+    vende: true,
     pistas: [
       "agencia",
       "campana",

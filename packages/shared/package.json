@@ -17,7 +17,10 @@
     "./botcake/ia/agente": "./src/botcake/ia/agente.ts",
     "./botcake/ia/expertos": "./src/botcake/ia/expertos.ts",
     "./botcake/ia/conversacion": "./src/botcake/ia/conversacion.ts",
-    "./botcake/ia/router": "./src/botcake/ia/router.ts"
+    "./botcake/ia/router": "./src/botcake/ia/router.ts",
+    "./botcake/ia/escalamiento": "./src/botcake/ia/escalamiento.ts",
+    "./botcake/ia/cierre": "./src/botcake/ia/cierre.ts",
+    "./botcake/ia/formato": "./src/botcake/ia/formato.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

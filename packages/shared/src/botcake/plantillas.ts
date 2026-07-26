@@ -40,6 +40,18 @@ export const PLANTILLAS = {
     id: "1594063132343063",
     categoria: "UTILITY",
   },
+  /**
+   * Aviso interno a Diana cuando el agente no puede resolver algo. Va por
+   * plantilla y no por texto libre porque ella no le escribe al WABA de la
+   * tienda: su ventana de 24h esta cerrada casi siempre.
+   * Vars: 1 nombre de la clienta, 2 telefono, 3 lo que pregunto.
+   * PENDIENTE: crear en Botcake y pegar aqui el id que devuelva Meta.
+   */
+  avisoAsesor: {
+    nombre: "aviso_asesor_requerido",
+    id: process.env.BOTCAKE_TEMPLATE_AVISO_ASESOR ?? "",
+    categoria: "UTILITY",
+  },
 } satisfies Record<string, PlantillaDef>;
 
 export const MARCA_WHATSAPP = "Milito Life";

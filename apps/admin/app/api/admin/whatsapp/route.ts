@@ -23,7 +23,11 @@ export async function GET() {
       .limit(50),
     supabase
       .from("whatsapp_conversaciones")
-      .select("id, telefono, nombre, ultimo_experto, ia_activa, ultimo_entrante_at")
+      .select(
+        "id, telefono, nombre, ultimo_experto, ia_activa, ultimo_entrante_at, escalado_at, motivo_escalado",
+      )
+      // Primero quien esta esperando respuesta de una persona.
+      .order("escalado_at", { ascending: false, nullsFirst: false })
       .order("updated_at", { ascending: false })
       .limit(30),
     supabase

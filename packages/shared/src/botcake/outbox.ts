@@ -9,7 +9,9 @@ export type TipoMensaje =
   | "recordatorio"
   | "envio"
   | "remarketing"
-  | "manual";
+  | "manual"
+  /** Aviso interno a Diana de que alguien necesita respuesta humana. */
+  | "escalamiento";
 
 export type MensajeNuevo = {
   telefonoE164: string;
