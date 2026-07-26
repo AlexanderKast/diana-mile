@@ -182,6 +182,15 @@ export async function POST(request: NextRequest) {
   // responde 200 para que Botcake acepte la URL, pero no se procesa nada —
   // sin destinatario no hay accion posible.
   if (!payload || (!payload.telefono && !payload.psid)) {
+    // Se registra el cuerpo para poder distinguir un ping real de un
+    // evento que viene con otros nombres de campo: sin esto, un webhook
+    // mal mapeado se descarta en silencio y parece que "no responde".
+    if (payload && Object.keys(payload).length) {
+      console.warn(
+        "[webhook-botcake] descartado sin destinatario:",
+        JSON.stringify(payload).slice(0, 600),
+      );
+    }
     return NextResponse.json({ ok: true }, { status: 200 });
   }
   const evento = payload;
