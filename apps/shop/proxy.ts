@@ -8,6 +8,27 @@ import { NextResponse, type NextRequest } from "next/server";
  * apps/admin/proxy.ts). Matcher acotado a /cuenta: cero impacto en
  * home/checkout, que siguen 100% anonimos.
  */
+/**
+ * Redirige SIN perder las cookies que Supabase acaba de rotar.
+ *
+ * `NextResponse.redirect()` crea una respuesta nueva y vacia: las cookies
+ * que el cliente de Supabase escribio en `response` durante `getUser()` no
+ * viajan con ella. Sin copiarlas, el navegador se queda con el refresh
+ * token viejo —ya rotado e invalido—, la siguiente peticion no encuentra
+ * sesion y rebota de vuelta al login. Ese ping-pong entre /cuenta y
+ * /cuenta/login es lo que el navegador corta con ERR_TOO_MANY_REDIRECTS.
+ */
+function redirigirConservandoSesion(
+  url: URL,
+  response: NextResponse,
+): NextResponse {
+  const redireccion = NextResponse.redirect(url);
+  for (const cookie of response.cookies.getAll()) {
+    redireccion.cookies.set(cookie);
+  }
+  return redireccion;
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -43,14 +64,14 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/cuenta/login";
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    return redirigirConservandoSesion(url, response);
   }
 
   if (user && isLoginRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/cuenta";
     url.search = "";
-    return NextResponse.redirect(url);
+    return redirigirConservandoSesion(url, response);
   }
 
   return response;

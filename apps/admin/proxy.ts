@@ -4,6 +4,28 @@ import { NextResponse, type NextRequest } from "next/server";
 import { rolesPermitidos, rolesPermitidosApi } from "@/lib/nav";
 import type { RolUsuario } from "@diana-mile/shared/types";
 
+/**
+ * Redirige SIN perder las cookies que Supabase acaba de rotar.
+ *
+ * `NextResponse.redirect()` crea una respuesta nueva y vacia: las cookies
+ * que el cliente de Supabase escribio en `response` durante `getUser()` no
+ * viajan con ella. Sin copiarlas, el navegador se queda con el refresh
+ * token viejo —ya rotado e invalido—, la siguiente peticion no encuentra
+ * sesion y rebota de vuelta al login: un ping-pong que el navegador corta
+ * con ERR_TOO_MANY_REDIRECTS. Aparecio primero en la tienda (/cuenta), pero
+ * el patron es identico aqui.
+ */
+function redirigirConservandoSesion(
+  url: URL,
+  response: NextResponse,
+): NextResponse {
+  const redireccion = NextResponse.redirect(url);
+  for (const cookie of response.cookies.getAll()) {
+    redireccion.cookies.set(cookie);
+  }
+  return redireccion;
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -42,13 +64,13 @@ export async function proxy(request: NextRequest) {
   if (isRoot) {
     const url = request.nextUrl.clone();
     url.pathname = user ? "/dashboard" : "/login";
-    return NextResponse.redirect(url);
+    return redirigirConservandoSesion(url, response);
   }
 
   if (!user && isDashboardRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return redirigirConservandoSesion(url, response);
   }
 
   if (!user && isAdminApiRoute) {
@@ -80,7 +102,7 @@ export async function proxy(request: NextRequest) {
       if (permitidos && (!rol || !permitidos.includes(rol))) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard";
-        return NextResponse.redirect(url);
+        return redirigirConservandoSesion(url, response);
       }
     }
   }
