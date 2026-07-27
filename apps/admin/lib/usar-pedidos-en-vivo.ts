@@ -34,8 +34,40 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
 
   useEffect(() => {
     const supabase = createClient();
+    let canal: ReturnType<typeof supabase.channel> | null = null;
+    let montado = true;
 
-    const canal = supabase
+    /**
+     * El socket hay que autenticarlo a mano.
+     *
+     * La sesion vive en una cookie y el cliente la lee de forma asincrona,
+     * asi que si se suscribe de una el socket sale con la clave anonima. La
+     * politica de lectura exige ser admin, de modo que Postgres no manda
+     * ninguna fila: el canal responde SUBSCRIBED —parece que todo va bien—
+     * y no llega un solo evento. Sintoma exacto que tenia el panel.
+     */
+    const arrancar = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!montado) return;
+
+      if (session?.access_token) {
+        await supabase.realtime.setAuth(session.access_token);
+      }
+      if (!montado) return;
+
+      canal = suscribir(supabase);
+    };
+
+    // El token caduca cada hora; sin renovarlo en el socket, el canal se
+    // queda mudo a mitad de la jornada sin avisar.
+    const { data: auth } = supabase.auth.onAuthStateChange((_evento, sesion) => {
+      if (sesion?.access_token) void supabase.realtime.setAuth(sesion.access_token);
+    });
+
+    const suscribir = (cliente: ReturnType<typeof createClient>) =>
+      cliente
       .channel("pedidos-en-vivo")
       .on(
         "postgres_changes",
@@ -68,8 +100,12 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
         }
       });
 
+    void arrancar();
+
     return () => {
-      void supabase.removeChannel(canal);
+      montado = false;
+      auth.subscription.unsubscribe();
+      if (canal) void supabase.removeChannel(canal);
     };
   }, []);
 
