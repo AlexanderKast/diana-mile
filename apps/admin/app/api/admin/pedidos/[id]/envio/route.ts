@@ -6,6 +6,7 @@ import {
 import { agregarTagsOrden, crearFulfillment } from "@/lib/shopify";
 import { enviarPush } from "@/lib/push";
 import { encolarPedidoEnviado } from "@diana-mile/shared/botcake/agentes";
+import { coberturaDe } from "@diana-mile/shared/botcake/ia/contexto";
 
 export async function POST(
   request: NextRequest,
@@ -104,6 +105,13 @@ export async function POST(
       url: `/cuenta/pedidos/${id}`,
     }).catch((err) => console.warn("[push] fallo al notificar envio:", err));
 
+    // El tiempo sale de la matriz de las transportadoras, por ciudad: no es
+    // lo mismo el Valle de Aburra, que se despacha desde Medellin en un
+    // dia, que un pueblo apartado que toma una semana.
+    const cobertura = pedidoActualizado.ciudad
+      ? await coberturaDe(supabase, pedidoActualizado.ciudad)
+      : null;
+
     await encolarPedidoEnviado(supabase, {
       pedidoId: id,
       nombre: pedidoActualizado.nombre ?? "cliente",
@@ -111,6 +119,10 @@ export async function POST(
       producto: pedidoActualizado.producto_nombre ?? "tu pedido",
       numeroGuia: numero_guia,
       precioTotal: Number(pedidoActualizado.precio_total ?? 0),
+      transportadora,
+      tiempoEntrega: cobertura
+        ? `${cobertura.diasMin} a ${cobertura.diasMax} dias habiles`
+        : null,
     });
   }
 

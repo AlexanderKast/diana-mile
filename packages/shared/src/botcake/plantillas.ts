@@ -41,6 +41,19 @@ export const PLANTILLAS = {
     categoria: "UTILITY",
   },
   /**
+   * Reemplazo de la anterior. Aquella decia "enviado con la transportadora"
+   * como texto fijo, sin hueco donde poner cual: el dato estaba en la base
+   * y no habia forma de mandarlo. Esta ademas dice cuando llega, que es lo
+   * que la gente pregunta apenas recibe el aviso.
+   * Vars: 1 nombre, 2 producto, 3 transportadora, 4 guia, 5 tiempo, 6 valor.
+   * Boton: "Tengo una novedad" (respuesta rapida).
+   */
+  pedidoEnviadoV2: {
+    nombre: "pedido_enviado_milito_v2",
+    id: "2834292316931854",
+    categoria: "UTILITY",
+  },
+  /**
    * Aviso interno a Diana cuando el agente no puede resolver algo. Va por
    * plantilla y no por texto libre porque ella no le escribe al WABA de la
    * tienda: su ventana de 24h esta cerrada casi siempre.

@@ -15,6 +15,7 @@
     "./botcake/agentes": "./src/botcake/agentes.ts",
     "./botcake/recordatorios": "./src/botcake/recordatorios.ts",
     "./botcake/ia/agente": "./src/botcake/ia/agente.ts",
+    "./botcake/ia/contexto": "./src/botcake/ia/contexto.ts",
     "./botcake/ia/expertos": "./src/botcake/ia/expertos.ts",
     "./botcake/ia/conversacion": "./src/botcake/ia/conversacion.ts",
     "./botcake/ia/router": "./src/botcake/ia/router.ts",

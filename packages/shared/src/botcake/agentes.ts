@@ -89,6 +89,42 @@ export async function encolarPedidoCancelado(
   });
 }
 
+/** Como se llaman las transportadoras de cara a la clienta. */
+const NOMBRE_TRANSPORTADORA: Record<string, string> = {
+  interrapidisimo: "Interrapidísimo",
+  servientrega: "Servientrega",
+  tcc: "TCC",
+  coordinadora: "Coordinadora",
+  deprisa: "Deprisa",
+  envia: "Envía",
+};
+
+function transportadoraLegible(valor: string | null | undefined): string {
+  const clave = (valor ?? "").trim().toLowerCase();
+  if (!clave || clave === "otro") return "la transportadora";
+  return NOMBRE_TRANSPORTADORA[clave] ?? valor!.trim();
+}
+
+/**
+ * Cual de las dos plantillas de despacho se usa.
+ *
+ * La v2 lleva transportadora y tiempo de entrega, pero mientras Meta no la
+ * apruebe mandarla falla y la clienta se queda sin aviso. Por eso la
+ * version vive en `config` y se cambia sin desplegar: se pone en "v2" el
+ * dia que quede aprobada, y si algo sale mal se vuelve atras igual de
+ * rapido.
+ */
+async function versionPlantillaEnvio(
+  supabase: SupabaseClient,
+): Promise<"v1" | "v2"> {
+  const { data } = await supabase
+    .from("config")
+    .select("valor")
+    .eq("clave", "plantilla_envio_version")
+    .maybeSingle();
+  return data?.valor === "v2" ? "v2" : "v1";
+}
+
 /** Agente Envio: pedido despachado con numero de guia. */
 export async function encolarPedidoEnviado(
   supabase: SupabaseClient,
@@ -99,8 +135,31 @@ export async function encolarPedidoEnviado(
     producto: string;
     numeroGuia: string;
     precioTotal: number;
+    transportadora?: string | null;
+    /** Ej: "1 a 2 dias habiles". Ya calculado con la matriz de cobertura. */
+    tiempoEntrega?: string | null;
   },
 ): Promise<void> {
+  const version = await versionPlantillaEnvio(supabase);
+
+  if (version === "v2") {
+    await encolarMensaje(supabase, {
+      telefonoE164: datos.telefonoE164,
+      tipo: "envio",
+      plantilla: PLANTILLAS.pedidoEnviadoV2,
+      pedidoId: datos.pedidoId,
+      variables: {
+        "1": datos.nombre,
+        "2": datos.producto,
+        "3": transportadoraLegible(datos.transportadora),
+        "4": datos.numeroGuia,
+        "5": datos.tiempoEntrega?.trim() || "3 a 5 dias habiles",
+        "6": formatoPesos(datos.precioTotal),
+      },
+    });
+    return;
+  }
+
   await encolarMensaje(supabase, {
     telefonoE164: datos.telefonoE164,
     tipo: "envio",
