@@ -11,6 +11,21 @@ export type PricingConfig = {
   envioPrioritarioPrecio: string;
   envioPrioritarioLabel: string;
   pwaBannerActivo: boolean;
+  /**
+   * Tope de valor que el mensajero puede recibir en efectivo por un pedido
+   * contraentrega.
+   *
+   * El estado COD lo sigue decidiendo `cod_disponible` a nivel de PRODUCTO,
+   * no este numero. Esto es una segunda barrera para el caso que el
+   * metafield no ve: un producto barato y apto para contraentrega al que se
+   * le agrega una variante de pack. Un tubo de AP 24 son $75.600 y es COD
+   * sin problema; el pack de 25 son $1.417.500 en efectivo en la puerta, y
+   * eso no lo sostiene nadie aunque el producto siga marcado como apto.
+   *
+   * Se lee de la tabla `config` (clave `cod_tope_pedido`) para poder subirlo
+   * o bajarlo desde el admin sin desplegar.
+   */
+  codTopePedido: number;
 };
 
 const DEFAULTS: PricingConfig = {
@@ -19,6 +34,7 @@ const DEFAULTS: PricingConfig = {
   envioPrioritarioPrecio: ENVIO_PRIORITARIO_PRECIO,
   envioPrioritarioLabel: ENVIO_PRIORITARIO_LABEL,
   pwaBannerActivo: true,
+  codTopePedido: 400000,
 };
 
 const CLAVES = [
@@ -27,7 +43,17 @@ const CLAVES = [
   "envio_prioritario_precio",
   "envio_prioritario_label",
   "pwa_banner_activo",
+  "cod_tope_pedido",
 ] as const;
+
+/**
+ * Un tope mal escrito en el admin (vacio, texto, 0) no puede convertirse en
+ * "ningun pedido pasa" ni en "todos pasan": se cae al default.
+ */
+function topeValido(valor: string | null | undefined): number {
+  const n = Number(valor);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULTS.codTopePedido;
+}
 
 /**
  * Lee la configuracion de precios/promos desde la tabla `config` de
@@ -67,6 +93,7 @@ export async function getPricingConfig(): Promise<PricingConfig> {
       pwaBannerActivo: valores.has("pwa_banner_activo")
         ? valores.get("pwa_banner_activo") !== "false"
         : DEFAULTS.pwaBannerActivo,
+      codTopePedido: topeValido(valores.get("cod_tope_pedido")),
     };
   } catch {
     return DEFAULTS;

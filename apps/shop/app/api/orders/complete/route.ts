@@ -75,6 +75,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Mismo tope que /api/orders/draft. Se repite porque confirmar es el
+    // paso que crea la orden real: el draft pudo crearse antes de que se
+    // bajara el tope, o con otra variante.
+    const topeConfig = await getPricingConfig();
+    const valorLinea = parseFloat(variant.price);
+    if (Number.isFinite(valorLinea) && valorLinea > topeConfig.codTopePedido) {
+      return NextResponse.json(
+        {
+          mensaje:
+            "Esta presentacion supera el monto que manejamos contraentrega. Escribele a Diana por WhatsApp y lo coordinan directamente.",
+        },
+        { status: 400 },
+      );
+    }
+
     const { orderId, orderNumber } = await completeDraftOrder(draftOrderId);
 
     let precioTotal: number | undefined;

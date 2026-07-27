@@ -256,10 +256,12 @@ const MOCK_PRODUCTS: Product[] = [
  * Shopify a partir del titulo al crearlas — no son arbitrarios).
  */
 export const COLLECTION_HANDLES = [
-  "ritual-epoch",
-  "rituales-de-piel",
-  "tendencia-milito",
-  "suplementos-y-bienestar",
+  "ritual-de-rostro",
+  "tecnologia-en-casa",
+  "cuerpo-y-ducha",
+  "bienestar-por-dentro",
+  "color-y-detalle",
+  "kits-de-inicio",
 ] as const;
 
 const MOCK_COLLECTIONS: Collection[] = [
@@ -353,7 +355,7 @@ const COLLECTION_BY_HANDLE_QUERY = `
       description
       image { url altText }
       metafields(identifiers: ${COLLECTION_METAFIELD_IDENTIFIERS_GQL}) { key value }
-      products(first: 24) {
+      products(first: 100) {
         edges {
           node {
             id

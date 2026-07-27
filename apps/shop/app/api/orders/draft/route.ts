@@ -91,6 +91,21 @@ export async function POST(request: NextRequest) {
 
     const pricing = await getPricingConfig();
 
+    // Segunda barrera, para lo que el metafield del producto no ve: una
+    // variante de pack dentro de un producto apto para contraentrega. El
+    // producto sigue siendo COD; lo que no puede sostenerse es que el
+    // mensajero reciba este monto en efectivo.
+    const valorLinea = parseFloat(variant.price);
+    if (Number.isFinite(valorLinea) && valorLinea > pricing.codTopePedido) {
+      return NextResponse.json(
+        {
+          mensaje:
+            "Esta presentacion supera el monto que manejamos contraentrega. Escribele a Diana por WhatsApp y lo coordinan directamente.",
+        },
+        { status: 400 },
+      );
+    }
+
     const result = await upsertCheckoutDraftOrder(
       {
         variantId,
