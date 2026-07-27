@@ -61,10 +61,33 @@ export type ContextoRuteo = {
   tienePedidoActivo?: boolean;
 };
 
+/**
+ * Saludos y cortesias que no necesitan clasificarse: llamar al modelo para
+ * decidir que "Hola" es un saludo cuesta un segundo o dos de espera que la
+ * persona siente, y siempre da lo mismo.
+ */
+const RE_SALUDO =
+  /^(hola|buenas|buenos dias|buenas tardes|buenas noches|hey|hi|holi|que tal|como estas|saludos|buen dia)[\s!.,¡]*$/i;
+
+function normalizarSaludo(mensaje: string): boolean {
+  const t = mensaje
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  return RE_SALUDO.test(t);
+}
+
 export async function elegirExperto(
   mensaje: string,
   contexto: ContextoRuteo = {},
 ): Promise<ExpertoId> {
+  // Un saludo suelto va derecho a recepcion, sin gastar una llamada al
+  // modelo ni el tiempo de espera que eso agrega.
+  if (normalizarSaludo(mensaje)) {
+    return contexto.expertoPrevio ?? EXPERTO_POR_DEFECTO;
+  }
+
   const porPistas = clasificarPorPistas(mensaje);
   if (porPistas) return porPistas;
 

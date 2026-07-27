@@ -292,24 +292,26 @@ export async function responderMensaje(
       return { respondido: true, escalar: true, motivo: "sin_api_key" };
     }
 
-    const pedido = await pedidoReciente(supabase, telefonoE164);
-
-    const expertoId = await elegirExperto(texto, {
-      expertoPrevio: conversacion.ultimoExperto,
-      tienePedidoActivo: Boolean(pedido),
-    });
-    const experto = EXPERTOS[expertoId];
-
-    const [catalogo, comunidad, previos] = await Promise.all([
-      experto.necesitaCatalogo ? catalogoResumen() : Promise.resolve(null),
+    // Todo lo que no depende del experto elegido se pide de una: el
+    // catalogo esta cacheado y el resto son consultas rapidas, asi que
+    // traerlo siempre sale mas barato que esperar a saber si hace falta.
+    // Cada segundo cuenta — la persona esta mirando el chat.
+    const [pedido, catalogo, comunidad, previos, expertoId] = await Promise.all([
+      pedidoReciente(supabase, telefonoE164),
+      catalogoResumen(),
       linkComunidad(supabase),
       historial(supabase, conversacion.id),
+      elegirExperto(texto, { expertoPrevio: conversacion.ultimoExperto }),
     ]);
+
+    const experto = EXPERTOS[expertoId];
 
     const contexto = formatearContexto({
       nombre: conversacion.nombre ?? nombre ?? null,
       pedido,
-      catalogo,
+      // El catalogo solo se le muestra a quien lo necesita: en soporte o
+      // en entrenamiento es ruido que le quita foco al modelo.
+      catalogo: experto.necesitaCatalogo ? catalogo : null,
       comunidad,
     });
 

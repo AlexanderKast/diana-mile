@@ -63,7 +63,11 @@ export function problemasDeFormato(
   const problemas: string[] = [];
 
   const lineas = texto.split("\n").filter((l) => l.trim()).length;
-  if (lineas > MAX_LINEAS) {
+  // Se tolera una linea de mas si el mensaje es corto: pedir una
+  // reescritura cuesta varios segundos de espera para la persona, y por
+  // cuatro lineas breves no vale la pena hacerla esperar.
+  const largoRazonable = texto.length <= 300;
+  if (lineas > MAX_LINEAS && !(lineas === MAX_LINEAS + 1 && largoRazonable)) {
     problemas.push(
       `tiene ${lineas} lineas y el maximo son ${MAX_LINEAS}: dejalo mas corto`,
     );
