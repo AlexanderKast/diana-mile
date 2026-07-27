@@ -50,6 +50,11 @@ export const NAV_GRUPOS: NavGroup[] = [
         href: "/dashboard/whatsapp",
         roles: ["superadmin", "admin", "confirmador"],
       },
+      {
+        label: "Aprendizaje",
+        href: "/dashboard/whatsapp/aprendizaje",
+        roles: ["superadmin", "admin"],
+      },
     ],
   },
   {

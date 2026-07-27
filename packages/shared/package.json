@@ -27,7 +27,8 @@
     "./botcake/seguimiento": "./src/botcake/seguimiento.ts",
     "./botcake/horario": "./src/botcake/horario.ts",
     "./botcake/mensaje-diario": "./src/botcake/mensaje-diario.ts",
-    "./botcake/vigilante": "./src/botcake/vigilante.ts"
+    "./botcake/vigilante": "./src/botcake/vigilante.ts",
+    "./botcake/ia/aprendizaje": "./src/botcake/ia/aprendizaje.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

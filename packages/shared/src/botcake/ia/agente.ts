@@ -32,6 +32,12 @@ import {
   type OpcionesFormato,
 } from "./formato";
 import { crearPedidoDesdeChat, type PedidoDesdeChat } from "./pedido";
+import {
+  anotarPendiente,
+  buscarAprendido,
+  formatearAprendido,
+  marcarUsado,
+} from "./aprendizaje";
 
 export type ResultadoAgente = {
   respondido: boolean;
@@ -125,6 +131,7 @@ NO uses esta marca si todavia falta un dato o si ella no ha confirmado. Y no la 
 function construirSystemPrompt(
   experto: (typeof EXPERTOS)[ExpertoId],
   contexto: string,
+  aprendido = "",
 ): string {
   const instruccionesExtra = experto.escalaAHumano
     ? `\n\nATENCION — ESTA CONVERSACION ES DE SOPORTE: la persona esta preguntando por un pedido o tiene un problema.
@@ -139,6 +146,9 @@ function construirSystemPrompt(
     `TU ESPECIALIDAD EN ESTE MOMENTO:\n${experto.conocimiento}`,
     experto.vende ? TECNICAS_CIERRE : "",
     contexto,
+    // Va antes de la regla de no inventar: si ya sabe la respuesta, no
+    // tiene por que escalar.
+    aprendido,
     // Solo quien vende puede tomar pedidos: en soporte no aplica.
     experto.vende ? REGLA_TOMAR_PEDIDO : "",
     // Cancelar aplica al reves: es cosa de soporte y de la tienda.
@@ -321,13 +331,15 @@ export async function responderMensaje(
     // catalogo esta cacheado y el resto son consultas rapidas, asi que
     // traerlo siempre sale mas barato que esperar a saber si hace falta.
     // Cada segundo cuenta — la persona esta mirando el chat.
-    const [pedido, catalogo, comunidad, previos, conocidos, expertoId] =
+    const [pedido, catalogo, comunidad, previos, conocidos, aprendido, expertoId] =
       await Promise.all([
         pedidoReciente(supabase, telefonoE164),
         catalogoResumen(),
         linkComunidad(supabase),
         historial(supabase, conversacion.id),
         datosConocidos(supabase, telefonoE164),
+        // Lo que ya se le enseño sobre una duda parecida a esta.
+        buscarAprendido(supabase, texto),
         elegirExperto(texto, { expertoPrevio: conversacion.ultimoExperto }),
       ]);
 
@@ -343,7 +355,17 @@ export async function responderMensaje(
       conocidos,
     });
 
-    const system = construirSystemPrompt(experto, contexto);
+    const system = construirSystemPrompt(
+      experto,
+      contexto,
+      formatearAprendido(aprendido),
+    );
+    if (aprendido.length) {
+      void marcarUsado(
+        supabase,
+        aprendido.map((a) => a.id),
+      );
+    }
     const opcionesFormato: OpcionesFormato = {
       soporte: experto.escalaAHumano,
       despedida: pareceDespedida(texto),
@@ -488,6 +510,14 @@ export async function responderMensaje(
         { ...datosBase, motivo: "no_sabe" },
         razonEscalada,
       );
+
+      // Queda anotada para que alguien la conteste una vez: la proxima que
+      // pregunten lo mismo, el agente ya lo sabe y no vuelve a escalar.
+      void anotarPendiente(supabase, {
+        telefono: telefonoE164,
+        pregunta: texto,
+        contexto: razonEscalada,
+      });
       await guardarRespuesta(
         supabase,
         conversacion.id,
