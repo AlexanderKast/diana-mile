@@ -20,7 +20,8 @@
     "wa:pedido": "tsx scripts/probar-pedido-wa.mts",
     "wa:diario": "tsx scripts/probar-diario-wa.mts",
     "wa:guardia": "tsx scripts/probar-guardia-catalogo.mts",
-    "wa:upsell": "tsx scripts/probar-upsell.mts"
+    "wa:upsell": "tsx scripts/probar-upsell.mts",
+    "wa:edicion": "tsx scripts/probar-edicion-orden.mts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

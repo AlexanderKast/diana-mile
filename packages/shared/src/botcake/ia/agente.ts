@@ -430,7 +430,10 @@ export async function responderMensaje(
       motivo: string,
     ) => Promise<{ cancelado: boolean; motivo?: string }>;
     /** Suma un producto a una orden que ya existe (edicion en Shopify). */
-    agregarAOrden?: (pedidoId: string, variantId: string) => Promise<boolean>;
+    agregarAOrden?: (
+      pedidoId: string,
+      variantId: string,
+    ) => Promise<{ ok: boolean; totalNuevo: number | null }>;
   },
 ): Promise<ResultadoAgente> {
   const { telefonoE164, texto, nombre } = entrada;
@@ -586,7 +589,7 @@ export async function responderMensaje(
         agregarAOrden: async (variantId) =>
           entrada.agregarAOrden
             ? entrada.agregarAOrden(adicional.pedidoId, variantId)
-            : false,
+            : { ok: false, totalNuevo: null },
       });
 
       await enviarTexto(telefonoE164, res.mensaje);

@@ -201,7 +201,9 @@ export async function aceptarAdicional(
     conversacionId: string;
     telefono: string;
     oferta: OfertaUpsell;
-    agregarAOrden: (variantId: string) => Promise<boolean>;
+    agregarAOrden: (
+      variantId: string,
+    ) => Promise<{ ok: boolean; totalNuevo: number | null }>;
   },
 ): Promise<{ ok: boolean; mensaje: string }> {
   const { oferta } = entrada;
@@ -234,9 +236,9 @@ export async function aceptarAdicional(
 
   const sumado = pedido.shopify_order_id
     ? await entrada.agregarAOrden(oferta.variantId)
-    : false;
+    : { ok: false, totalNuevo: null };
 
-  if (!sumado) {
+  if (!sumado.ok) {
     await anotar(supabase, {
       pedidoId: pedido.id,
       telefono: entrada.telefono,
@@ -252,7 +254,11 @@ export async function aceptarAdicional(
     };
   }
 
-  const nuevoTotal = Number(pedido.precio_total ?? 0) + oferta.precio;
+  // Manda el total que devuelve Shopify: es el que va en la orden y el que
+  // el mensajero va a cobrar. La suma nuestra queda de respaldo por si la
+  // lectura falla, pero no es la fuente de verdad.
+  const nuevoTotal =
+    sumado.totalNuevo ?? Number(pedido.precio_total ?? 0) + oferta.precio;
   await supabase
     .from("pedidos")
     .update({

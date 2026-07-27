@@ -370,7 +370,7 @@ export async function agregarProductoAOrden(
   orderId: string,
   variantId: string,
   cantidad = 1,
-): Promise<boolean> {
+): Promise<{ ok: boolean; totalNuevo: number | null }> {
   const resultado = await safeShopifyCall("agregar producto a orden", async () => {
     const gql = async (query: string, variables: Record<string, unknown>) => {
       const res = await fetch(
@@ -431,8 +431,21 @@ export async function agregarProductoAOrden(
     const errCommit = commit.data?.orderEditCommit?.userErrors ?? [];
     if (errCommit.length) throw new Error(JSON.stringify(errCommit));
 
-    return true;
+    // El total se lee de vuelta en vez de sumarlo por nuestra cuenta: al
+    // anadir una linea Shopify recalcula impuestos, descuentos y envio, y
+    // el numero que resulte es el que el mensajero va a cobrar. Sumar el
+    // precio del producto y ya funciona hasta el dia que un producto tiene
+    // IVA distinto, y ese dia el cobro no cuadra.
+    const ver = await fetch(
+      `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders/${orderId}.json?fields=total_price`,
+      { headers: { "X-Shopify-Access-Token": ADMIN_TOKEN! } },
+    );
+    const total = ver.ok
+      ? parseFloat((await ver.json())?.order?.total_price ?? "")
+      : NaN;
+
+    return { ok: true, totalNuevo: Number.isFinite(total) ? total : null };
   });
 
-  return resultado ?? false;
+  return resultado ?? { ok: false, totalNuevo: null };
 }

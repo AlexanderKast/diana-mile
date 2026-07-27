@@ -384,7 +384,7 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
           .select("shopify_order_id")
           .eq("id", pedidoId)
           .maybeSingle();
-        if (!p?.shopify_order_id) return false;
+        if (!p?.shopify_order_id) return { ok: false, totalNuevo: null };
         return agregarProductoAOrden(p.shopify_order_id, variantId);
       },
       // El agente puede cancelar por si mismo, pero solo si el pedido
