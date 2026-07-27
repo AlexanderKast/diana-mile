@@ -38,9 +38,12 @@ function LoginForm() {
     });
     setLoading(false);
 
+    // Aunque el envio falle se pasa al paso del codigo. Hoy el proveedor de
+    // Supabase esta deshabilitado y este error salta siempre; cortar aqui
+    // dejaria la pantalla sin salida, y el codigo temporal del equipo no se
+    // podria ni escribir. El error de verdad aparece al validar.
     if (otpError) {
-      setError("No pudimos enviar el codigo. Intenta de nuevo.");
-      return;
+      console.warn("[login] no se pudo enviar el codigo:", otpError.message);
     }
 
     setTelefonoE164(normalizado.e164);
@@ -59,13 +62,32 @@ function LoginForm() {
       type: "sms",
     });
 
-    setLoading(false);
-
+    // Si el codigo real no cuadra, se intenta el temporal del equipo. Va en
+    // segundo lugar a proposito: el dia que el envio por WhatsApp vuelva a
+    // funcionar, el codigo de verdad manda y esto no se usa nunca.
     if (verifyError) {
-      setError("Codigo incorrecto o vencido.");
-      return;
+      const res = await fetch("/api/cuenta/acceso-maestro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telefono: telefonoE164, codigo }),
+      });
+
+      if (!res.ok) {
+        setLoading(false);
+        setError("Codigo incorrecto o vencido.");
+        return;
+      }
+
+      const sesion = await res.json();
+      const { error: sesionError } = await supabase.auth.setSession(sesion);
+      if (sesionError) {
+        setLoading(false);
+        setError("No pudimos abrir tu sesion. Intenta de nuevo.");
+        return;
+      }
     }
 
+    setLoading(false);
     router.push(next);
     router.refresh();
   }
