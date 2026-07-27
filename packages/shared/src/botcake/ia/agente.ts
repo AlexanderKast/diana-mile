@@ -632,12 +632,13 @@ export async function responderMensaje(
       totalTokens,
     );
 
-    return {
-      respondido: true,
-      experto: expertoId,
-      respuesta,
-      escalar: experto.escalaAHumano,
-    };
+    // Se responde y la IA sigue encendida. Antes toda conversacion de
+    // soporte apagaba el agente, aunque hubiera contestado bien: preguntar
+    // "donde va mi pedido" dejaba el chat mudo hasta la reactivacion
+    // automatica, y los mensajes siguientes se perdian. El agente solo se
+    // aparta cuando de verdad no puede resolver, y eso ya lo deciden las
+    // ramas de arriba (marca [[ESCALAR]], cancelacion pendiente o bucle).
+    return { respondido: true, experto: expertoId, respuesta };
   } catch (err) {
     console.error("[wa-agente] fallo al responder:", err);
     try {

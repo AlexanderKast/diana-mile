@@ -13,6 +13,10 @@ export type PedidoContexto = {
   numeroGuia: string | null;
   transportadora: string | null;
   creadoAt: string;
+  /** Ciudad de entrega, para calcular cuando le llega. */
+  ciudad: string | null;
+  /** Rango de dias habiles de esa ciudad, ya consultado en la matriz. */
+  diasEntrega: { min: number; max: number } | null;
 };
 
 /**
@@ -63,7 +67,7 @@ export async function pedidoReciente(
   const { data } = await supabase
     .from("pedidos")
     .select(
-      "id, estado, producto_nombre, numero_guia, transportadora, created_at",
+      "id, estado, producto_nombre, numero_guia, transportadora, created_at, ciudad",
     )
     .eq("telefono", telefonoE164)
     .order("created_at", { ascending: false })
@@ -71,6 +75,14 @@ export async function pedidoReciente(
     .maybeSingle();
 
   if (!data) return null;
+
+  // Sin esto el agente no sabia responder "¿cuando me llega?" y terminaba
+  // pasandole a Diana una pregunta que se contesta sola con la matriz de
+  // cobertura. Es la consulta mas comun despues de comprar.
+  const cobertura = data.ciudad
+    ? await coberturaDe(supabase, data.ciudad)
+    : null;
+
   return {
     id: data.id,
     estado: data.estado,
@@ -78,6 +90,10 @@ export async function pedidoReciente(
     numeroGuia: data.numero_guia ?? null,
     transportadora: data.transportadora ?? null,
     creadoAt: data.created_at,
+    ciudad: data.ciudad ?? null,
+    diasEntrega: cobertura
+      ? { min: cobertura.diasMin, max: cobertura.diasMax }
+      : null,
   };
 }
 
@@ -361,8 +377,14 @@ USALOS. Si te pide un pedido nuevo, NO le preguntes todo de cero: le confirmas s
     const guia = ctx.pedido.numeroGuia
       ? `guia ${ctx.pedido.numeroGuia}${ctx.pedido.transportadora ? ` con ${ctx.pedido.transportadora}` : ""}`
       : "todavia sin guia asignada";
+    const entrega = ctx.pedido.diasEntrega
+      ? `Le llega en ${ctx.pedido.diasEntrega.min} a ${ctx.pedido.diasEntrega.max} dias habiles contados desde esa fecha${ctx.pedido.ciudad ? ` (${ctx.pedido.ciudad})` : ""}.`
+      : "No tienes el tiempo de entrega de su ciudad.";
+
     partes.push(
-      `PEDIDO DE ESTA PERSONA: ${ctx.pedido.producto}, estado "${ctx.pedido.estado}", ${guia}. Fecha: ${new Date(ctx.pedido.creadoAt).toLocaleDateString("es-CO")}. Estos son los unicos datos de pedido que puedes afirmar.`,
+      `PEDIDO DE ESTA PERSONA: ${ctx.pedido.producto}, estado "${ctx.pedido.estado}", ${guia}. Fecha: ${new Date(ctx.pedido.creadoAt).toLocaleDateString("es-CO")}. ${entrega} Estos son los unicos datos de pedido que puedes afirmar.
+
+SI TE PREGUNTA POR EL ESTADO O CUANDO LLEGA: contestale tu con lo de arriba. Eso NO se escala. Le dices en que va y en cuantos dias habiles lo recibe; si todavia no hay guia es normal y se lo explicas con naturalidad, no como un problema. Solo escalas si te pregunta algo que estos datos no responden.`,
     );
   } else {
     partes.push(

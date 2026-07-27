@@ -19,11 +19,15 @@ const VENTANA_MS = 24 * 60 * 60 * 1000;
  * Cuanto espera un escalamiento antes de que la IA retome la conversacion.
  *
  * Si nadie del equipo entra a responder, dejar el bot apagado significa
- * abandonar a esa persona: escribe, no le contestan, y se va. Una hora es
- * suficiente para que alguien alcance a tomar el caso, y poco como para
- * que un cliente se quede hablando solo.
+ * abandonar a esa persona: escribe, no le contestan, y se va.
+ *
+ * Estaba en una hora y se vio lo que eso significa en un chat real: la
+ * persona escribio tres veces en catorce minutos y no recibio nada. En
+ * WhatsApp eso no se lee como "estan revisando", se lee como que la
+ * tienda no existe. Veinte minutos alcanzan para que alguien tome el caso
+ * y son pocos como para que el silencio se note.
  */
-const HORAS_PARA_RETOMAR = 1;
+const HORAS_PARA_RETOMAR = 1 / 3;
 
 export type Conversacion = {
   id: string;
