@@ -54,6 +54,20 @@ export const PLANTILLAS = {
     categoria: "UTILITY",
   },
   /**
+   * Aviso interno a Diana cuando entra un pedido, venga de donde venga.
+   * Va por plantilla porque su ventana de 24h con el WABA de la tienda
+   * esta cerrada casi siempre.
+   * Vars: 1 numero de orden, 2 cliente, 3 telefono, 4 ciudad, 5 producto,
+   * 6 valor.
+   * Boton URL: abre el panel.
+   * PENDIENTE: crear en Botcake y pegar aqui el id que devuelva Meta.
+   */
+  pedidoNuevo: {
+    nombre: "pedido_nuevo_milito",
+    id: "",
+    categoria: "UTILITY",
+  },
+  /**
    * Aviso interno a Diana cuando el agente no puede resolver algo. Va por
    * plantilla y no por texto libre porque ella no le escribe al WABA de la
    * tienda: su ventana de 24h esta cerrada casi siempre.

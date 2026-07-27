@@ -173,3 +173,49 @@ export async function encolarPedidoEnviado(
     },
   });
 }
+
+/**
+ * Le avisa a Diana que entro un pedido.
+ *
+ * En contraentrega los primeros minutos deciden la venta: cuanto antes se
+ * llame a confirmar, menos se cae. El panel ya avisa a quien lo tiene
+ * abierto, pero nadie lo tiene abierto todo el dia — el WhatsApp si lo
+ * lleva encima.
+ *
+ * Va por plantilla y no por texto libre porque ella no le escribe al WABA
+ * de la tienda, asi que su ventana de 24h esta cerrada casi siempre.
+ */
+export async function encolarAvisoPedidoNuevo(
+  supabase: SupabaseClient,
+  datos: {
+    pedidoId?: string;
+    numeroOrden: string;
+    cliente: string;
+    telefonoCliente: string;
+    ciudad: string;
+    producto: string;
+    precioTotal: number;
+  },
+): Promise<void> {
+  const numeroAdmin = process.env.WHATSAPP_ADMIN_NUMERO;
+  const plantilla = PLANTILLAS.pedidoNuevo;
+
+  // Sin numero configurado o sin plantilla aprobada todavia, el aviso del
+  // panel queda como unico canal. No es motivo para romper la venta.
+  if (!numeroAdmin || !plantilla.id) return;
+
+  await encolarMensaje(supabase, {
+    telefonoE164: numeroAdmin,
+    tipo: "escalamiento",
+    plantilla,
+    pedidoId: datos.pedidoId,
+    variables: {
+      "1": datos.numeroOrden,
+      "2": datos.cliente.slice(0, 60),
+      "3": datos.telefonoCliente,
+      "4": datos.ciudad.slice(0, 40),
+      "5": datos.producto.replace(/\s+/g, " ").slice(0, 90),
+      "6": formatoPesos(datos.precioTotal),
+    },
+  });
+}

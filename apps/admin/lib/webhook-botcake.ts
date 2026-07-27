@@ -432,12 +432,16 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
     // esperar ni un segundo a quien escribio.
     await atribuirClicWeb(supabase, telefono, payload.texto.trim());
 
+    // Un escalamiento ya avisa a Diana por WhatsApp y deja la conversacion
+    // marcada en el panel. Aqui habia ademas un push a "todos", que no son
+    // los admins sino TODAS las suscripciones — o sea las clientas. La
+    // tabla esta vacia hoy, pero en cuanto alguien se suscriba desde la
+    // tienda recibiria "WhatsApp necesita a una persona" con el nombre y el
+    // mensaje de otra clienta.
     if (resultado.escalar) {
-      enviarPush("todos", {
-        titulo: "WhatsApp necesita a una persona 💬",
-        cuerpo: `${payload.nombre ?? telefono}: ${payload.texto.slice(0, 80)}`,
-        url: "/dashboard/whatsapp",
-      }).catch(() => {});
+      console.warn(
+        `[webhook-botcake] escalado ${telefono}: ${resultado.motivo ?? "sin motivo"}`,
+      );
     }
     return;
   }

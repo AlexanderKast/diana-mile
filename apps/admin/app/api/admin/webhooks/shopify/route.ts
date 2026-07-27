@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { cancelarPorShopifyOrderId } from "@diana-mile/shared/botcake/cancelacion";
+import { encolarAvisoPedidoNuevo } from "@diana-mile/shared/botcake/agentes";
 
 const WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET;
 
@@ -53,8 +54,6 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
     .eq("shopify_order_id", orderId)
     .maybeSingle();
 
-  if (existente) return;
-
   const noteAttrs = new Map((order.note_attributes ?? []).map((a) => [a.name, a.value]));
   const address = order.shipping_address;
 
@@ -76,23 +75,50 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
     order.billing_address?.name,
   );
   const lineItem = order.line_items?.[0];
+  const telefono =
+    primero(address?.phone, order.customer?.phone, order.phone) || "";
+  const total = order.total_price ? parseFloat(order.total_price) : null;
 
-  await supabase.from("pedidos").insert({
-    shopify_order_id: orderId,
-    shopify_order_number: `#${order.order_number}`,
-    nombre: nombre || "Sin nombre",
-    telefono: address?.phone ?? order.customer?.phone ?? order.phone ?? "",
-    direccion: address?.address1 ?? "",
-    barrio: address?.address2 ?? null,
-    ciudad: address?.city ?? "",
-    departamento: address?.province ?? null,
-    producto_nombre: lineItem?.title ?? "Producto Shopify",
-    producto_sku: lineItem?.sku ?? null,
-    cantidad: lineItem?.quantity ?? 1,
-    precio_total: order.total_price ? parseFloat(order.total_price) : null,
-    utm_source: noteAttrs.get("utm_source") ?? null,
-    utm_campaign: noteAttrs.get("utm_campaign") ?? null,
-    estado: "pendiente",
+  // El alta se salta si el pedido ya estaba (lo creo el checkout), pero el
+  // aviso se manda igual: este webhook es el unico punto por el que pasan
+  // TODAS las ordenes, vengan del checkout, del agente o de Shopify a mano.
+  let pedidoId = existente?.id as string | undefined;
+
+  if (!existente) {
+    const { data: creado } = await supabase
+      .from("pedidos")
+      .insert({
+        shopify_order_id: orderId,
+        shopify_order_number: `#${order.order_number}`,
+        nombre: nombre || "Sin nombre",
+        telefono,
+        direccion: address?.address1 ?? "",
+        barrio: address?.address2 ?? null,
+        ciudad: address?.city ?? "",
+        departamento: address?.province ?? null,
+        producto_nombre: lineItem?.title ?? "Producto Shopify",
+        producto_sku: lineItem?.sku ?? null,
+        cantidad: lineItem?.quantity ?? 1,
+        precio_total: total,
+        utm_source: noteAttrs.get("utm_source") ?? null,
+        utm_campaign: noteAttrs.get("utm_campaign") ?? null,
+        estado: "pendiente",
+      })
+      .select("id")
+      .single();
+    pedidoId = creado?.id;
+  }
+
+  // En contraentrega los primeros minutos deciden la venta: cuanto antes se
+  // llame a confirmar, menos se cae el pedido.
+  await encolarAvisoPedidoNuevo(supabase, {
+    pedidoId,
+    numeroOrden: `#${order.order_number}`,
+    cliente: nombre || "Sin nombre",
+    telefonoCliente: telefono || "sin telefono",
+    ciudad: address?.city ?? "sin ciudad",
+    producto: lineItem?.title ?? "Producto",
+    precioTotal: total ?? 0,
   });
 }
 

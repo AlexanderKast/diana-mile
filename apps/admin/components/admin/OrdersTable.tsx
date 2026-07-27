@@ -5,6 +5,7 @@ import { cx, formatCOP } from "@diana-mile/shared/utils";
 import { Button } from "@diana-mile/shared/ui/Button";
 import type { EstadoPedido, Pedido, ResultadoConfirmacion } from "@diana-mile/shared/types";
 import { usarPedidosEnVivo } from "@/lib/usar-pedidos-en-vivo";
+import { AvisoPedidoNuevo } from "@/components/admin/AvisoPedidoNuevo";
 
 type OrdersTableProps = {
   pedidos: Pedido[];
@@ -104,6 +105,8 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
     pedidos: pedidosLocal,
     setPedidos: setPedidosLocal,
     enVivo,
+    nuevo,
+    descartarNuevo,
   } = usarPedidosEnVivo(pedidos);
   const [enviando, setEnviando] = useState(false);
   const [errorAccion, setErrorAccion] = useState<string | null>(null);
@@ -259,6 +262,7 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
 
   return (
     <div>
+      <AvisoPedidoNuevo pedido={nuevo} onCerrar={descartarNuevo} />
       {/* Se avisa cuando NO esta en vivo, no cuando si: un punto verde
           permanente se vuelve invisible a los cinco minutos, y lo que hay
           que saber es justo lo contrario — que lo que estas viendo puede

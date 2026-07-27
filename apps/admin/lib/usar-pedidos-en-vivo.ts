@@ -20,6 +20,8 @@ import type { Pedido } from "@diana-mile/shared/types";
 export function usarPedidosEnVivo(iniciales: Pedido[]) {
   const [pedidos, setPedidos] = useState<Pedido[]>(iniciales);
   const [enVivo, setEnVivo] = useState(false);
+  /** El ultimo pedido que entro estando la pagina abierta, para avisarlo. */
+  const [nuevo, setNuevo] = useState<Pedido | null>(null);
 
   // Si el servidor manda otra lista (al navegar o revalidar), manda esa.
   // Se compara por contenido y no por identidad del array: cualquier
@@ -77,7 +79,12 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
         const i = previos.findIndex((p) => p.id === fila.id);
 
         // Nuevo: arriba del todo, que es donde se mira primero.
-        if (i === -1) return [fila, ...previos];
+        if (i === -1) {
+          // Solo se avisa de las altas, no de cada cambio de estado: si
+          // suena por todo, se deja de oir.
+          if (operacion === "INSERT") setNuevo(fila);
+          return [fila, ...previos];
+        }
 
         // Actualizado: se reemplaza en su sitio para no reordenar la lista
         // bajo el cursor de quien la esta leyendo.
@@ -126,5 +133,5 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
   // El setter sale para que el panel siga pintando sus cambios al
   // instante: esperar a que el evento de vuelta por la red haria que cada
   // clic se sienta lento.
-  return { pedidos, setPedidos, enVivo };
+  return { pedidos, setPedidos, enVivo, nuevo, descartarNuevo: () => setNuevo(null) };
 }
