@@ -10,7 +10,11 @@
  * los dos caminos se desincronicen con el tiempo.
  */
 
-import { validarDatosPedido, type DatosPedido } from "./datos-pedido";
+import {
+  datosConSustento,
+  validarDatosPedido,
+  type DatosPedido,
+} from "./datos-pedido";
 
 /** minusculas y sin tildes, para comparar lo que escribe la gente. */
 function clave(texto: string): string {
@@ -159,6 +163,12 @@ export type PedidoDesdeChat = Partial<DatosPedido> & {
  */
 export async function crearPedidoDesdeChat(
   entrada: PedidoDesdeChat,
+  /**
+   * Todo lo que escribio la persona en la conversacion. Es obligatorio:
+   * sin esto no se puede comprobar que los datos salieron de ella y no de
+   * un ejemplo del prompt.
+   */
+  mensajesDeLaPersona: string[] = [],
 ): Promise<ResultadoPedido> {
   const sitio = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
   if (!sitio) {
@@ -175,6 +185,18 @@ export async function crearPedidoDesdeChat(
     };
   }
   const datos = validacion.datos;
+
+  // Barrera contra datos inventados: si la direccion, el barrio o la
+  // ciudad no aparecen en lo que escribio la persona, el modelo los
+  // completo por su cuenta y el envio se perderia. Se corta aqui.
+  const sustento = datosConSustento(datos, mensajesDeLaPersona);
+  if (!sustento.ok) {
+    return {
+      ok: false,
+      motivo: `datos sin sustento en la conversacion: ${sustento.sinSustento.join(", ")}`,
+      faltantes: sustento.sinSustento,
+    };
+  }
 
   const variante = await resolverVariante(
     entrada.producto ?? "",

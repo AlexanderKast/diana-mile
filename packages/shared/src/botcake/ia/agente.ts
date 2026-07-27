@@ -85,6 +85,10 @@ ${MARCA_PEDIDO}{"nombre":"...","telefono":"...","departamento":"...","ciudad":".
 - "notas" es cualquier indicacion de entrega que te haya dado (portería, horario). Vacio si no dijo nada.
 - El JSON tiene que ser valido y en una sola linea.
 
+REGLA ABSOLUTA DE ESTOS DATOS: cada valor tiene que ser EXACTAMENTE lo que la persona escribio en ESTA conversacion. Nada de completar con lo que suene razonable, con direcciones de ejemplo que hayas visto arriba, ni con datos de pedidos anteriores de esta u otra persona. Si no te dio la direccion, NO la inventes: preguntasela. Un pedido con una direccion inventada es un envio perdido, plata perdida y una clienta furiosa.
+
+Y NO uses la marca antes de tiempo: no la mandes si todavia falta un dato o si ella no ha confirmado el resumen. Primero recapitulas, ella dice que si, y ahi si.
+
 Ese texto NUNCA lo ve la clienta: el sistema crea el pedido de verdad y le responde con el numero de orden. Si algo falta o esta mal, te lo devuelve para que se lo preguntes.
 
 NO uses esta marca si todavia falta un dato o si ella no ha confirmado. Y no la mezcles con texto: o mandas la marca sola, o mandas un mensaje normal.`;
@@ -124,6 +128,8 @@ function construirSystemPrompt(
 async function tomarPedido(
   respuesta: string,
   telefonoE164: string,
+  /** Lo que escribio la persona: se usa para verificar que los datos son suyos. */
+  mensajesDeLaPersona: string[],
 ): Promise<{ mensaje: string; creado: boolean; detalle: string }> {
   const crudo = respuesta.slice(respuesta.indexOf(MARCA_PEDIDO) + MARCA_PEDIDO.length);
   // El modelo a veces envuelve el JSON en comillas de codigo.
@@ -145,10 +151,13 @@ async function tomarPedido(
 
   // El telefono del chat manda sobre el que se haya dictado: es el numero
   // desde el que esta escribiendo y el que de verdad contesta.
-  const resultado = await crearPedidoDesdeChat({
-    ...datos,
-    telefono: datos.telefono?.trim() || telefonoE164,
-  });
+  const resultado = await crearPedidoDesdeChat(
+    {
+      ...datos,
+      telefono: datos.telefono?.trim() || telefonoE164,
+    },
+    mensajesDeLaPersona,
+  );
 
   if (resultado.ok) {
     return {
@@ -287,7 +296,13 @@ export async function responderMensaje(
 
     // El modelo junto todos los datos: se crea la orden de verdad.
     if (traeMarcaPedido) {
-      const resultado = await tomarPedido(respuesta, telefonoE164);
+      // Solo lo que escribio la persona, incluido el mensaje de ahora: es
+      // contra esto que se verifica que la direccion no sea inventada.
+      const dichoPorElla = [
+        ...previos.filter((m) => m.role === "user").map((m) => m.content),
+        texto,
+      ];
+      const resultado = await tomarPedido(respuesta, telefonoE164, dichoPorElla);
 
       await enviarTexto(telefonoE164, resultado.mensaje);
       await guardarRespuesta(

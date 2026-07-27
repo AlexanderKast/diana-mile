@@ -196,6 +196,48 @@ export type DatosPedido = {
   direccion: string;
 };
 
+/**
+ * Comprueba que los datos que dice tener el modelo aparezcan de verdad en
+ * lo que escribio la persona.
+ *
+ * Existe porque paso: el modelo cerro un pedido con una direccion sacada
+ * de un ejemplo del prompt, no de la conversacion. Una direccion inventada
+ * significa un envio perdido y un cliente enojado, asi que esto no se le
+ * puede dejar al prompt: se verifica en codigo antes de tocar Shopify.
+ *
+ * La comparacion es por partes significativas (numeros y palabras largas):
+ * la persona escribe "calle 10 numero 43-25" y el modelo lo normaliza a
+ * "Calle 10 #43-25", que es correcto y debe pasar.
+ */
+export function datosConSustento(
+  datos: { direccion: string; barrio: string; ciudad: string; nombre: string },
+  mensajesDeLaPersona: string[],
+): { ok: boolean; sinSustento: string[] } {
+  const dicho = clave(mensajesDeLaPersona.join(" "));
+  const sinSustento: string[] = [];
+
+  const respalda = (valor: string, minimo: number): boolean => {
+    const partes = valor
+      .split(/[\s,.#\-()]+/)
+      .map((p) => clave(p))
+      .filter((p) => p.length >= 2 && !/^(de|la|el|los|las|del|apto|int|no)$/.test(p));
+    if (!partes.length) return false;
+    const presentes = partes.filter((p) => dicho.includes(p)).length;
+    return presentes / partes.length >= minimo;
+  };
+
+  // La direccion es lo mas critico: se exige que la mayor parte de lo que
+  // la compone haya salido de la boca de la clienta.
+  if (!respalda(datos.direccion, 0.5)) sinSustento.push("direccion");
+  if (!respalda(datos.barrio, 0.5)) sinSustento.push("barrio");
+  if (!respalda(datos.ciudad, 0.5)) sinSustento.push("ciudad");
+  // Del nombre basta con que una parte coincida: la gente da solo el
+  // primer nombre y despues el apellido en otro mensaje.
+  if (!respalda(datos.nombre, 0.34)) sinSustento.push("nombre");
+
+  return { ok: sinSustento.length === 0, sinSustento };
+}
+
 export type ValidacionPedido =
   | { ok: true; datos: DatosPedido & { telefonoE164: string } }
   | { ok: false; faltantes: string[]; problemas: string[] };
