@@ -16,6 +16,7 @@ import {
   responderConfirmacion,
   responderModificar,
 } from "@diana-mile/shared/botcake/respuestas-boton";
+import { emparejarClic } from "@diana-mile/shared/whatsapp/clics";
 import { enviarPush } from "@/lib/push";
 
 /**
@@ -295,6 +296,62 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
     return;
   }
 
+  /**
+   * Conecta a quien escribio con el clic que dio en la web.
+   *
+   * Los anuncios de Click-to-WhatsApp ya vienen con ctwa_clid y mandan:
+   * si esta, no se toca nada. Esto cubre al resto —organico, el link de la
+   * bio, un anuncio que lleva a la tienda y de ahi a WhatsApp—, que hasta
+   * ahora cerraba ventas sin que nadie supiera de donde habian salido.
+   */
+  async function atribuirClicWeb(
+    db: typeof supabase,
+    tel: string,
+    texto: string,
+  ): Promise<void> {
+    try {
+      const { data: conv } = await db
+        .from("whatsapp_conversaciones")
+        .select("id, ctwa_clid, origen_anuncio")
+        .eq("telefono", tel)
+        .maybeSingle();
+
+      if (!conv || conv.ctwa_clid) return;
+
+      const clic = await emparejarClic(db, {
+        mensaje: texto,
+        conversacionId: conv.id,
+      });
+      if (!clic) return;
+
+      await db
+        .from("whatsapp_conversaciones")
+        .update({
+          origen_anuncio: {
+            canal: "web",
+            origen: clic.origen,
+            ruta: clic.ruta,
+            titulo: clic.titulo,
+            fbp: clic.fbp,
+            fbc: clic.fbc,
+            utm_source: clic.utmSource,
+            utm_medium: clic.utmMedium,
+            utm_campaign: clic.utmCampaign,
+            utm_content: clic.utmContent,
+            utm_term: clic.utmTerm,
+          },
+        })
+        .eq("id", conv.id);
+
+      console.log(
+        `[webhook-botcake] lead atribuido a ${clic.origen ?? "web"}${clic.ruta ?? ""}`,
+      );
+    } catch (err) {
+      // La atribucion es un extra: si falla, la conversacion sigue igual.
+      console.warn("[webhook-botcake] no se pudo atribuir el clic:", err);
+    }
+  }
+
   // Un mensaje libre lo atiende el agente de IA.
   if (evento === "mensaje") {
     if (!payload.texto?.trim()) return;
@@ -356,6 +413,12 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
         return { cancelado: res.cancelado, motivo: res.motivo };
       },
     });
+
+    // De donde salio: si el texto coincide con un clic reciente al boton
+    // de WhatsApp de la web, se recupera la pagina y los cookies del pixel.
+    // Va despues de responder porque la atribucion no puede hacerle
+    // esperar ni un segundo a quien escribio.
+    await atribuirClicWeb(supabase, telefono, payload.texto.trim());
 
     if (resultado.escalar) {
       enviarPush("todos", {

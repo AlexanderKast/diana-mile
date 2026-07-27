@@ -9,6 +9,7 @@ import { DianaStory } from "@/components/site/DianaStory";
 import { SocialProofSection } from "@/components/site/SocialProofSection";
 import TrustBadges from "@/components/product/TrustBadges";
 import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
+import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 export const metadata: Metadata = {
   title: "Milito Life Shop — Bienestar probado por Diana Mile",
@@ -16,12 +17,10 @@ export const metadata: Metadata = {
     "Bienestar, piel y tendencia probados por Diana Mile, entrenadora física y personal de salud. Pago contraentrega en toda Colombia, productos 100% originales.",
 };
 
-const WHATSAPP_NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
-const WHATSAPP_ENTRENAMIENTO_HREF = WHATSAPP_NUMERO
-  ? `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(
-      "Hola Diana, quiero información sobre tu acompañamiento de entrenamiento",
-    )}`
-  : null;
+const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMERO,
+  "Hola Diana, quiero información sobre tu acompañamiento de entrenamiento",
+);
 
 const PILARES = [
   {

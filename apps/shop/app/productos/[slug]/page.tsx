@@ -31,6 +31,7 @@ import { PersonalizedBenefitCard } from "@/components/product/PersonalizedBenefi
 import { ResultadosRealesGallery } from "@/components/product/ResultadosRealesGallery";
 import { WithoutRitualSection } from "@/components/product/WithoutRitualSection";
 import { SectionDivider } from "@/components/ui/SectionDivider";
+import { TituloWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 
 // Client components condicionales (no siempre se renderizan segun el
 // producto) — se cargan en un chunk separado para no engordar el bundle
@@ -137,6 +138,9 @@ export default async function ProductoPage({ params }: ProductPageProps) {
     <OrderSheetProvider product={product} pricing={pricing}>
       {pricing.discountPopupActivo && <ExitIntentPopup />}
       <BackToTopButton />
+      {/* Para que el boton de WhatsApp nombre este producto y no mande un
+          "hola" generico desde la pagina donde mas se decide la compra. */}
+      <TituloWhatsApp valor={product.title} />
       <ProductViewTracking
         contentId={product.handle}
         contentName={product.title}

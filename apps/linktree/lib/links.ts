@@ -2,6 +2,7 @@ import type {
   LinktreeLink,
   LinktreeLinkSection,
 } from "@diana-mile/shared/types";
+import { enlaceWhatsApp } from "@diana-mile/shared/whatsapp/mensajes";
 
 export type LinkSection = LinktreeLinkSection;
 export type LinkItem = LinktreeLink;
@@ -16,8 +17,14 @@ const AGENDA_AGENCIA_URL = "https://cal.com/kreoon/marcas";
 const KREOON_SIGNUP_URL = "https://kreoon.com/creadores/registro";
 // TODO: URL real
 const TIKTOK_URL = "https://tiktok.com/@militolife";
-// TODO: URL real
-const WHATSAPP_URL = "https://wa.me/57XXXXXXXXXX";
+// El numero sale del entorno, igual que en la tienda, para no tener el
+// mismo dato escrito en dos sitios. Mientras no este configurado la
+// tarjeta se apaga sola: estaba apuntando a "wa.me/57XXXXXXXXXX", que
+// abre WhatsApp con un contacto inexistente.
+const WHATSAPP_NUMERO = enlaceWhatsApp(
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMERO,
+  { ruta: "/", origen: "linktree" },
+);
 
 export const links: LinkItem[] = [
   {
@@ -98,10 +105,10 @@ export const links: LinkItem[] = [
     // WhatsApp siempre debe ir de ultimo dentro de "social".
     id: "whatsapp",
     label: "Escríbenos por WhatsApp",
-    url: WHATSAPP_URL,
+    url: WHATSAPP_NUMERO ?? "#",
     icon: "whatsapp",
     variant: "secondary",
     section: "social",
-    active: true,
+    active: WHATSAPP_NUMERO !== null,
   },
 ];

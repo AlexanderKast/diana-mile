@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@diana-mile/shared/utils";
+import { EnlaceWhatsApp } from "@/components/site/EnlaceWhatsApp";
 
 function HomeIcon({ className }: { className?: string }) {
   return (
@@ -103,11 +104,6 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-const WHATSAPP_NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
-const whatsappHref = WHATSAPP_NUMERO
-  ? `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent("Hola, quiero conocer los productos Milito Life Shop")}`
-  : null;
-
 /**
  * Bottom tab bar movil (patron "app nativa" tipo Shein/Instagram). Se
  * oculta por completo en la pagina de producto y en el checkout, donde
@@ -165,17 +161,10 @@ export function MobileTabBar() {
             {label}
           </Link>
         ))}
-        {whatsappHref && (
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] text-[#25D366]"
-          >
-            <WhatsAppIcon />
-            WhatsApp
-          </a>
-        )}
+        <EnlaceWhatsApp className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] text-[#25D366]">
+          <WhatsAppIcon />
+          WhatsApp
+        </EnlaceWhatsApp>
       </nav>
       <div className="h-16 md:hidden" />
     </>

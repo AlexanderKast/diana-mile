@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCollections } from "@/lib/shopify";
+import { EnlaceWhatsApp } from "@/components/site/EnlaceWhatsApp";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -19,10 +20,6 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-const WHATSAPP_NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
-const whatsappHref = WHATSAPP_NUMERO
-  ? `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent("Hola, quiero conocer los productos Milito Life Shop")}`
-  : null;
 const LINKTREE_URL = process.env.NEXT_PUBLIC_LINKTREE_URL || "/";
 
 export async function SiteHeader() {
@@ -67,17 +64,10 @@ export async function SiteHeader() {
           >
             Redes
           </Link>
-          {whatsappHref && (
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-blanco transition-colors hover:bg-[#1EBE5A] md:flex"
-            >
-              <WhatsAppIcon />
-              WhatsApp
-            </a>
-          )}
+          <EnlaceWhatsApp className="hidden items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-blanco transition-colors hover:bg-[#1EBE5A] md:flex">
+            <WhatsAppIcon />
+            WhatsApp
+          </EnlaceWhatsApp>
         </nav>
       </div>
     </header>

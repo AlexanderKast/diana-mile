@@ -15,6 +15,7 @@ import {
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 import { PushOptIn } from "@/components/site/PushOptIn";
 import { trackPurchase } from "@/lib/tracking/client-events";
+import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 type SelectedVariant = Pick<ProductVariant, "id" | "title" | "price">;
 
@@ -392,9 +393,11 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   }
 
   if (success) {
-    const whatsappNumero = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
     const mensaje = `Hola, acabo de confirmar mi pedido ${success.orderNumber} de ${product.title} (${selectedVariant.title}).`;
-    const whatsappUrl = `https://wa.me/${whatsappNumero}?text=${encodeURIComponent(mensaje)}`;
+    const whatsappUrl = enlaceConTexto(
+      process.env.NEXT_PUBLIC_WHATSAPP_NUMERO,
+      mensaje,
+    );
 
     return (
       <div className="animate-fade-in-up flex flex-col items-start gap-4 rounded-2xl border border-arena bg-crema p-6">
@@ -467,7 +470,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           </p>
         </div>
 
-        {whatsappNumero ? (
+        {whatsappUrl ? (
           <button
             type="button"
             onClick={() =>

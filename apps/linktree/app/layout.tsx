@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
+import {
+  BotonWhatsAppFlotante,
+  ProveedorWhatsApp,
+} from "@diana-mile/shared/ui/WhatsAppFlotante";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -67,7 +71,14 @@ export default function RootLayout({
       className={`${cormorant.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full overflow-x-hidden bg-crema text-morado-oscuro">
-        {children}
+        <ProveedorWhatsApp>
+          {children}
+          <BotonWhatsAppFlotante
+            numero={process.env.NEXT_PUBLIC_WHATSAPP_NUMERO}
+            origen="linktree"
+            className="bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6"
+          />
+        </ProveedorWhatsApp>
       </body>
     </html>
   );

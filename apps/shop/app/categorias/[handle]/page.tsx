@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getCollectionByHandle } from "@/lib/shopify";
 import { CategoryHero } from "@/components/category/CategoryHero";
 import { ProductCard } from "@/components/product/ProductCard";
+import { TituloWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 
 type CategoryPageProps = {
   params: Promise<{ handle: string }>;
@@ -39,6 +40,7 @@ export default async function CategoriaPage({ params }: CategoryPageProps) {
 
   return (
     <main className="flex flex-col gap-8 pb-16">
+      <TituloWhatsApp valor={collection.title} />
       <CategoryHero collection={collection} />
 
       {collection.products.length === 0 ? (
