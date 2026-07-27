@@ -29,7 +29,120 @@ type PayloadBotcake = {
   nombre?: string;
 };
 
-/** wa_573132947776 → +573132947776 */
+/**
+ * Botcake no manda un formato propio: reenvia el payload nativo de la
+ * WhatsApp Cloud API de Meta, tal cual. Ademas, su `entry` es un objeto
+ * donde Meta usa un array, asi que se aceptan las dos formas.
+ */
+type MensajeWhatsApp = {
+  from?: string;
+  type?: string;
+  text?: { body?: string };
+  button?: { text?: string; payload?: string };
+  interactive?: {
+    button_reply?: { title?: string };
+    list_reply?: { title?: string };
+  };
+};
+
+type ValorWhatsApp = {
+  messages?: MensajeWhatsApp[];
+  statuses?: unknown[];
+  contacts?: { profile?: { name?: string }; wa_id?: string }[];
+  metadata?: { phone_number_id?: string; display_phone_number?: string };
+};
+
+type PayloadWhatsApp = {
+  object?: string;
+  entry?:
+    | { changes?: { field?: string; value?: ValorWhatsApp }[] }
+    | { changes?: { field?: string; value?: ValorWhatsApp }[] }[];
+};
+
+/** Los botones de las plantillas llegan como texto: se mapean a eventos. */
+const EVENTO_POR_BOTON: { patron: RegExp; evento: EventoBotcake }[] = [
+  { patron: /confirmar/i, evento: "confirmado" },
+  { patron: /modificar/i, evento: "modificar" },
+  { patron: /anular|cancelar/i, evento: "anulado" },
+  { patron: /asesor|humano/i, evento: "asesor" },
+];
+
+/** Extrae lo unico que nos importa del payload de Meta. */
+function interpretarWhatsApp(payload: PayloadWhatsApp): PayloadBotcake | null {
+  const entries = Array.isArray(payload.entry)
+    ? payload.entry
+    : payload.entry
+      ? [payload.entry]
+      : [];
+
+  for (const entry of entries) {
+    for (const cambio of entry.changes ?? []) {
+      const valor = cambio.value;
+      // Los avisos de entrega y lectura no traen mensaje: se ignoran.
+      const mensaje = valor?.messages?.[0];
+      if (!mensaje?.from) continue;
+
+      const nombre = valor?.contacts?.[0]?.profile?.name ?? null;
+
+      // Un boton de plantilla puede venir como button o como interactive.
+      const textoBoton =
+        mensaje.button?.text ??
+        mensaje.button?.payload ??
+        mensaje.interactive?.button_reply?.title ??
+        mensaje.interactive?.list_reply?.title ??
+        null;
+
+      if (textoBoton) {
+        const regla = EVENTO_POR_BOTON.find((r) => r.patron.test(textoBoton));
+        return {
+          telefono: mensaje.from,
+          nombre: nombre ?? undefined,
+          // Un boton que no reconocemos se trata como texto: mejor que la
+          // IA lo interprete a que se pierda en silencio.
+          evento: regla?.evento ?? "mensaje",
+          texto: textoBoton,
+        };
+      }
+
+      const texto = mensaje.text?.body?.trim();
+      if (!texto) continue;
+
+      return {
+        telefono: mensaje.from,
+        nombre: nombre ?? undefined,
+        evento: "mensaje",
+        texto,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * El webhook global de Botcake (Integraciones → API) no permite configurar
+ * headers, asi que no puede mandar un secret. Se valida que el evento
+ * venga del numero de WhatsApp de la tienda: es el dato que un tercero no
+ * conoce y ata el mensaje a nuestra cuenta.
+ */
+function esDeNuestraLinea(payload: PayloadWhatsApp): boolean {
+  const esperado = process.env.BOTCAKE_WABA_PAGE_ID?.replace(/^waba_/, "");
+  if (!esperado) return false;
+
+  const entries = Array.isArray(payload.entry)
+    ? payload.entry
+    : payload.entry
+      ? [payload.entry]
+      : [];
+
+  return entries.some((entry) =>
+    entry.changes?.some(
+      (c) => c.value?.metadata?.phone_number_id === esperado,
+    ),
+  );
+}
+
+/** 573132947776 o wa_573132947776 → +573132947776 */
 function normalizarTelefono(payload: PayloadBotcake): string | null {
   const crudo = payload.telefono ?? payload.psid ?? "";
   const digitos = crudo.replace(/\D/g, "");
@@ -171,13 +284,13 @@ export async function POST(request: NextRequest) {
   // de acceso de Vercel y de cualquier proxy intermedio.
   const provisto = request.headers.get("x-webhook-secret");
 
-  let payload: PayloadBotcake | null;
+  let bruto: (PayloadBotcake & PayloadWhatsApp) | null;
   let crudo = "";
   try {
     crudo = await request.text();
-    payload = JSON.parse(crudo) as PayloadBotcake;
+    bruto = JSON.parse(crudo) as PayloadBotcake & PayloadWhatsApp;
   } catch {
-    payload = null;
+    bruto = null;
   }
 
   // Diagnostico temporal: el webhook global de Botcake (Integraciones →
@@ -198,26 +311,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Ping de verificacion: viene sin credenciales y sin datos de nadie. Se
-  // responde 200 para que Botcake acepte la URL, pero no se procesa nada —
-  // sin destinatario no hay accion posible.
-  if (!payload || (!payload.telefono && !payload.psid)) {
-    // Se registra el cuerpo para poder distinguir un ping real de un
-    // evento que viene con otros nombres de campo: sin esto, un webhook
-    // mal mapeado se descarta en silencio y parece que "no responde".
-    if (payload && Object.keys(payload).length) {
-      console.warn(
-        "[webhook-botcake] descartado sin destinatario:",
-        JSON.stringify(payload).slice(0, 600),
-      );
-    }
+  if (!bruto) {
     return NextResponse.json({ ok: true }, { status: 200 });
   }
-  const evento = payload;
 
-  // A partir de aqui hay datos de una persona real: exige el secret.
-  if (!secret || !secretValido(provisto, secret)) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  // Dos formas de entrada, cada una con su forma de autenticarse:
+  //  · el payload nativo de WhatsApp que reenvia Botcake, que no puede
+  //    llevar headers y se valida por el numero de la tienda;
+  //  · el formato propio (pruebas y flows manuales), con secret por header.
+  let evento: PayloadBotcake | null = null;
+  let autorizado = false;
+
+  if (bruto.object === "whatsapp_business_account" || bruto.entry) {
+    if (!esDeNuestraLinea(bruto)) {
+      console.warn("[webhook-botcake] evento de otra linea, ignorado");
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+    evento = interpretarWhatsApp(bruto);
+    autorizado = true;
+  } else if (bruto.telefono || bruto.psid) {
+    evento = bruto;
+    autorizado = Boolean(secret) && secretValido(provisto, secret!);
+    if (!autorizado) {
+      return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+    }
+  }
+
+  // Sin mensaje que procesar: acuses de entrega, estados de lectura o el
+  // ping con que Botcake valida la URL. Se responde 200 y ya.
+  if (!evento || !autorizado) {
+    return NextResponse.json({ ok: true }, { status: 200 });
   }
 
   // Responder ya; procesar despues (Botcake reintenta si tardamos).
