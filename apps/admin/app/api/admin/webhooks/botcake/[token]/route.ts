@@ -12,15 +12,21 @@ import {
  * Webhook de Botcake para los eventos reales de WhatsApp.
  *
  * Botcake reenvia el payload nativo de la WhatsApp Cloud API desde su
- * pantalla de Integraciones → API, que NO permite configurar cabeceras.
- * Sin header no hay donde mandar un secret, asi que el secret viaja en la
- * ruta: la URL completa es la credencial y por eso no debe compartirse ni
- * pegarse fuera de Botcake.
+ * pantalla de Integraciones → API, que NO permite configurar cabeceras y
+ * tampoco reenvia la firma X-Hub-Signature-256 de Meta (se verificaron las
+ * cabeceras que llegan: solo content-type, user-agent y las que agrega el
+ * proxy). Sin header ni firma, la unica credencial posible viaja en la
+ * ruta, asi que la URL completa ES el secreto.
  *
- * No se usa `metadata.phone_number_id` como autenticador: identifica la
- * linea pero no es secreto, y cualquiera que lo conociera podria inyectar
- * mensajes falsos y hacer que el bot le escriba a numeros arbitrarios. Se
- * mantiene solo como filtro adicional, despues del token.
+ * Riesgo asumido: una URL con secreto queda escrita en los logs de acceso
+ * de Vercel y de cualquier proxy intermedio. Se acota de dos formas:
+ *  · el token es exclusivo de esta ruta (BOTCAKE_WEBHOOK_PATH_TOKEN), no
+ *    el secret general, asi que filtrarlo no compromete nada mas;
+ *  · se rota cambiando la variable y volviendo a pegar la URL en Botcake.
+ *
+ * `metadata.phone_number_id` NO autentica: identifica la linea pero no es
+ * secreto, y cualquiera que lo conociera podria inyectar mensajes falsos.
+ * Se usa solo como filtro posterior al token.
  */
 export async function GET() {
   return NextResponse.json({ ok: true }, { status: 200 });
@@ -38,7 +44,7 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const esperado = process.env.BOTCAKE_WEBHOOK_SECRET;
+  const esperado = process.env.BOTCAKE_WEBHOOK_PATH_TOKEN;
 
   if (!esperado || !tokenValido(token, esperado)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
