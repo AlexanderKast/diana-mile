@@ -43,6 +43,15 @@ import {
   type PedidoDesdeChat,
 } from "./pedido";
 import {
+  aceptarAdicional,
+  elegirAdicional,
+  guardarOferta,
+  mensajeAdicional,
+  ofertaPendiente,
+  rechazarAdicional,
+  type OfertaUpsell,
+} from "./upsell";
+import {
   anotarPendiente,
   buscarAprendido,
   formatearAprendido,
@@ -146,6 +155,73 @@ Ese texto NUNCA lo ve la clienta: el sistema crea el pedido de verdad y le respo
 
 NO uses esta marca si todavia falta un dato o si ella no ha confirmado. Y no la mezcles con texto: o mandas la marca sola, o mandas un mensaje normal.`;
 
+/** Marca con la que el modelo dice que acepto el adicional. */
+const MARCA_AGREGAR = "[[AGREGAR]]";
+
+/**
+ * Ofrece un adicional al pedido recien creado.
+ *
+ * Nunca lanza ni bloquea: si algo falla, la clienta ya tiene su
+ * confirmacion y eso es lo que importaba. Un adicional que no se ofrece no
+ * le cuesta nada a nadie; una excepcion despues de cobrar, si.
+ */
+async function ofrecerAdicional(
+  supabase: SupabaseClient,
+  datos: { conversacionId: string; telefonoE164: string; expertoId: ExpertoId },
+): Promise<void> {
+  try {
+    const { data: pedido } = await supabase
+      .from("pedidos")
+      .select("id, producto_nombre")
+      .eq("telefono", datos.telefonoE164)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!pedido) return;
+
+    const oferta = await elegirAdicional(supabase, pedido.producto_nombre ?? "");
+    if (!oferta) return;
+
+    oferta.pedidoId = pedido.id;
+    const texto = mensajeAdicional(oferta);
+
+    const envio = await enviarTexto(datos.telefonoE164, texto);
+    if (!envio.success) return;
+
+    // Solo se guarda si de verdad salio: una oferta anotada que ella nunca
+    // recibio haria que un "si" a otra cosa le sumara un producto.
+    await guardarOferta(supabase, datos.conversacionId, oferta);
+    await guardarRespuesta(
+      supabase,
+      datos.conversacionId,
+      texto,
+      datos.expertoId,
+      0,
+    );
+  } catch (err) {
+    console.warn("[wa-agente] no se pudo ofrecer el adicional:", err);
+  }
+}
+
+/**
+ * Se inyecta solo mientras hay un adicional ofrecido y sin responder. Es
+ * lo que permite entender un "si" suelto tres mensajes despues sin volver
+ * a preguntar de que se trataba.
+ */
+function reglaAdicional(producto: string, precio: number): string {
+  return `HAY UN ADICIONAL OFRECIDO Y PENDIENTE DE RESPUESTA
+
+Le ofreciste sumarle ${producto} por $${Math.round(precio).toLocaleString("es-CO")} al pedido que acaba de hacer.
+
+Si en este mensaje ella ACEPTA —"si", "dale", "hagale", "sumalo", "de una", o cualquier forma de decir que si— tu respuesta completa debe ser exactamente:
+${MARCA_AGREGAR}
+
+Ese texto no lo ve ella: el sistema le suma el producto a su orden y le responde con el total nuevo.
+
+Si dice que no, o cambia de tema, NO insistas ni se lo vuelvas a ofrecer: le respondes normal lo que te pregunte. Presionar a quien acaba de comprar es la forma mas rapida de que se arrepienta de todo.`;
+}
+
 /** Marcador con que queda anotada una escalada en el historial. */
 const MARCA_ESCALADO_HISTORIAL = "(escalado a Diana:";
 
@@ -180,6 +256,7 @@ function construirSystemPrompt(
   experto: (typeof EXPERTOS)[ExpertoId],
   contexto: string,
   aprendido = "",
+  adicional: OfertaUpsell | null = null,
 ): string {
   const instruccionesExtra = experto.escalaAHumano
     ? `\n\nATENCION — ESTA CONVERSACION ES DE SOPORTE: la persona esta preguntando por un pedido o tiene un problema.
@@ -205,6 +282,7 @@ function construirSystemPrompt(
     // afirmar lo que no se puede sostener. Se le da a todos los expertos,
     // no solo a los que venden: el de entrenamiento o el de contenido
     // tambien terminan recomendando un producto cuando viene a cuento.
+    adicional ? reglaAdicional(adicional.producto, adicional.precio) : "",
     REGLA_CATALOGO,
     REGLA_NO_INVENTAR,
     instruccionesExtra,
@@ -351,6 +429,8 @@ export async function responderMensaje(
       pedidoId: string,
       motivo: string,
     ) => Promise<{ cancelado: boolean; motivo?: string }>;
+    /** Suma un producto a una orden que ya existe (edicion en Shopify). */
+    agregarAOrden?: (pedidoId: string, variantId: string) => Promise<boolean>;
   },
 ): Promise<ResultadoAgente> {
   const { telefonoE164, texto, nombre } = entrada;
@@ -452,10 +532,14 @@ export async function responderMensaje(
       cobertura,
     });
 
+    // El adicional ofrecido y sin responder viaja en el prompt: sin eso,
+    // un "si" suelto no significa nada y habria que volver a preguntar.
+    const adicional = await ofertaPendiente(supabase, conversacion.id);
     const system = construirSystemPrompt(
       experto,
       contexto,
       formatearAprendido(aprendido),
+      adicional,
     );
     if (aprendido.length) {
       void marcarUsado(
@@ -481,10 +565,58 @@ export async function responderMensaje(
     // quitaria caracteres al JSON del pedido.
     const traeMarcaPedido = respuesta.includes(MARCA_PEDIDO);
     const traeMarcaCancelar = respuesta.includes(MARCA_CANCELAR);
+    const traeMarcaAgregar = respuesta.includes(MARCA_AGREGAR);
     const razonEscalada = detectarEscalada(respuesta);
 
-    if (!traeMarcaPedido && !traeMarcaCancelar && !razonEscalada) {
+    if (
+      !traeMarcaPedido &&
+      !traeMarcaCancelar &&
+      !traeMarcaAgregar &&
+      !razonEscalada
+    ) {
       respuesta = limpiarFormato(respuesta, opcionesFormato);
+    }
+
+    // Acepto el adicional: se le suma a la orden que ya existe.
+    if (traeMarcaAgregar && adicional) {
+      const res = await aceptarAdicional(supabase, {
+        conversacionId: conversacion.id,
+        telefono: telefonoE164,
+        oferta: adicional,
+        agregarAOrden: async (variantId) =>
+          entrada.agregarAOrden
+            ? entrada.agregarAOrden(adicional.pedidoId, variantId)
+            : false,
+      });
+
+      await enviarTexto(telefonoE164, res.mensaje);
+      await guardarRespuesta(
+        supabase,
+        conversacion.id,
+        res.mensaje,
+        expertoId,
+        tokens,
+      );
+      return {
+        respondido: true,
+        experto: expertoId,
+        respuesta: res.mensaje,
+        // Si no se pudo sumar, lo termina una persona: ya se le dijo que
+        // se lo confirmamos, y esa promesa hay que cumplirla.
+        escalar: !res.ok,
+        motivo: res.ok ? undefined : "no se pudo sumar el adicional",
+      };
+    }
+
+    // Contesto otra cosa: la oferta se cierra aqui. Se ofrece una vez y no
+    // se insiste — presionar a quien acaba de comprar es la forma mas
+    // rapida de que se arrepienta de todo.
+    if (adicional && !traeMarcaAgregar) {
+      await rechazarAdicional(supabase, {
+        conversacionId: conversacion.id,
+        telefono: telefonoE164,
+        oferta: adicional,
+      });
     }
 
     // Pidio cancelar y ya se intento retener: se ejecuta si el pedido
@@ -606,6 +738,18 @@ export async function responderMensaje(
         expertoId,
         tokens,
       );
+
+      // El mejor momento para subir el ticket: ya decidio, ya dio sus
+      // datos y ya acepto pagar contraentrega. Va en un segundo mensaje
+      // para no enturbiar la confirmacion, que es lo que ella esta
+      // esperando leer.
+      if (resultado.creado) {
+        await ofrecerAdicional(supabase, {
+          conversacionId: conversacion.id,
+          telefonoE164,
+          expertoId,
+        });
+      }
 
       if (!resultado.creado) {
         // No se pudo cerrar: queda registro para poder rescatar la venta

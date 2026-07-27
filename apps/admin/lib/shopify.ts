@@ -348,3 +348,91 @@ export async function crearFulfillment(
     }
   });
 }
+
+/**
+ * Agrega un producto a una orden que ya existe.
+ *
+ * Es lo que permite ofrecer un adicional DESPUES de cerrar el pedido sin
+ * perder la venta original: la orden se crea en cuanto la clienta
+ * confirma, y si luego acepta el adicional se le suma aqui. La
+ * alternativa —esperar la respuesta del adicional para crear la orden—
+ * significa perderlo todo cuando la persona se queda callada, que es lo
+ * que mas pasa.
+ *
+ * La edicion de ordenes de Shopify son tres pasos: se abre una edicion, se
+ * anaden las variantes y se confirma. Solo al confirmar cambia la orden,
+ * asi que si algo falla a mitad no queda a medias.
+ *
+ * `notifyCustomer` va en false a proposito: el aviso se lo damos nosotros
+ * por WhatsApp, con nuestras palabras, no con la plantilla de Shopify.
+ */
+export async function agregarProductoAOrden(
+  orderId: string,
+  variantId: string,
+  cantidad = 1,
+): Promise<boolean> {
+  const resultado = await safeShopifyCall("agregar producto a orden", async () => {
+    const gql = async (query: string, variables: Record<string, unknown>) => {
+      const res = await fetch(
+        `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/graphql.json`,
+        {
+          method: "POST",
+          headers: adminHeaders(),
+          body: JSON.stringify({ query, variables }),
+        },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      return res.json();
+    };
+
+    const inicio = await gql(
+      `mutation ordenEditar($id: ID!) {
+        orderEditBegin(id: $id) {
+          calculatedOrder { id }
+          userErrors { field message }
+        }
+      }`,
+      { id: `gid://shopify/Order/${orderId}` },
+    );
+
+    const errInicio = inicio.data?.orderEditBegin?.userErrors ?? [];
+    if (errInicio.length) throw new Error(JSON.stringify(errInicio));
+
+    const calculada = inicio.data?.orderEditBegin?.calculatedOrder?.id;
+    if (!calculada) throw new Error("Shopify no devolvio la orden calculada");
+
+    const anadir = await gql(
+      `mutation anadir($id: ID!, $variantId: ID!, $quantity: Int!) {
+        orderEditAddVariant(id: $id, variantId: $variantId, quantity: $quantity) {
+          userErrors { field message }
+        }
+      }`,
+      {
+        id: calculada,
+        variantId: variantId.startsWith("gid://")
+          ? variantId
+          : `gid://shopify/ProductVariant/${variantId}`,
+        quantity: cantidad,
+      },
+    );
+
+    const errAnadir = anadir.data?.orderEditAddVariant?.userErrors ?? [];
+    if (errAnadir.length) throw new Error(JSON.stringify(errAnadir));
+
+    const commit = await gql(
+      `mutation confirmar($id: ID!) {
+        orderEditCommit(id: $id, notifyCustomer: false, staffNote: "Adicional agregado por WhatsApp") {
+          userErrors { field message }
+        }
+      }`,
+      { id: calculada },
+    );
+
+    const errCommit = commit.data?.orderEditCommit?.userErrors ?? [];
+    if (errCommit.length) throw new Error(JSON.stringify(errCommit));
+
+    return true;
+  });
+
+  return resultado ?? false;
+}

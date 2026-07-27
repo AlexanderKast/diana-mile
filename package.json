@@ -19,7 +19,8 @@
     "wa:probar": "tsx scripts/probar-agente-wa.mts",
     "wa:pedido": "tsx scripts/probar-pedido-wa.mts",
     "wa:diario": "tsx scripts/probar-diario-wa.mts",
-    "wa:guardia": "tsx scripts/probar-guardia-catalogo.mts"
+    "wa:guardia": "tsx scripts/probar-guardia-catalogo.mts",
+    "wa:upsell": "tsx scripts/probar-upsell.mts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

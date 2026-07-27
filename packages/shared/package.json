@@ -32,7 +32,8 @@
     "./botcake/ia/aprendizaje": "./src/botcake/ia/aprendizaje.ts",
     "./botcake/respuestas-boton": "./src/botcake/respuestas-boton.ts",
     "./whatsapp/mensajes": "./src/whatsapp/mensajes.ts",
-    "./whatsapp/clics": "./src/whatsapp/clics.ts"
+    "./whatsapp/clics": "./src/whatsapp/clics.ts",
+    "./botcake/ia/upsell": "./src/botcake/ia/upsell.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

@@ -2,6 +2,7 @@ import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { responderMensaje } from "@diana-mile/shared/botcake/ia/agente";
 import {
   agregarNotaOrden,
+  agregarProductoAOrden,
   agregarTagsOrden,
   cancelarOrdenShopify,
   estadoOrden,
@@ -375,6 +376,17 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
       telefonoE164: telefono,
       texto: payload.texto.trim(),
       nombre: payload.nombre ?? pedido?.nombre ?? null,
+      // Suma el adicional a la orden que ya existe, para no perder la
+      // venta original esperando a que responda si lo quiere.
+      agregarAOrden: async (pedidoId, variantId) => {
+        const { data: p } = await supabase
+          .from("pedidos")
+          .select("shopify_order_id")
+          .eq("id", pedidoId)
+          .maybeSingle();
+        if (!p?.shopify_order_id) return false;
+        return agregarProductoAOrden(p.shopify_order_id, variantId);
+      },
       // El agente puede cancelar por si mismo, pero solo si el pedido
       // todavia no salio de bodega: si ya va en camino decide una persona.
       cancelarPedido: async (pedidoId, motivo) => {
