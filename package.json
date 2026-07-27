@@ -22,7 +22,8 @@
     "wa:guardia": "tsx scripts/probar-guardia-catalogo.mts",
     "wa:upsell": "tsx scripts/probar-upsell.mts",
     "wa:edicion": "tsx scripts/probar-edicion-orden.mts",
-    "shopify:webhooks": "node scripts/webhooks-shopify.mjs"
+    "shopify:webhooks": "node scripts/webhooks-shopify.mjs",
+    "wa:guardas": "tsx scripts/probar-guardas.mts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -12,6 +12,7 @@ import {
   linkComunidad,
   pedidoReciente,
 } from "./contexto";
+import { confirmoHacePoco, esRepeticion } from "./guardas";
 import {
   correccionDeCatalogo,
   problemasDeCatalogo,
@@ -698,6 +699,31 @@ export async function responderMensaje(
 
     // El modelo junto todos los datos: se crea la orden de verdad.
     if (traeMarcaPedido) {
+      const dichoAntes = previos
+        .filter((m) => m.role === "user")
+        .map((m) => m.content);
+
+      // Un pedido se crea porque acaba de decir que si, no porque lo
+      // dijera en algun momento. Paso: confirmo sus datos, el pedido no se
+      // pudo cerrar, y doce minutos despues escribio "Hola" — con ese
+      // "Hola" se le creo la orden, porque el modelo seguia viendo la
+      // confirmacion vieja en el historial.
+      if (!confirmoHacePoco(texto, dichoAntes[dichoAntes.length - 1])) {
+        const pregunta = `${nombre?.split(/\s+/)[0] ?? "Hola"}, ¿te confirmo el pedido con los datos que me diste? Dime que si y lo dejo listo.`;
+        await enviarTexto(telefonoE164, pregunta);
+        await guardarRespuesta(
+          supabase,
+          conversacion.id,
+          pregunta,
+          expertoId,
+          tokens,
+        );
+        console.warn(
+          `[wa-agente] se freno un pedido sin confirmacion reciente (${telefonoE164}): "${texto.slice(0, 40)}"`,
+        );
+        return { respondido: true, experto: expertoId, respuesta: pregunta };
+      }
+
       // Solo lo que escribio la persona, incluido el mensaje de ahora: es
       // contra esto que se verifica que la direccion no sea inventada.
       const dichoPorElla = [
@@ -824,6 +850,57 @@ export async function responderMensaje(
       } catch (err) {
         console.warn("[wa-agente] fallo el reintento de formato:", err);
       }
+    }
+
+    // Repetir palabra por palabra lo que ya no funciono es la forma mas
+    // rapida de que alguien cierre el chat. Paso: la clienta dijo "no
+    // entiendo tu pregunta" y recibio otra vez la misma pregunta.
+    const ultimaDelAgente = [...previos]
+      .reverse()
+      .find((m) => m.role === "assistant")?.content;
+
+    if (esRepeticion(respuesta, ultimaDelAgente)) {
+      console.warn(`[wa-agente] respuesta repetida a ${telefonoE164}`);
+      try {
+        const reintento = await chat([
+          { role: "system", content: system },
+          ...previos,
+          { role: "assistant", content: respuesta },
+          {
+            role: "user",
+            content:
+              "[CORRECCION — no es la clienta quien escribe esto] Acabas de repetir palabra por palabra tu mensaje anterior, y ella ya te dijo que no lo entendio. No lo vuelvas a mandar: dilo de otra forma, mas simple y concreta, o preguntale algo distinto que te desatasque. Responde solo con el mensaje nuevo.",
+          },
+        ]);
+        totalTokens += reintento.tokens;
+        const corregido = limpiarFormato(reintento.texto, opcionesFormato);
+        if (!esRepeticion(corregido, ultimaDelAgente)) respuesta = corregido;
+      } catch (err) {
+        console.warn("[wa-agente] fallo el reintento de repeticion:", err);
+      }
+    }
+
+    // Insistio en repetirse: eso ya no lo desatasca el modelo.
+    if (esRepeticion(respuesta, ultimaDelAgente)) {
+      const razon = "se repite y no logra avanzar";
+      const res = await escalarAHumano(
+        supabase,
+        { ...datosBase, motivo: "no_sabe" },
+        razon,
+      );
+      await guardarRespuesta(
+        supabase,
+        conversacion.id,
+        `${MARCA_ESCALADO_HISTORIAL} ${razon})`,
+        expertoId,
+        totalTokens,
+      );
+      return {
+        respondido: res.mensajeEnviado,
+        experto: expertoId,
+        escalar: true,
+        motivo: razon,
+      };
     }
 
     // Regla de oro: no se ofrece lo que la tienda no vende, ni un precio
