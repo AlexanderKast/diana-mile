@@ -6,6 +6,7 @@ import {
   enviarSeguimientosPendientes,
   recuperarCarritosAbandonados,
 } from "@diana-mile/shared/botcake/seguimiento";
+import { vigilarEscalamientos } from "@diana-mile/shared/botcake/vigilante";
 
 /**
  * Cron de los agentes de WhatsApp:
@@ -27,12 +28,16 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminSupabaseClient();
 
+  // Primero los escalamientos: alguien esperando respuesta importa mas que
+  // cualquier envio programado.
+  const escalamientos = await vigilarEscalamientos(supabase);
   const recordatorios = await enviarRecordatoriosPendientes(supabase);
   const seguimientos = await enviarSeguimientosPendientes(supabase);
   const carritos = await recuperarCarritosAbandonados(supabase);
   const outbox = await procesarPendientes(supabase);
 
   return NextResponse.json({
+    escalamientos,
     recordatorios,
     seguimientos,
     carritos,
