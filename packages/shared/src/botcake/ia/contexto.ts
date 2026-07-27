@@ -8,6 +8,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type PedidoContexto = {
   id: string;
+  /** El "#1020" que la clienta ve y menciona en el chat. */
+  numeroOrden: string | null;
   estado: string;
   producto: string;
   numeroGuia: string | null;
@@ -67,7 +69,7 @@ export async function pedidoReciente(
   const { data } = await supabase
     .from("pedidos")
     .select(
-      "id, estado, producto_nombre, numero_guia, transportadora, created_at, ciudad",
+      "id, shopify_order_number, estado, producto_nombre, numero_guia, transportadora, created_at, ciudad",
     )
     .eq("telefono", telefonoE164)
     .order("created_at", { ascending: false })
@@ -85,6 +87,7 @@ export async function pedidoReciente(
 
   return {
     id: data.id,
+    numeroOrden: data.shopify_order_number ?? null,
     estado: data.estado,
     producto: data.producto_nombre ?? "producto",
     numeroGuia: data.numero_guia ?? null,
@@ -382,7 +385,7 @@ USALOS. Si te pide un pedido nuevo, NO le preguntes todo de cero: le confirmas s
       : "No tienes el tiempo de entrega de su ciudad.";
 
     partes.push(
-      `PEDIDO DE ESTA PERSONA: ${ctx.pedido.producto}, estado "${ctx.pedido.estado}", ${guia}. Fecha: ${new Date(ctx.pedido.creadoAt).toLocaleDateString("es-CO")}. ${entrega} Estos son los unicos datos de pedido que puedes afirmar.
+      `PEDIDO DE ESTA PERSONA${ctx.pedido.numeroOrden ? ` (orden ${ctx.pedido.numeroOrden})` : ""}: ${ctx.pedido.producto}, estado "${ctx.pedido.estado}", ${guia}. Fecha: ${new Date(ctx.pedido.creadoAt).toLocaleDateString("es-CO")}. ${entrega} Estos son los unicos datos de pedido que puedes afirmar.
 
 SI TE PREGUNTA POR EL ESTADO O CUANDO LLEGA: contestale tu con lo de arriba. Eso NO se escala. Le dices en que va y en cuantos dias habiles lo recibe; si todavia no hay guia es normal y se lo explicas con naturalidad, no como un problema. Solo escalas si te pregunta algo que estos datos no responden.`,
     );

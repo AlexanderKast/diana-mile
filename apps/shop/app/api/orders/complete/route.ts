@@ -96,6 +96,11 @@ export async function POST(request: NextRequest) {
         .from("pedidos")
         .insert({
           shopify_order_id: orderId,
+          // El numero visible ("#1020") es el unico que la clienta conoce y
+          // el que le dice el agente al cerrar. Si no se guarda aqui, cuando
+          // ella escribe "que paso con mi #1020" no hay con que relacionarlo
+          // y el agente termina escalando algo que sabe de sobra.
+          shopify_order_number: orderNumber,
           nombre,
           telefono: telefonoNormalizado.e164,
           direccion,

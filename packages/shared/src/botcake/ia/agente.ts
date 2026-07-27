@@ -133,6 +133,36 @@ Ese texto NUNCA lo ve la clienta: el sistema crea el pedido de verdad y le respo
 
 NO uses esta marca si todavia falta un dato o si ella no ha confirmado. Y no la mezcles con texto: o mandas la marca sola, o mandas un mensaje normal.`;
 
+/** Marcador con que queda anotada una escalada en el historial. */
+const MARCA_ESCALADO_HISTORIAL = "(escalado a Diana:";
+
+/**
+ * Si a esta persona ya se le contesto algo despues de que se escalara.
+ *
+ * El acuse de recibo se manda una sola vez: quien escribe cinco veces
+ * mientras espera no necesita cinco "te leo" identicos, eso ya parece un
+ * bot roto. La escalada misma queda anotada en el historial con un
+ * marcador, y no cuenta como respuesta porque nunca se le envio.
+ */
+async function yaSeAcusoRecibo(
+  supabase: SupabaseClient,
+  conversacion: { id: string; escaladoAt: string | null },
+): Promise<boolean> {
+  if (!conversacion.escaladoAt) return true;
+
+  const { data } = await supabase
+    .from("whatsapp_conversacion_mensajes")
+    .select("contenido")
+    .eq("conversacion_id", conversacion.id)
+    .eq("rol", "assistant")
+    .gt("created_at", conversacion.escaladoAt)
+    .limit(5);
+
+  return (data ?? []).some(
+    (m) => !String(m.contenido ?? "").startsWith(MARCA_ESCALADO_HISTORIAL),
+  );
+}
+
 function construirSystemPrompt(
   experto: (typeof EXPERTOS)[ExpertoId],
   contexto: string,
@@ -319,7 +349,23 @@ export async function responderMensaje(
 
     await guardarEntrante(supabase, conversacion.id, texto);
 
+    // Escalada y esperando a que alguien del equipo entre. Antes esto era
+    // silencio absoluto: la persona escribia "??", "que paso?", "hola" y no
+    // recibia ni un acuse. Ahora se le contesta una sola vez —repetirlo en
+    // cada mensaje seria peor que callarse— para que sepa que la leyeron.
     if (!conversacion.iaActiva) {
+      if (!(await yaSeAcusoRecibo(supabase, conversacion))) {
+        const acuse = `${conversacion.nombre?.split(/\s+/)[0] ?? "Hola"}, te leo. Estoy validando lo tuyo y te confirmo en un momentico 💚`;
+        const envio = await enviarTexto(telefonoE164, acuse);
+        if (envio.success) {
+          await guardarRespuesta(supabase, conversacion.id, acuse, "pedido", 0);
+        }
+        return {
+          respondido: envio.success,
+          escalar: true,
+          motivo: "ia_silenciada: acuse enviado",
+        };
+      }
       return { respondido: false, escalar: true, motivo: "ia_silenciada" };
     }
 
@@ -576,7 +622,7 @@ export async function responderMensaje(
       await guardarRespuesta(
         supabase,
         conversacion.id,
-        `(escalado a Diana: ${razonEscalada})`,
+        `${MARCA_ESCALADO_HISTORIAL} ${razonEscalada})`,
         expertoId,
         tokens,
       );
