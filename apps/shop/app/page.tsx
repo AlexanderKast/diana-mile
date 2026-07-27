@@ -2,19 +2,18 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getProducts, getCollections } from "@/lib/shopify";
+import { getCoberturaResumen } from "@/lib/cobertura-server";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CategoryCard } from "@/components/category/CategoryCard";
 import { DianaStory } from "@/components/site/DianaStory";
 import { SocialProofSection } from "@/components/site/SocialProofSection";
-import TrustBadges from "@/components/product/TrustBadges";
-import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
 import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 export const metadata: Metadata = {
   title: "Milito Life Shop — Bienestar probado por Diana Mile",
   description:
-    "Bienestar, piel y tendencia probados por Diana Mile, entrenadora física y personal de salud. Pago contraentrega en toda Colombia, productos 100% originales.",
+    "Bienestar, piel y tendencia probados por Diana Mile, entrenadora física y personal de salud. Pago contraentrega en buena parte de Colombia, productos 100% originales.",
 };
 
 const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
@@ -22,137 +21,149 @@ const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
   "Hola Diana, quiero información sobre tu acompañamiento de entrenamiento",
 );
 
+/**
+ * Los tres argumentos de la tienda, sin foto.
+ *
+ * Antes cada uno venia con un `ImagePlaceholder` gris rotulado "Foto: Diana
+ * probando un producto". Tres rectangulos vacios en fila es exactamente el
+ * aspecto de una plantilla a medio llenar. Numerados y con la linea dorada
+ * se leen como una decision editorial y no necesitan imagen que no existe.
+ */
 const PILARES = [
   {
+    numero: "01",
     titulo: "Probado antes que tú",
     descripcion:
-      "Cada producto que ves aquí pasó primero por el ritual de Diana antes de llegar a la tienda.",
-    imagenLabel: "Foto: Diana probando un producto",
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="9" />
-        <path d="M8 12l2.5 2.5L16 9" />
-      </svg>
-    ),
+      "Cada producto que ves aquí pasó primero por el ritual de Diana. Si no le funcionó, no llegó a la tienda.",
   },
   {
-    titulo: "Pago contraentrega",
+    numero: "02",
+    titulo: "Pagas al recibir",
     descripcion:
-      "Pagas cuando ya lo tienes en tus manos, sin sorpresas ni letra pequeña.",
-    imagenLabel: "Foto: entrega contraentrega",
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M3 8l9-5 9 5-9 5-9-5z" />
-        <path d="M3 8v8l9 5 9-5V8" />
-        <path d="M12 13v8" />
-      </svg>
-    ),
+      "En la mayor parte del país pagas cuando ya lo tienes en las manos. Los de mayor valor se coordinan contigo, uno a uno.",
   },
   {
+    numero: "03",
     titulo: "100% original",
     descripcion:
-      "Trabajamos solo con productos auténticos, sin falsificaciones ni intermediarios dudosos.",
-    imagenLabel: "Foto: empaque/sello de autenticidad",
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z" />
-        <path d="M9 12l2 2 4-4" />
-      </svg>
-    ),
+      "Producto auténtico de Nu Skin, sin intermediarios dudosos. Milito Life Shop es distribuidora independiente.",
   },
-];
-
-const STATS = [
-  { numero: "COD", texto: "Pago contraentrega en Colombia" },
-  { numero: "WA", texto: "Acompanamiento por WhatsApp" },
-  { numero: "24-72h", texto: "Despacho estimado en ciudades principales" },
 ];
 
 export default async function HomePage() {
-  const [products, collections] = await Promise.all([
+  const [products, collections, cobertura] = await Promise.all([
     getProducts(),
     getCollections(),
+    getCoberturaResumen(),
   ]);
-  const destacados = products.slice(0, 3);
+
+  // Se destacan los que se pueden pedir aquí mismo y tienen foto: mandar a
+  // alguien desde el home a una ficha sin imagen —o a una que termina en
+  // "escríbele a Diana"— es gastar el mejor clic de la página.
+  const destacados = products
+    .filter((p) => p.codDisponible && p.images.length > 0)
+    .slice(0, 3);
 
   return (
     <>
       {/* Hero */}
       <section className="bg-crema">
-        <div className="mx-auto max-w-6xl px-6 py-16 md:py-24 grid gap-10 md:grid-cols-2 md:gap-8 md:items-center">
-          <div className="relative aspect-[4/5] w-full rounded-2xl overflow-hidden order-1 md:order-2 animate-fade-in-up">
-            <Image
-              src="/images/hero-home.jpg"
-              alt="Ritual Milito Life Shop con hojas tropicales"
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-          </div>
-          <div
-            className="order-2 md:order-1 animate-fade-in-up"
-            style={{ animationDelay: "100ms" }}
-          >
-            <h1 className="font-display text-4xl md:text-6xl leading-tight text-carbon">
-              Probado por Diana, hecho para ti
-            </h1>
-            <p className="mt-4 text-[15px] text-carbon-suave max-w-md">
-              Bienestar, piel y tendencia — todo lo que uso y recomiendo, con
-              pago contraentrega en toda Colombia.
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 py-20 md:grid-cols-[1.05fr_0.95fr] md:gap-14 md:py-28">
+          <div className="animate-fade-in-up order-2 md:order-1">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-ceniza">
+              Distribuidora independiente Nu Skin
             </p>
-            <div className="mt-8">
+            <h1 className="mt-5 font-display text-[44px] leading-[0.95] tracking-tight text-carbon md:text-[76px]">
+              Probado por Diana,
+              <br />
+              hecho para ti
+            </h1>
+            <div className="linea-dorada mt-7 w-16" />
+            <p className="mt-7 max-w-md text-[15px] leading-relaxed text-carbon-suave">
+              Bienestar, piel y tendencia — lo que uso y recomiendo con mi
+              nombre. Pago contraentrega en buena parte de Colombia.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link href="/productos">
                 <Button variant="primary">Descubrir la tienda →</Button>
               </Link>
+              <Link
+                href="/categorias"
+                className="text-[14px] text-carbon underline decoration-dorado decoration-1 underline-offset-4 transition-colors hover:text-dorado-oscuro"
+              >
+                Explorar por categoría
+              </Link>
             </div>
-            <div className="mt-6">
-              <TrustBadges />
-            </div>
+          </div>
+
+          <div
+            className="animate-fade-in-up relative order-1 aspect-[4/5] w-full overflow-hidden rounded-2xl md:order-2"
+            style={{ animationDelay: "80ms" }}
+          >
+            <Image
+              src="/images/hero-home.jpg"
+              alt="Ritual de cuidado Milito Life Shop"
+              fill
+              priority
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 45vw"
+            />
           </div>
         </div>
       </section>
 
-      {/* Explora por categoria */}
+      {/* Los tres argumentos */}
+      <section className="bg-blanco px-6 py-20 md:py-28">
+        <div className="mx-auto max-w-5xl">
+          <div className="grid gap-12 md:grid-cols-3 md:gap-10">
+            {PILARES.map((pilar, i) => (
+              <div
+                key={pilar.numero}
+                className="animate-fade-in-up border-t border-arena pt-6"
+                style={{ animationDelay: `${i * 90}ms` }}
+              >
+                <span className="font-display text-[15px] tracking-[0.2em] text-dorado-oscuro">
+                  {pilar.numero}
+                </span>
+                <h2 className="mt-4 font-display text-[26px] leading-tight text-carbon">
+                  {pilar.titulo}
+                </h2>
+                <p className="mt-3 text-[14px] leading-relaxed text-carbon-suave">
+                  {pilar.descripcion}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Categorias */}
       {collections.length > 0 && (
-        <section className="bg-crema">
-          <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-            <h2 className="font-display text-2xl text-carbon mb-8">
-              Explora por categoría
-            </h2>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+        <section className="bg-crema px-6 py-20 md:py-28">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
+                  El catálogo
+                </p>
+                <h2 className="mt-3 font-display text-[32px] leading-tight tracking-tight text-carbon md:text-[44px]">
+                  Explora por categoría
+                </h2>
+              </div>
+              <Link
+                href="/categorias"
+                className="text-[14px] text-carbon underline decoration-dorado decoration-1 underline-offset-4 transition-colors hover:text-dorado-oscuro"
+              >
+                Ver todas
+              </Link>
+            </div>
+
+            <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
               {collections.map((collection, i) => (
                 <div
                   key={collection.id}
                   className="animate-fade-in-up"
-                  style={{ animationDelay: `${i * 100}ms` }}
+                  style={{ animationDelay: `${i * 70}ms` }}
                 >
                   <CategoryCard collection={collection} />
                 </div>
@@ -162,114 +173,72 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Por que Milito Life Shop */}
-      <section className="bg-blanco">
-        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-          <h2 className="font-display text-3xl md:text-4xl text-carbon mb-8">
-            Por que Milito Life Shop
-          </h2>
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible">
-            {PILARES.map((pilar, i) => (
-              <div
-                key={pilar.titulo}
-                className="min-w-[80%] snap-center shrink-0 md:min-w-0 md:shrink overflow-hidden bg-blanco border border-arena rounded-2xl animate-fade-in-up"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <ImagePlaceholder
-                  label={pilar.imagenLabel}
-                  aspect="aspect-[4/3]"
-                  rounded="rounded-none"
-                  className="border-x-0 border-t-0"
-                />
-                <div className="p-6">
-                  <div className="text-dorado mb-3">{pilar.icon}</div>
-                  <h3 className="font-display text-xl text-carbon mb-2">
-                    {pilar.titulo}
-                  </h3>
-                  <p className="text-[15px] text-carbon-suave">
-                    {pilar.descripcion}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Destacados */}
+      {destacados.length > 0 && (
+        <section className="bg-blanco px-6 py-20 md:py-28">
+          <div className="mx-auto max-w-6xl">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
+              Para empezar
+            </p>
+            <h2 className="mt-3 max-w-xl font-display text-[32px] leading-tight tracking-tight text-carbon md:text-[44px]">
+              Rituales esenciales
+            </h2>
+            <p className="mt-4 max-w-md text-[14px] leading-relaxed text-carbon-suave">
+              Los pides aquí mismo y pagas cuando llegan a tu puerta.
+            </p>
 
-      {/* Rituales esenciales */}
-      <section className="bg-crema">
-        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-          <h2 className="font-display text-2xl text-carbon mb-8">
-            Rituales esenciales
-          </h2>
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible">
-            {destacados.map((product, i) => (
-              <div
-                key={product.id}
-                className="min-w-[80%] snap-center shrink-0 md:min-w-0 md:shrink animate-fade-in-up"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <DianaStory />
-
-      {/* Entrena con Diana */}
-      {WHATSAPP_ENTRENAMIENTO_HREF && (
-        <section className="seccion-joya text-carbon py-16 px-6 md:py-20">
-          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 md:items-center md:gap-12">
-            <ImagePlaceholder
-              label="Foto: Diana entrenando"
-              aspect="aspect-[4/5]"
-            />
-            <div className="text-center md:text-left">
-              <h2 className="font-display text-2xl md:text-3xl">
-                Entrena con Diana
-              </h2>
-              <p className="mt-3 text-sm text-carbon-suave max-w-md mx-auto md:mx-0">
-                Acompañamiento de bienestar y salud personal, uno a uno, con la
-                misma entrenadora detrás de esta tienda.
-              </p>
-              <div className="mt-6">
-                <a
-                  href={WHATSAPP_ENTRENAMIENTO_HREF}
-                  target="_blank"
-                  rel="noopener noreferrer"
+            <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+              {destacados.map((product, i) => (
+                <div
+                  key={product.id}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${i * 90}ms` }}
                 >
-                  <Button variant="primary">Escribir por WhatsApp →</Button>
-                </a>
-              </div>
+                  <ProductCard product={product} />
+                </div>
+              ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* Prueba social */}
-      <section className="bg-blanco">
-        <div className="mx-auto max-w-6xl px-4 py-16 md:py-20 grid grid-cols-3 gap-3 md:gap-4 text-center">
-          {STATS.map((stat) => (
-            <div key={stat.numero} className="px-1">
-              <p className="font-display text-3xl md:text-4xl text-dorado-oscuro">
-                {stat.numero}
-              </p>
-              <p className="mt-2 text-[13px] leading-snug text-ceniza">
-                {stat.texto}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <DianaStory />
 
-      <SocialProofSection />
+      {/* Entrena con Diana — sin foto: ver el comentario de DianaStory */}
+      {WHATSAPP_ENTRENAMIENTO_HREF && (
+        <section className="seccion-joya px-6 py-20 text-carbon md:py-24">
+          <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
+              Más allá de la tienda
+            </p>
+            <h2 className="font-display text-[32px] leading-tight tracking-tight md:text-[44px]">
+              Entrena con Diana
+            </h2>
+            <div className="linea-dorada w-16" />
+            <p className="max-w-md text-[15px] leading-relaxed text-carbon-suave">
+              Acompañamiento de bienestar y salud personal, uno a uno, con la
+              misma entrenadora que está detrás de esta tienda.
+            </p>
+            <a
+              href={WHATSAPP_ENTRENAMIENTO_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2"
+            >
+              <Button variant="primary">Escribir por WhatsApp →</Button>
+            </a>
+          </div>
+        </section>
+      )}
 
-      {/* CTA final */}
-      <section className="seccion-joya text-carbon py-12 px-6 text-center">
-        <h2 className="font-display text-2xl">Empieza tu ritual hoy</h2>
-        <div className="mt-6">
+      <SocialProofSection cobertura={cobertura} />
+
+      {/* Cierre */}
+      <section className="bg-crema px-6 py-20 text-center md:py-24">
+        <h2 className="font-display text-[32px] leading-tight tracking-tight text-carbon md:text-[40px]">
+          Empieza tu ritual hoy
+        </h2>
+        <div className="mt-8">
           <Link href="/productos">
             <Button variant="primary">Ver productos</Button>
           </Link>

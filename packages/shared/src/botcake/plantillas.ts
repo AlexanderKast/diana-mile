@@ -32,8 +32,12 @@ export const PLANTILLAS = {
     categoria: "UTILITY",
   },
   /**
-   * Aviso de despacho con numero de guia. Vars: 1 nombre, 2 pedido,
-   * 3 guia, 4 valor.
+   * Aviso de despacho. Vars: 1 nombre, 2 producto, 3 guia, 4 valor,
+   * 5 transportadora, 6 tiempo de entrega.
+   *
+   * El orden no es el logico: transportadora y tiempo se anadieron al
+   * final para no mover las cuatro que ya tenia y tener que pasar otra vez
+   * por revision de Meta.
    */
   pedidoEnviado: {
     nombre: "pedido_enviado_milito",
@@ -41,28 +45,14 @@ export const PLANTILLAS = {
     categoria: "UTILITY",
   },
   /**
-   * Reemplazo de la anterior. Aquella decia "enviado con la transportadora"
-   * como texto fijo, sin hueco donde poner cual: el dato estaba en la base
-   * y no habia forma de mandarlo. Esta ademas dice cuando llega, que es lo
-   * que la gente pregunta apenas recibe el aviso.
-   * Vars: 1 nombre, 2 producto, 3 transportadora, 4 guia, 5 tiempo, 6 valor.
-   * Boton: "Tengo una novedad" (respuesta rapida).
-   */
-  pedidoEnviadoV2: {
-    nombre: "pedido_enviado_milito_v2",
-    id: "2834292316931854",
-    categoria: "UTILITY",
-  },
-  /**
    * Codigo de acceso a la cuenta de la tienda. Categoria AUTHENTICATION:
    * Meta le pone caducidad y boton de copiar, y no deja usarla para otra
    * cosa. La manda Supabase Auth a traves de /api/auth/otp-whatsapp.
    * Vars: 1 el codigo.
-   * PENDIENTE: crear en Botcake y pegar aqui el id que devuelva Meta.
    */
   codigoAcceso: {
     nombre: "codigo_acceso_milito",
-    id: "",
+    id: "1360310535446398",
     categoria: "AUTHENTICATION",
   },
   /**

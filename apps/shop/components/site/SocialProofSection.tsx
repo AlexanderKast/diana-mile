@@ -1,90 +1,86 @@
 import Link from "next/link";
 import { Button } from "@diana-mile/shared/ui/Button";
-import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
-
-function IconStar() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 20 20"
-      fill="var(--dorado)"
-      aria-hidden="true"
-    >
-      <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L10 1.5z" />
-    </svg>
-  );
-}
+import type { CoberturaResumen } from "@/lib/cobertura-server";
 
 /**
- * Testimonios placeholder — reemplazar por resenas reales antes de
- * publicar. Version desacoplada de TestimonialsSection (que depende de
- * OrderSheetContext, ligado a un producto especifico); esta es generica
- * para usarse en home u otras paginas sin flujo de compra activo.
+ * Prueba social REAL.
+ *
+ * Antes esta seccion mostraba tres testimonios escritos a mano, con foto
+ * gris de perfil y cinco estrellas. Nadie los habia dicho. Una reseña
+ * inventada es la señal mas rapida de que una tienda no es seria: quien
+ * compra contraentrega esta decidiendo si confia, y esa es justo la
+ * pregunta que una reseña falsa contesta mal.
+ *
+ * Lo que la reemplaza sale de `cobertura_entrega`, la matriz real de la
+ * transportadora. Son numeros verificables, se actualizan solos, y dicen
+ * algo que a la clienta de verdad le importa: si llegan a su municipio y en
+ * cuantos dias.
  */
-const TESTIMONIOS = [
-  {
-    titulo: "Se nota la diferencia",
-    texto:
-      "Pedí sin muchas expectativas y el ritual completo cambió mi piel en semanas.",
-  },
-  {
-    titulo: "Llegó rápido y bien empacado",
-    texto:
-      "El pedido contraentrega fue sin complicaciones, y el producto es tal cual lo describen.",
-  },
-  {
-    titulo: "Confío en las recomendaciones de Diana",
-    texto:
-      "Sigo su ritual desde hace tiempo y cada producto que suma a la tienda lo pruebo primero.",
-  },
-];
+export function SocialProofSection({
+  cobertura,
+}: {
+  cobertura: CoberturaResumen | null;
+}) {
+  if (!cobertura) return null;
 
-export function SocialProofSection() {
+  const porcentajeRecaudo = Math.round(
+    (cobertura.conRecaudo / cobertura.ciudades) * 100,
+  );
+
+  const DATOS = [
+    {
+      cifra: cobertura.ciudades.toLocaleString("es-CO"),
+      titulo: "municipios",
+      detalle: "cubiertos por la transportadora en todo el país",
+    },
+    {
+      cifra: cobertura.conRecaudo.toLocaleString("es-CO"),
+      titulo: "con contraentrega",
+      detalle: `el ${porcentajeRecaudo}% de la cobertura permite pagar al recibir`,
+    },
+    {
+      cifra: `${cobertura.diasMin}-${cobertura.diasMax}`,
+      titulo: "días de entrega",
+      detalle: "según tu municipio — te lo confirmamos antes de despachar",
+    },
+  ];
+
   return (
-    <section className="bg-blanco py-16 px-6 md:py-20">
-      <div className="mx-auto max-w-6xl">
-        <h2 className="mb-8 text-center font-display text-2xl text-carbon md:text-3xl">
-          Lo que dicen de su ritual
+    <section className="bg-blanco px-6 py-20 md:py-28">
+      <div className="mx-auto max-w-5xl">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
+          Cobertura real
+        </p>
+        <h2 className="mt-3 max-w-2xl font-display text-[32px] leading-[1.1] tracking-tight text-carbon md:text-[44px]">
+          No prometemos cobertura nacional. La medimos.
         </h2>
+        <div className="linea-dorada mt-6 w-16" />
 
-        <div
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto md:grid md:grid-cols-3 md:gap-6 md:overflow-visible"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {TESTIMONIOS.map((item) => (
+        <dl className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+          {DATOS.map((d, i) => (
             <div
-              key={item.titulo}
-              className="flex min-w-[85%] shrink-0 snap-center flex-col gap-3 rounded-2xl border border-arena bg-blanco p-5 md:min-w-0"
+              key={d.titulo}
+              className="animate-fade-in-up border-t border-arena pt-5"
+              style={{ animationDelay: `${i * 90}ms` }}
             >
-              <div className="flex items-center gap-3">
-                <ImagePlaceholder
-                  label="Foto"
-                  aspect="aspect-square"
-                  rounded="rounded-full"
-                  showLabel={false}
-                  iconSize={16}
-                  className="w-9 shrink-0 px-0"
-                />
-                <div className="flex items-center gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <IconStar key={i} />
-                  ))}
-                </div>
-              </div>
-              <p className="text-[14px] font-semibold text-carbon">
-                {item.titulo}
-              </p>
-              <p className="text-[14px] leading-relaxed text-carbon-suave">
-                {item.texto}
-              </p>
+              <dt className="font-display text-[46px] leading-none text-carbon md:text-[56px]">
+                {d.cifra}
+              </dt>
+              <dd className="mt-2">
+                <span className="text-[13px] uppercase tracking-[0.14em] text-dorado-oscuro">
+                  {d.titulo}
+                </span>
+                <p className="mt-3 text-[14px] leading-relaxed text-carbon-suave">
+                  {d.detalle}
+                </p>
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
 
-        <div className="mt-10 text-center">
+        <div className="mt-14">
           <Link href="/productos">
-            <Button variant="primary">Descubrir productos →</Button>
+            <Button variant="primary">Ver el catálogo →</Button>
           </Link>
         </div>
       </div>
