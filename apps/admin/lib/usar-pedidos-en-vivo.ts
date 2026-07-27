@@ -66,32 +66,46 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
       if (sesion?.access_token) void supabase.realtime.setAuth(sesion.access_token);
     });
 
+    const aplicar = (operacion: string, fila?: Pedido, vieja?: Partial<Pedido>) =>
+      setPedidos((previos) => {
+        if (operacion === "DELETE") {
+          const id = vieja?.id;
+          return id ? previos.filter((p) => p.id !== id) : previos;
+        }
+        if (!fila?.id) return previos;
+
+        const i = previos.findIndex((p) => p.id === fila.id);
+
+        // Nuevo: arriba del todo, que es donde se mira primero.
+        if (i === -1) return [fila, ...previos];
+
+        // Actualizado: se reemplaza en su sitio para no reordenar la lista
+        // bajo el cursor de quien la esta leyendo.
+        const copia = [...previos];
+        copia[i] = fila;
+        return copia;
+      });
+
+    /**
+     * Se escucha una difusion y no "postgres changes".
+     *
+     * Con postgres_changes el canal se suscribia y no llegaba ni un evento:
+     * Realtime comprueba la politica de lectura contra cada fila y aqui no
+     * la resolvia, aunque la misma consulta con este mismo token si
+     * devuelve las filas. Ahora un disparador publica el cambio y el
+     * permiso se decide una sola vez, al entrar al canal.
+     */
     const suscribir = (cliente: ReturnType<typeof createClient>) =>
       cliente
-      .channel("pedidos-en-vivo")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pedidos" },
-        (payload) => {
-          setPedidos((previos) => {
-            if (payload.eventType === "DELETE") {
-              const viejo = payload.old as Partial<Pedido>;
-              return previos.filter((p) => p.id !== viejo.id);
-            }
-
-            const fila = payload.new as Pedido;
-            const i = previos.findIndex((p) => p.id === fila.id);
-
-            // Nuevo: arriba del todo, que es donde se mira primero.
-            if (i === -1) return [fila, ...previos];
-
-            // Actualizado: se reemplaza en su sitio para no reordenar la
-            // lista bajo el cursor de quien la esta leyendo.
-            const copia = [...previos];
-            copia[i] = fila;
-            return copia;
-          });
-        },
+      .channel("pedidos", { config: { private: true } })
+      .on("broadcast", { event: "INSERT" }, ({ payload }) =>
+        aplicar("INSERT", payload?.record as Pedido),
+      )
+      .on("broadcast", { event: "UPDATE" }, ({ payload }) =>
+        aplicar("UPDATE", payload?.record as Pedido),
+      )
+      .on("broadcast", { event: "DELETE" }, ({ payload }) =>
+        aplicar("DELETE", undefined, payload?.old_record as Partial<Pedido>),
       )
       .subscribe((estado) => {
         setEnVivo(estado === "SUBSCRIBED");
