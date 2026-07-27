@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { BotonWhatsAppFlotante } from "@diana-mile/shared/ui/WhatsAppFlotante";
 
-const NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
 
 /**
  * Coloca el boton sin pelearse con lo que ya vive abajo de la pantalla.
@@ -24,7 +23,6 @@ export function BotonWhatsApp() {
 
   return (
     <BotonWhatsAppFlotante
-      numero={NUMERO}
       origen="shop"
       className={
         hayBarraInferior

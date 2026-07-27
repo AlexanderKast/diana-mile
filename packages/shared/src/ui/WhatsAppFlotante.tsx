@@ -33,12 +33,25 @@ import {
 
 const ContextoTitulo = createContext<{
   titulo: string | null;
+  numero: string | null;
   fijar: (t: string | null) => void;
-}>({ titulo: null, fijar: () => {} });
+}>({ titulo: null, numero: null, fijar: () => {} });
 
-export function ProveedorWhatsApp({ children }: { children: ReactNode }) {
+/**
+ * El numero se recibe del servidor y viaja por aqui, no se lee del entorno
+ * en cada componente: asi vive en la tabla `config` y se cambia desde el
+ * admin sin desplegar, y todos los accesos a WhatsApp del sitio usan el
+ * mismo sin poder desincronizarse.
+ */
+export function ProveedorWhatsApp({
+  children,
+  numero = null,
+}: {
+  children: ReactNode;
+  numero?: string | null;
+}) {
   const [titulo, fijar] = useState<string | null>(null);
-  const valor = useMemo(() => ({ titulo, fijar }), [titulo]);
+  const valor = useMemo(() => ({ titulo, numero, fijar }), [titulo, numero]);
   return (
     <ContextoTitulo.Provider value={valor}>{children}</ContextoTitulo.Provider>
   );
@@ -65,16 +78,16 @@ export function TituloWhatsApp({ valor }: { valor: string | null }) {
  * este modulo existe para saber.
  */
 export function useEnlaceWhatsApp(
-  numero: string | null | undefined,
+  numero?: string | null,
   origen: OrigenApp = "shop",
 ): { href: string | null; mensaje: string; alHacerClic: () => void } {
   const pathname = usePathname() ?? "/";
-  const { titulo } = useContext(ContextoTitulo);
+  const { titulo, numero: delContexto } = useContext(ContextoTitulo);
   const ctx = { ruta: pathname, titulo, origen };
   const mensaje = mensajeWhatsApp(ctx);
 
   return {
-    href: enlaceWhatsApp(numero, ctx),
+    href: enlaceWhatsApp(numero ?? delContexto, ctx),
     mensaje,
     alHacerClic: () => anotarClic({ mensaje, ruta: pathname, titulo, origen }),
   };
@@ -145,8 +158,8 @@ function IconoWhatsApp() {
 }
 
 export type BotonWhatsAppProps = {
-  /** Numero en formato internacional sin signos. Sin el, no se pinta nada. */
-  numero: string | null | undefined;
+  /** Solo si hace falta forzar uno distinto al del proveedor. */
+  numero?: string | null;
   origen?: OrigenApp;
   /** Para mover el boton donde cada sitio lo necesite. */
   className?: string;

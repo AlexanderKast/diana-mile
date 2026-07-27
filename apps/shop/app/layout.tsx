@@ -8,6 +8,7 @@ import { TrackingScripts } from "@/components/tracking/TrackingScripts";
 import { BotonWhatsApp } from "@/components/site/BotonWhatsApp";
 import { ProveedorWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 import { getPricingConfig } from "@/lib/pricing-server";
+import { getWhatsappNumero } from "@/lib/whatsapp-server";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -37,7 +38,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pricing = await getPricingConfig();
+  const [pricing, whatsappNumero] = await Promise.all([
+    getPricingConfig(),
+    getWhatsappNumero(),
+  ]);
 
   return (
     <html
@@ -47,7 +51,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden">
         <TrackingScripts />
-        <ProveedorWhatsApp>
+        <ProveedorWhatsApp numero={whatsappNumero}>
           <div className="min-h-screen flex flex-col">
             <SiteHeader />
             <InstallBanner activo={pricing.pwaBannerActivo} />

@@ -31,9 +31,31 @@ function normalizar(ruta: string): string {
   return limpia.length > 1 ? limpia.replace(/\/+$/, "") : limpia;
 }
 
+/**
+ * Nombre aproximado sacado del slug: "epoch-polishing-bar" -> "Epoch
+ * Polishing Bar".
+ *
+ * Existe porque el titulo exacto lo pone la pagina despues de hidratar, y
+ * eso puede no llegar nunca: basta con una extension del navegador que
+ * toque el HTML para que React descarte los efectos. Con esto el mensaje
+ * ya nombra el producto desde el HTML del servidor, y si la hidratacion va
+ * bien se reemplaza por el titulo de verdad.
+ */
+export function tituloDesdeRuta(ruta: string): string | null {
+  const partes = normalizar(ruta).split("/").filter(Boolean);
+  const slug = partes[1];
+  if (!slug) return null;
+
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+}
+
 export function mensajeWhatsApp(ctx: ContextoEnlace): string {
   const ruta = normalizar(ctx.ruta);
-  const titulo = ctx.titulo?.trim();
+  const titulo = ctx.titulo?.trim() || tituloDesdeRuta(ruta);
 
   if (ctx.origen === "linktree") {
     return "Hola, llegue por el link de la bio y quiero informacion.";

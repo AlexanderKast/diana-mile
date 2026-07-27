@@ -2,7 +2,6 @@
 
 import { useEnlaceWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 
-const NUMERO = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
 
 /**
  * El acceso a WhatsApp del header y de la barra movil.
@@ -20,7 +19,7 @@ export function EnlaceWhatsApp({
   className?: string;
   children: React.ReactNode;
 }) {
-  const { href, mensaje, alHacerClic } = useEnlaceWhatsApp(NUMERO, "shop");
+  const { href, mensaje, alHacerClic } = useEnlaceWhatsApp(undefined, "shop");
   if (!href) return null;
 
   return (
