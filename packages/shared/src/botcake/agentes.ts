@@ -61,6 +61,34 @@ export async function encolarRecordatorioConfirmacion(
   });
 }
 
+/**
+ * Agente Cancelacion: el pedido se cancelo, venga de donde venga (Shopify,
+ * el panel, o el boton del cliente en WhatsApp). Va por plantilla porque
+ * una cancelacion suele pasar dias despues, con la ventana de 24h cerrada.
+ */
+export async function encolarPedidoCancelado(
+  supabase: SupabaseClient,
+  datos: {
+    pedidoId: string;
+    nombre: string;
+    telefonoE164: string;
+    numeroPedido: string;
+    producto: string;
+  },
+): Promise<void> {
+  await encolarMensaje(supabase, {
+    telefonoE164: datos.telefonoE164,
+    tipo: "cancelacion",
+    plantilla: PLANTILLAS.pedidoCancelado,
+    pedidoId: datos.pedidoId,
+    variables: {
+      "1": datos.nombre,
+      "2": datos.numeroPedido,
+      "3": datos.producto,
+    },
+  });
+}
+
 /** Agente Envio: pedido despachado con numero de guia. */
 export async function encolarPedidoEnviado(
   supabase: SupabaseClient,

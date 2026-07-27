@@ -52,6 +52,18 @@ export const PLANTILLAS = {
     id: process.env.BOTCAKE_TEMPLATE_AVISO_ASESOR ?? "",
     categoria: "UTILITY",
   },
+  /**
+   * Aviso de cancelacion. Va por plantilla porque una cancelacion suele
+   * ocurrir dias despues del pedido, cuando la ventana de 24h ya cerro y
+   * un texto libre no llegaria.
+   * Vars: 1 nombre, 2 numero de pedido, 3 producto.
+   * PENDIENTE: crear en Botcake y pegar aqui el id que devuelva Meta.
+   */
+  pedidoCancelado: {
+    nombre: "pedido_cancelado_milito",
+    id: process.env.BOTCAKE_TEMPLATE_CANCELADO ?? "",
+    categoria: "UTILITY",
+  },
 } satisfies Record<string, PlantillaDef>;
 
 export const MARCA_WHATSAPP = "Milito Life";

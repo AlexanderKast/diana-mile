@@ -11,7 +11,8 @@ export type TipoMensaje =
   | "remarketing"
   | "manual"
   /** Aviso interno a Diana de que alguien necesita respuesta humana. */
-  | "escalamiento";
+  | "escalamiento"
+  | "cancelacion";
 
 export type MensajeNuevo = {
   telefonoE164: string;

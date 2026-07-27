@@ -181,6 +181,39 @@ export async function crearOrdenDirecta(
   });
 }
 
+/**
+ * Cancela la orden en Shopify y devuelve el inventario al stock.
+ *
+ * `email: false` a proposito: el aviso al cliente lo manda el agente de
+ * WhatsApp con su plantilla, no queremos que Shopify mande ademas un
+ * correo con otro tono. Devuelve true si quedo cancelada (o ya lo estaba).
+ */
+export async function cancelarOrdenShopify(
+  orderId: string,
+  motivo = "other",
+): Promise<boolean> {
+  const resultado = await safeShopifyCall("cancelar orden", async () => {
+    const res = await fetch(
+      `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders/${orderId}/cancel.json`,
+      {
+        method: "POST",
+        headers: adminHeaders(),
+        body: JSON.stringify({ reason: motivo, email: false, restock: true }),
+      },
+    );
+
+    if (!res.ok) {
+      const detalle = await res.text();
+      // Shopify responde 422 si ya estaba cancelada: eso no es un fallo.
+      if (res.status === 422 && detalle.includes("already")) return true;
+      throw new Error(`HTTP ${res.status}: ${detalle.slice(0, 200)}`);
+    }
+    return true;
+  });
+
+  return resultado ?? false;
+}
+
 export async function agregarNotaOrden(orderId: string, linea: string): Promise<void> {
   await safeShopifyCall("agregar nota", async () => {
     const getRes = await fetch(`https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders/${orderId}.json?fields=note`, {

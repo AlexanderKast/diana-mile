@@ -22,7 +22,8 @@
     "./botcake/ia/cierre": "./src/botcake/ia/cierre.ts",
     "./botcake/ia/formato": "./src/botcake/ia/formato.ts",
     "./botcake/ia/datos-pedido": "./src/botcake/ia/datos-pedido.ts",
-    "./botcake/ia/pedido": "./src/botcake/ia/pedido.ts"
+    "./botcake/ia/pedido": "./src/botcake/ia/pedido.ts",
+    "./botcake/cancelacion": "./src/botcake/cancelacion.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

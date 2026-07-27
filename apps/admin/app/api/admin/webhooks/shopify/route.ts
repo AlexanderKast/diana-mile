@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
+import { cancelarPorShopifyOrderId } from "@diana-mile/shared/botcake/cancelacion";
 
 const WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET;
 
@@ -30,6 +31,8 @@ type ShopifyOrder = {
   note_attributes?: { name: string; value: string }[];
   financial_status?: string;
   fulfillment_status?: string | null;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
   total_price?: string;
   phone?: string;
   customer?: { first_name?: string; last_name?: string; phone?: string };
@@ -73,7 +76,34 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
   });
 }
 
+/**
+ * La orden se cancelo en Shopify: se refleja en Supabase y se le avisa al
+ * cliente por WhatsApp. Es idempotente, y hace falta que lo sea porque
+ * Shopify emite orders/cancelled y ademas un orders/updated por lo mismo.
+ */
+async function procesarOrdenCancelada(order: ShopifyOrder) {
+  const supabase = createAdminSupabaseClient();
+  const resultado = await cancelarPorShopifyOrderId(
+    supabase,
+    String(order.id),
+    order.cancel_reason ?? undefined,
+  );
+
+  if (resultado.cancelado && !resultado.yaEstaba) {
+    console.warn(
+      `[webhook-shopify] pedido cancelado desde Shopify (orden ${order.id}), aviso encolado: ${resultado.avisoEncolado}`,
+    );
+  }
+}
+
 async function procesarOrdenActualizada(order: ShopifyOrder) {
+  // Una cancelacion tambien llega como orders/updated: se atiende por el
+  // mismo camino para que no dependa de que topic llegue primero.
+  if (order.cancelled_at) {
+    await procesarOrdenCancelada(order);
+    return;
+  }
+
   const supabase = createAdminSupabaseClient();
   const orderId = String(order.id);
 
@@ -148,6 +178,8 @@ export async function POST(request: NextRequest) {
       try {
         if (topic === "orders/create") {
           await procesarOrdenCreada(payload);
+        } else if (topic === "orders/cancelled") {
+          await procesarOrdenCancelada(payload);
         } else if (topic === "orders/updated") {
           await procesarOrdenActualizada(payload);
         } else if (topic === "fulfillments/create") {

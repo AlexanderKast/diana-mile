@@ -1,6 +1,11 @@
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { responderMensaje } from "@diana-mile/shared/botcake/ia/agente";
-import { agregarNotaOrden, agregarTagsOrden } from "@/lib/shopify";
+import {
+  agregarNotaOrden,
+  agregarTagsOrden,
+  cancelarOrdenShopify,
+} from "@/lib/shopify";
+import { cancelarPedido } from "@diana-mile/shared/botcake/cancelacion";
 import { enviarPush } from "@/lib/push";
 
 /**
@@ -250,38 +255,50 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
     return;
   }
 
-  const nuevoEstado =
-    evento === "confirmado"
-      ? "confirmado"
-      : evento === "anulado"
-        ? "cancelado"
-        : null;
-
-  if (nuevoEstado) {
+  if (evento === "confirmado") {
     await supabase
       .from("pedidos")
-      .update({ estado: nuevoEstado, updated_at: new Date().toISOString() })
+      .update({ estado: "confirmado", updated_at: new Date().toISOString() })
       .eq("id", pedido.id);
 
     await supabase.from("confirmaciones").insert({
       pedido_id: pedido.id,
       usuario_id: "whatsapp-bot",
       usuario_nombre: "Agente WhatsApp",
-      resultado: evento === "confirmado" ? "confirmado" : "rechazado",
+      resultado: "confirmado",
       notas: "Respuesta del cliente por WhatsApp (boton de plantilla).",
     });
 
     if (pedido.shopify_order_id) {
-      await agregarTagsOrden(pedido.shopify_order_id, [
-        evento === "confirmado" ? "confirmado-whatsapp" : "cancelado-whatsapp",
-      ]);
+      await agregarTagsOrden(pedido.shopify_order_id, ["confirmado-whatsapp"]);
       await agregarNotaOrden(
         pedido.shopify_order_id,
-        evento === "confirmado"
-          ? "Cliente confirmo el pedido por WhatsApp."
-          : "Cliente anulo el pedido por WhatsApp.",
+        "Cliente confirmo el pedido por WhatsApp.",
       );
     }
+  }
+
+  if (evento === "anulado") {
+    // Pasa por el flujo comun para que quede cancelado tambien en Shopify
+    // y el cliente reciba el aviso, igual que si se cancelara desde el
+    // panel o desde Shopify.
+    await supabase.from("confirmaciones").insert({
+      pedido_id: pedido.id,
+      usuario_id: "whatsapp-bot",
+      usuario_nombre: "Agente WhatsApp",
+      resultado: "rechazado",
+      notas: "El cliente anulo el pedido por WhatsApp.",
+    });
+
+    await cancelarPedido(supabase, pedido.id, {
+      origen: "cliente",
+      motivo: "el cliente lo anulo desde WhatsApp",
+      cancelarEnShopify: async (orderId) => {
+        await agregarTagsOrden(orderId, ["cancelado-whatsapp"]);
+        await agregarNotaOrden(orderId, "Cliente anulo el pedido por WhatsApp.");
+        return cancelarOrdenShopify(orderId);
+      },
+    });
   }
 
   // "Modificar datos" y "hablar con un asesor" necesitan a una persona.

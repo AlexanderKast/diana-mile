@@ -277,6 +277,12 @@ export function validarDatosPedido(
     ? normalizarDepartamento(parcial.departamento)
     : departamentoPorCiudad(ciudad);
 
+  // Bogota es su propio departamento para Shopify. Es habitual decir que
+  // queda "en Cundinamarca" —geograficamente lo esta— pero con ese valor
+  // la direccion queda mal clasificada para el envio, asi que la ciudad
+  // manda sobre lo que se haya dictado.
+  if (/^bogot/.test(clave(ciudad))) departamento = "Bogotá D.C.";
+
   if (!departamento) {
     if (parcial.departamento?.trim()) {
       problemas.push(
