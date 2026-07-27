@@ -31,7 +31,11 @@ import {
   problemasDeFormato,
   type OpcionesFormato,
 } from "./formato";
-import { crearPedidoDesdeChat, type PedidoDesdeChat } from "./pedido";
+import {
+  crearPedidoDesdeChat,
+  presentacionesDe,
+  type PedidoDesdeChat,
+} from "./pedido";
 import {
   anotarPendiente,
   buscarAprendido,
@@ -221,12 +225,32 @@ async function tomarPedido(
     };
   }
 
-  // El producto o la presentacion no existen: nunca se sustituye por otra
-  // cosa, se pregunta. Mandarle lo que no pidio es peor que no venderle.
+  // La presentacion que pidio no existe. No se sustituye por otra —eso es
+  // mandarle lo que no pidio—, pero tampoco basta con decir "confirmame
+  // cual quieres": hay que decirle cuales SI hay, o no sabe que responder
+  // y la conversacion se traba.
   if (resultado.motivo === "no se pudo identificar el producto") {
+    const opciones = await presentacionesDe(datos.producto ?? "");
+
+    if (opciones?.opciones.length === 1) {
+      return {
+        mensaje: `Te cuento: de ${opciones.titulo} por ahora solo tengo *${opciones.opciones[0]}*. La presentacion que me pides esta agotada.\n\n¿Te sirve asi?`,
+        creado: false,
+        detalle: `presentacion no disponible, unica opcion: ${opciones.opciones[0]}`,
+      };
+    }
+
+    if (opciones?.opciones.length) {
+      return {
+        mensaje: `De ${opciones.titulo} tengo estas presentaciones: ${opciones.opciones.join(" · ")}.\n\n¿Cual te mando?`,
+        creado: false,
+        detalle: "presentacion no disponible",
+      };
+    }
+
     return {
       mensaje:
-        "Antes de cerrarlo, confirmame cual presentacion quieres para no equivocarme. ¿Me dices cual del catalogo te sirve?",
+        "Dejame confirmarte la disponibilidad de ese producto y te digo en un momentico 💚",
       creado: false,
       detalle: resultado.motivo,
     };
@@ -478,6 +502,28 @@ export async function responderMensaje(
         dichoPorElla,
         supabase,
       );
+
+      // Si el intento anterior fallo por lo mismo y se le iba a repetir el
+      // mismo mensaje, la conversacion se traba: la persona no entiende
+      // que le estan pidiendo y el agente insiste igual. Ahi entra una
+      // persona, que es lo unico que lo desatasca.
+      const ultimaRespuesta = [...previos]
+        .reverse()
+        .find((m) => m.role === "assistant")?.content;
+
+      if (!resultado.creado && ultimaRespuesta === resultado.mensaje) {
+        await escalarAHumano(
+          supabase,
+          { ...datosBase, motivo: "no_sabe" },
+          `no logra cerrar el pedido: ${resultado.detalle}`,
+        );
+        return {
+          respondido: true,
+          experto: expertoId,
+          escalar: true,
+          motivo: `bucle al tomar el pedido: ${resultado.detalle}`,
+        };
+      }
 
       await enviarTexto(telefonoE164, resultado.mensaje);
       await guardarRespuesta(

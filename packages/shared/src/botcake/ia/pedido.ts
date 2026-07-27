@@ -33,6 +33,39 @@ export type VarianteResuelta = {
   precio: number;
 };
 
+/**
+ * Presentaciones reales de un producto, para poder decirle a la clienta
+ * cuales SI hay cuando pide una que no existe. Un "confirmame cual quieres"
+ * a secas no le sirve de nada: no sabe cuales son las opciones.
+ */
+export async function presentacionesDe(
+  producto: string,
+): Promise<{ titulo: string; opciones: string[] } | null> {
+  const productos = await traerProductos();
+  if (!productos.length || !producto?.trim()) return null;
+
+  let mejor: { nodo: NodoProducto; p: number } | null = null;
+  for (const nodo of productos) {
+    const p = puntaje(producto, nodo.title);
+    if (p > 0 && (!mejor || p > mejor.p)) mejor = { nodo, p };
+  }
+  if (!mejor) return null;
+
+  const opciones = mejor.nodo.variants.edges
+    .map((e) => e.node)
+    .filter((v) => v.availableForSale)
+    .map((v) => {
+      const precio = Math.round(parseFloat(v.price.amount)).toLocaleString(
+        "es-CO",
+      );
+      return v.title === "Default Title"
+        ? `$${precio}`
+        : `${v.title} por $${precio}`;
+    });
+
+  return { titulo: mejor.nodo.title, opciones };
+}
+
 const QUERY_VARIANTES = `{
   products(first: 40, sortKey: BEST_SELLING) {
     edges {

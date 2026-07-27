@@ -189,9 +189,14 @@ export async function catalogoResumen(): Promise<string | null> {
     }
 
     const lineas = productos.map(({ node }) => {
-      const disponibles = node.variants.edges
-        .map((v) => v.node)
-        .filter((v) => v.availableForSale);
+      const todas = node.variants.edges.map((v) => v.node);
+      const disponibles = todas.filter((v) => v.availableForSale);
+      // Las agotadas se nombran, no se ocultan: si alguien pregunta por la
+      // presentacion que no hay, el agente tiene que poder decirle "esa
+      // esta agotada" en vez de actuar como si no existiera.
+      const agotadas = todas
+        .filter((v) => !v.availableForSale && v.title !== "Default Title")
+        .map((v) => v.title);
 
       const precios = new Set(
         disponibles.map((v) => Math.round(parseFloat(v.price.amount))),
@@ -211,7 +216,11 @@ export async function catalogoResumen(): Promise<string | null> {
           // Una sola presentacion con nombre propio: se conserva, porque
           // "Pack 2 unidades $161.500" le dice a la clienta que son dos y
           // "$161.500" a secas la deja creyendo que es una.
-          detalle = `${disponibles[0].title} $${precio}`;
+          //
+          // El "UNICA PRESENTACION" es necesario: sin eso el modelo ve
+          // "Pack 2 unidades" y deduce que tambien existe la individual,
+          // se la ofrece a la clienta y le inventa un precio.
+          detalle = `${disponibles[0].title} $${precio} (UNICA PRESENTACION DISPONIBLE)`;
         } else {
           const opciones =
             disponibles.length > 1 && nombrada
@@ -235,8 +244,11 @@ export async function catalogoResumen(): Promise<string | null> {
       }
 
       const estado = node.availableForSale ? "" : " (AGOTADO)";
+      const sinStock = agotadas.length
+        ? ` [agotadas por ahora: ${agotadas.join(", ")}]`
+        : "";
       const link = sitio ? ` — ${sitio}/productos/${node.handle}` : "";
-      return `- ${node.title}: ${detalle}${estado}${link}`;
+      return `- ${node.title}: ${detalle}${sinStock}${estado}${link}`;
     });
 
     const texto = lineas.join("\n");
@@ -309,6 +321,7 @@ USALOS. Si te pide un pedido nuevo, NO le preguntes todo de cero: le confirmas s
 ${ctx.catalogo}
 
 COMO CITAR PRECIOS (para no decirle una cifra distinta a la que ve en la web):
+- Solo puedes vender las presentaciones con precio. Las que aparecen entre corchetes como "agotadas por ahora" EXISTEN pero no hay stock: no las ofrezcas ni las tomes en un pedido. Si te preguntan por una de esas, se lo dices de frente —"esa presentacion esta agotada ahorita"— y le ofreces la que si hay. Ofrecer algo agotado es prometer lo que no puedes cumplir.
 - Cada producto puede tener varias presentaciones con precios distintos. NUNCA des una cifra suelta sin decir a que presentacion corresponde.
 - Si el producto tiene varias presentaciones, mencionas la MAS BARATA PRIMERO y despues la otra, en la misma linea: "la unidad esta en $89.700 y el pack de 2 en $161.500". Empezar por la mas cara la espanta; mostrar solo la barata deja plata sobre la mesa.
 - El envio es gratis. El "envio prioritario" es un adicional OPCIONAL de $12.000 que ella marca si quiere en el formulario: no viene incluido y no lo menciones salvo que pregunte.
