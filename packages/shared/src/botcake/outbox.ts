@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { enviarPlantilla } from "./client";
+import { puedeEnviarseAhora } from "./horario";
 import { PLANTILLAS, type PlantillaDef } from "./plantillas";
 
 const MAX_INTENTOS = 3;
@@ -12,7 +13,9 @@ export type TipoMensaje =
   | "manual"
   /** Aviso interno a Diana de que alguien necesita respuesta humana. */
   | "escalamiento"
-  | "cancelacion";
+  | "cancelacion"
+  /** Mensaje de valor que sale una vez al dia a la comunidad. */
+  | "diario";
 
 export type MensajeNuevo = {
   telefonoE164: string;
@@ -111,6 +114,11 @@ export async function encolarMensaje(
       return;
     }
 
+    // Fuera de la franja horaria queda en cola y sale a las 7am: el cron
+    // lo recoge. Escribirle a alguien de madrugada hace que bloqueen el
+    // numero, y eso cuesta mucho mas que esperar unas horas.
+    if (!puedeEnviarseAhora(mensaje.tipo)) return;
+
     await intentarEnvio(supabase, fila as FilaMensaje);
   } catch (err) {
     console.error("[whatsapp-outbox] error al encolar:", err);
@@ -124,20 +132,31 @@ export async function encolarMensaje(
 export async function procesarPendientes(
   supabase: SupabaseClient,
   limite = 25,
-): Promise<{ procesados: number; enviados: number }> {
+): Promise<{ procesados: number; enviados: number; diferidos: number }> {
   const { data: filas, error } = await supabase
     .from("whatsapp_mensajes")
-    .select("id, telefono, plantilla, variables, intentos")
+    .select("id, telefono, tipo, plantilla, variables, intentos")
     .in("estado", ["pendiente", "fallido"])
     .lt("intentos", MAX_INTENTOS)
     .order("created_at", { ascending: true })
     .limit(limite);
 
-  if (error || !filas?.length) return { procesados: 0, enviados: 0 };
+  if (error || !filas?.length) {
+    return { procesados: 0, enviados: 0, diferidos: 0 };
+  }
 
   let enviados = 0;
-  for (const fila of filas as FilaMensaje[]) {
+  let diferidos = 0;
+
+  for (const fila of filas as (FilaMensaje & { tipo: string })[]) {
+    // Lo que esta fuera de horario se queda esperando sin gastar intentos:
+    // no es un fallo, todavia no es hora.
+    if (!puedeEnviarseAhora(fila.tipo)) {
+      diferidos++;
+      continue;
+    }
     if (await intentarEnvio(supabase, fila)) enviados++;
   }
-  return { procesados: filas.length, enviados };
+
+  return { procesados: filas.length, enviados, diferidos };
 }

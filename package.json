@@ -17,7 +17,8 @@
     "landing:gen": "node scripts/generate-landing.mjs",
     "collection:gen": "node scripts/generate-collection.mjs",
     "wa:probar": "tsx scripts/probar-agente-wa.mts",
-    "wa:pedido": "tsx scripts/probar-pedido-wa.mts"
+    "wa:pedido": "tsx scripts/probar-pedido-wa.mts",
+    "wa:diario": "tsx scripts/probar-diario-wa.mts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -97,6 +97,16 @@ export const PLANTILLAS = {
     id: process.env.BOTCAKE_TEMPLATE_SEGUIMIENTO ?? "",
     categoria: "MARKETING",
   },
+  /**
+   * Mensaje diario de la comunidad. Vars: 1 el mensaje, 2 nombre.
+   * El texto va como variable para no tener que aprobar una plantilla
+   * nueva cada dia.
+   */
+  mensajeDiario: {
+    nombre: "mensaje_diario_milito",
+    id: process.env.BOTCAKE_TEMPLATE_DIARIO ?? "",
+    categoria: "MARKETING",
+  },
 } satisfies Record<string, PlantillaDef>;
 
 export const MARCA_WHATSAPP = "Milito Life";

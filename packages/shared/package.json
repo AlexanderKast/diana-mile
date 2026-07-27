@@ -24,7 +24,9 @@
     "./botcake/ia/datos-pedido": "./src/botcake/ia/datos-pedido.ts",
     "./botcake/ia/pedido": "./src/botcake/ia/pedido.ts",
     "./botcake/cancelacion": "./src/botcake/cancelacion.ts",
-    "./botcake/seguimiento": "./src/botcake/seguimiento.ts"
+    "./botcake/seguimiento": "./src/botcake/seguimiento.ts",
+    "./botcake/horario": "./src/botcake/horario.ts",
+    "./botcake/mensaje-diario": "./src/botcake/mensaje-diario.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
