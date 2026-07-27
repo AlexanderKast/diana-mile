@@ -15,6 +15,46 @@ export type PedidoContexto = {
   creadoAt: string;
 };
 
+/**
+ * Datos de entrega que ya se le conocen a la persona, de compras previas.
+ *
+ * Sin esto el agente le vuelve a preguntar el nombre y la direccion a
+ * alguien que ya le compro, que es lo que mas molesta de un chat de
+ * atencion: "ya te di esos datos".
+ */
+export type DatosConocidos = {
+  nombre: string;
+  telefono: string;
+  direccion: string;
+  barrio: string | null;
+  ciudad: string;
+  departamento: string | null;
+};
+
+export async function datosConocidos(
+  supabase: SupabaseClient,
+  telefonoE164: string,
+): Promise<DatosConocidos | null> {
+  const { data } = await supabase
+    .from("pedidos")
+    .select("nombre, telefono, direccion, barrio, ciudad, departamento")
+    .eq("telefono", telefonoE164)
+    .not("direccion", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data?.direccion) return null;
+  return {
+    nombre: data.nombre,
+    telefono: data.telefono,
+    direccion: data.direccion,
+    barrio: data.barrio,
+    ciudad: data.ciudad,
+    departamento: data.departamento,
+  };
+}
+
 /** Ultimo pedido de ese telefono (para responder "donde va mi pedido"). */
 export async function pedidoReciente(
   supabase: SupabaseClient,
@@ -225,6 +265,7 @@ export type ContextoConversacion = {
   pedido: PedidoContexto | null;
   catalogo: string | null;
   comunidad: string | null;
+  conocidos?: DatosConocidos | null;
 };
 
 /** Arma el bloque de contexto que se mete en el system prompt. */
@@ -236,6 +277,18 @@ export function formatearContexto(ctx: ContextoConversacion): string {
       ? `La persona se llama ${ctx.nombre}.`
       : "Todavia no sabes su nombre. Puedes preguntarselo con naturalidad.",
   );
+
+  if (ctx.conocidos) {
+    const c = ctx.conocidos;
+    partes.push(
+      `YA LE HAS VENDIDO ANTES. Estos son sus datos de la ultima entrega:
+- Nombre: ${c.nombre}
+- Celular: ${c.telefono}
+- Direccion: ${c.direccion}${c.barrio ? `, ${c.barrio}` : ""}, ${c.ciudad}${c.departamento ? ` (${c.departamento})` : ""}
+
+USALOS. Si te pide un pedido nuevo, NO le preguntes todo de cero: le confirmas si va a la misma direccion y ya. Preguntarle otra vez lo que ya te dio es lo que mas molesta en un chat de atencion. Si te dice "los mismos datos de antes", son estos y con eso alcanza para cerrar.`,
+    );
+  }
 
   if (ctx.pedido) {
     const guia = ctx.pedido.numeroGuia

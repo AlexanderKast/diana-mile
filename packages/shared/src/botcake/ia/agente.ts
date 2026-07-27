@@ -5,6 +5,7 @@ import { chat, tieneApiKey } from "./mistral";
 import { elegirExperto } from "./router";
 import {
   catalogoResumen,
+  datosConocidos,
   formatearContexto,
   linkComunidad,
   pedidoReciente,
@@ -160,6 +161,7 @@ async function tomarPedido(
   telefonoE164: string,
   /** Lo que escribio la persona: se usa para verificar que los datos son suyos. */
   mensajesDeLaPersona: string[],
+  supabase: SupabaseClient,
 ): Promise<{ mensaje: string; creado: boolean; detalle: string }> {
   const crudo = respuesta.slice(respuesta.indexOf(MARCA_PEDIDO) + MARCA_PEDIDO.length);
   // El modelo a veces envuelve el JSON en comillas de codigo.
@@ -187,13 +189,36 @@ async function tomarPedido(
       telefono: datos.telefono?.trim() || telefonoE164,
     },
     mensajesDeLaPersona,
+    supabase,
   );
 
   if (resultado.ok) {
+    // Ya habia uno reciente: se le confirma ese, sin dar a entender que se
+    // creo otro. Un "listo, quedo el #1019" despues del #1018 la deja
+    // creyendo que tiene dos pedidos.
+    if (resultado.yaExistia) {
+      return {
+        mensaje: `Tu pedido de ${resultado.producto} ya esta registrado, tranquilo. Pagas *$${resultado.total.toLocaleString("es-CO")}* cuando lo recibas 💚`,
+        creado: true,
+        detalle: `ya existia: ${resultado.orderNumber}`,
+      };
+    }
+
     return {
       mensaje: `¡Listo! 🎉 Tu pedido quedo con el numero *${resultado.orderNumber}*.\n\nTe llega a la direccion que me diste y pagas *$${resultado.total.toLocaleString("es-CO")}* cuando lo recibas.`,
       creado: true,
       detalle: resultado.orderNumber,
+    };
+  }
+
+  // El producto o la presentacion no existen: nunca se sustituye por otra
+  // cosa, se pregunta. Mandarle lo que no pidio es peor que no venderle.
+  if (resultado.motivo === "no se pudo identificar el producto") {
+    return {
+      mensaje:
+        "Antes de cerrarlo, confirmame cual presentacion quieres para no equivocarme. ¿Me dices cual del catalogo te sirve?",
+      creado: false,
+      detalle: resultado.motivo,
     };
   }
 
@@ -296,13 +321,15 @@ export async function responderMensaje(
     // catalogo esta cacheado y el resto son consultas rapidas, asi que
     // traerlo siempre sale mas barato que esperar a saber si hace falta.
     // Cada segundo cuenta — la persona esta mirando el chat.
-    const [pedido, catalogo, comunidad, previos, expertoId] = await Promise.all([
-      pedidoReciente(supabase, telefonoE164),
-      catalogoResumen(),
-      linkComunidad(supabase),
-      historial(supabase, conversacion.id),
-      elegirExperto(texto, { expertoPrevio: conversacion.ultimoExperto }),
-    ]);
+    const [pedido, catalogo, comunidad, previos, conocidos, expertoId] =
+      await Promise.all([
+        pedidoReciente(supabase, telefonoE164),
+        catalogoResumen(),
+        linkComunidad(supabase),
+        historial(supabase, conversacion.id),
+        datosConocidos(supabase, telefonoE164),
+        elegirExperto(texto, { expertoPrevio: conversacion.ultimoExperto }),
+      ]);
 
     const experto = EXPERTOS[expertoId];
 
@@ -313,6 +340,7 @@ export async function responderMensaje(
       // en entrenamiento es ruido que le quita foco al modelo.
       catalogo: experto.necesitaCatalogo ? catalogo : null,
       comunidad,
+      conocidos,
     });
 
     const system = construirSystemPrompt(experto, contexto);
@@ -422,7 +450,12 @@ export async function responderMensaje(
         ...previos.filter((m) => m.role === "user").map((m) => m.content),
         texto,
       ];
-      const resultado = await tomarPedido(respuesta, telefonoE164, dichoPorElla);
+      const resultado = await tomarPedido(
+        respuesta,
+        telefonoE164,
+        dichoPorElla,
+        supabase,
+      );
 
       await enviarTexto(telefonoE164, resultado.mensaje);
       await guardarRespuesta(

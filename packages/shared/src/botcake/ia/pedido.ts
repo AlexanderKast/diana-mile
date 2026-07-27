@@ -10,6 +10,7 @@
  * los dos caminos se desincronicen con el tiempo.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   datosConSustento,
   validarDatosPedido,
@@ -126,15 +127,34 @@ export async function resolverVariante(
     .sort((a, b) => parseFloat(a.price.amount) - parseFloat(b.price.amount))[0];
 
   if (presentacion?.trim()) {
+    const numeroPedido = presentacion.match(/\d+/)?.[0];
+
     let mejorVar: { v: (typeof disponibles)[0]; p: number } | null = null;
     for (const v of disponibles) {
       let p = puntaje(presentacion, v.title);
       // "pack de 2", "2 unidades" y "x2" deben caer en la misma variante.
-      const numeroPedido = presentacion.match(/\d+/)?.[0];
       const numeroVariante = v.title.match(/\d+/)?.[0];
       if (numeroPedido && numeroPedido === numeroVariante) p += 2;
       if (p > 0 && (!mejorVar || p > mejorVar.p)) mejorVar = { v, p };
     }
+
+    // Si pidio una cantidad concreta y NINGUNA variante la tiene, no se
+    // sustituye por otra: paso en produccion que alguien pidio una barra
+    // suelta —que estaba agotada— y se le creo el pack de dos al doble de
+    // precio. Es preferible decirle que no hay a mandarle lo que no pidio.
+    if (numeroPedido) {
+      const coincideCantidad = disponibles.some(
+        (v) => v.title.match(/\d+/)?.[0] === numeroPedido,
+      );
+      const pidioUnidad = numeroPedido === "1";
+      const hayVarianteUnica =
+        disponibles.length === 1 && disponibles[0].title === "Default Title";
+
+      if (!coincideCantidad && !(pidioUnidad && hayVarianteUnica)) {
+        return null;
+      }
+    }
+
     if (mejorVar) elegida = mejorVar.v;
   }
 
@@ -148,7 +168,14 @@ export async function resolverVariante(
 }
 
 export type ResultadoPedido =
-  | { ok: true; orderNumber: string; total: number; producto: string }
+  | {
+      ok: true;
+      orderNumber: string;
+      total: number;
+      producto: string;
+      /** Ya habia un pedido reciente: no se creo otro. */
+      yaExistia?: boolean;
+    }
   | { ok: false; motivo: string; faltantes?: string[]; problemas?: string[] };
 
 export type PedidoDesdeChat = Partial<DatosPedido> & {
@@ -161,6 +188,9 @@ export type PedidoDesdeChat = Partial<DatosPedido> & {
  * Crea la orden. Usa los endpoints publicos de la tienda para no duplicar
  * las reglas de precio ni el alta del cliente en Shopify.
  */
+/** Un pedido igual y tan reciente es casi seguro un doble envio. */
+const MINUTOS_ANTIDUPLICADO = 20;
+
 export async function crearPedidoDesdeChat(
   entrada: PedidoDesdeChat,
   /**
@@ -169,6 +199,12 @@ export async function crearPedidoDesdeChat(
    * un ejemplo del prompt.
    */
   mensajesDeLaPersona: string[] = [],
+  /**
+   * Para comprobar si a esta persona ya se le acaba de crear un pedido.
+   * Sin esto el modelo puede emitir la marca dos veces seguidas y crear
+   * dos ordenes iguales — paso en produccion.
+   */
+  supabase?: SupabaseClient,
 ): Promise<ResultadoPedido> {
   const sitio = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
   if (!sitio) {
@@ -196,6 +232,36 @@ export async function crearPedidoDesdeChat(
       motivo: `datos sin sustento en la conversacion: ${sustento.sinSustento.join(", ")}`,
       faltantes: sustento.sinSustento,
     };
+  }
+
+  // Barrera antiduplicado: el modelo puede emitir la marca dos veces
+  // seguidas —lo hizo en produccion, creando dos ordenes iguales con 43
+  // segundos de diferencia—. Si ya hay un pedido reciente de esta persona,
+  // se devuelve ese en vez de crear otro.
+  if (supabase) {
+    const desde = new Date(
+      Date.now() - MINUTOS_ANTIDUPLICADO * 60_000,
+    ).toISOString();
+
+    const { data: reciente } = await supabase
+      .from("pedidos")
+      .select("shopify_order_id, producto_nombre, precio_total")
+      .eq("telefono", datos.telefonoE164)
+      .neq("estado", "cancelado")
+      .gt("created_at", desde)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const previo = reciente?.[0];
+    if (previo) {
+      return {
+        ok: true,
+        yaExistia: true,
+        orderNumber: previo.shopify_order_id ?? "",
+        total: Number(previo.precio_total ?? 0),
+        producto: previo.producto_nombre ?? "tu pedido",
+      };
+    }
   }
 
   const variante = await resolverVariante(

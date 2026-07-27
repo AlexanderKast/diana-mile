@@ -2,8 +2,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExpertoId } from "./expertos";
 import type { MensajeChat } from "./mistral";
 
-/** Cuantos mensajes previos se le pasan al modelo como memoria. */
-const MEMORIA_MENSAJES = 12;
+/**
+ * Cuantos mensajes previos se le pasan al modelo como memoria.
+ *
+ * Con 12 se quedaba corto: en una conversacion de venta —saludo, producto,
+ * precio, datos, confirmacion— se pasan facil de 12 turnos y el modelo
+ * empezaba a responder cosas de mas atras o a repreguntar datos que ya le
+ * habian dado. 30 cubre una conversacion completa sin encarecer mucho.
+ */
+const MEMORIA_MENSAJES = 30;
 
 /** Ventana de WhatsApp: solo se puede escribir texto libre dentro de 24h. */
 const VENTANA_MS = 24 * 60 * 60 * 1000;
