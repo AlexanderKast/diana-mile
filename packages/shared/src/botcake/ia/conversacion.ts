@@ -11,11 +11,12 @@ const VENTANA_MS = 24 * 60 * 60 * 1000;
 /**
  * Cuanto espera un escalamiento antes de que la IA retome la conversacion.
  *
- * Si nadie del equipo entra a responder, dejar el bot apagado para siempre
- * significa abandonar a esa persona: escribe, no le contestan, y se va.
- * Pasado este tiempo es mejor que responda la IA a que no responda nadie.
+ * Si nadie del equipo entra a responder, dejar el bot apagado significa
+ * abandonar a esa persona: escribe, no le contestan, y se va. Una hora es
+ * suficiente para que alguien alcance a tomar el caso, y poco como para
+ * que un cliente se quede hablando solo.
  */
-const HORAS_PARA_RETOMAR = 3;
+const HORAS_PARA_RETOMAR = 1;
 
 export type Conversacion = {
   id: string;

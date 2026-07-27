@@ -375,6 +375,13 @@ export async function responderMensaje(
       if (!pedido) {
         aviso =
           "No encuentro un pedido activo a tu nombre. ¿Me confirmas el numero de pedido o el nombre con el que lo hiciste?";
+      } else if (pedido.estado === "cancelado") {
+        // Ya estaba cancelado: se confirma y punto. Escalarlo aqui dejaria
+        // al equipo revisando un caso que no existe, y a la persona sin
+        // respuesta mientras tanto.
+        aviso =
+          "Ese pedido ya esta cancelado, tranquila. No te va a llegar nada ni tienes que pagar nada 💚";
+        resuelto = true;
       } else if (!entrada.cancelarPedido) {
         aviso = "Dejame revisar tu pedido y te confirmo en un momentico 💚";
       } else {
