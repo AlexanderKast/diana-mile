@@ -64,6 +64,39 @@ export const PLANTILLAS = {
     id: process.env.BOTCAKE_TEMPLATE_CANCELADO ?? "",
     categoria: "UTILITY",
   },
+  /**
+   * Recuperacion de carrito abandonado. Vars: 1 nombre, 2 producto.
+   * MARKETING: solo a quien no pidio parar promociones.
+   */
+  carritoAbandonado: {
+    nombre: "carrito_abandonado_milito",
+    id: process.env.BOTCAKE_TEMPLATE_CARRITO ?? "",
+    categoria: "MARKETING",
+  },
+  /** Recompra al mes de la entrega. Vars: 1 nombre, 2 producto. */
+  recompra: {
+    nombre: "recompra_milito",
+    id: process.env.BOTCAKE_TEMPLATE_RECOMPRA ?? "",
+    categoria: "MARKETING",
+  },
+  /**
+   * Invitacion a la comunidad, despues de que el pedido llego.
+   * Vars: 1 nombre, 2 link de la comunidad.
+   */
+  comunidad: {
+    nombre: "invitacion_comunidad_milito",
+    id: process.env.BOTCAKE_TEMPLATE_COMUNIDAD ?? "",
+    categoria: "MARKETING",
+  },
+  /**
+   * Contenido de valor segun lo que compro (uso, cuidados, resultados).
+   * Vars: 1 nombre, 2 producto, 3 el consejo.
+   */
+  seguimientoValor: {
+    nombre: "seguimiento_valor_milito",
+    id: process.env.BOTCAKE_TEMPLATE_SEGUIMIENTO ?? "",
+    categoria: "MARKETING",
+  },
 } satisfies Record<string, PlantillaDef>;
 
 export const MARCA_WHATSAPP = "Milito Life";

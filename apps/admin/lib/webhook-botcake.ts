@@ -4,8 +4,12 @@ import {
   agregarNotaOrden,
   agregarTagsOrden,
   cancelarOrdenShopify,
+  estadoOrden,
 } from "@/lib/shopify";
 import { cancelarPedido } from "@diana-mile/shared/botcake/cancelacion";
+import { cancelarSeguimiento } from "@diana-mile/shared/botcake/seguimiento";
+import { escalarAHumano } from "@diana-mile/shared/botcake/ia/escalamiento";
+import { enviarTexto } from "@diana-mile/shared/botcake/client";
 import { enviarPush } from "@/lib/push";
 
 /**
@@ -233,6 +237,22 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
   // Un mensaje libre lo atiende el agente de IA.
   if (evento === "mensaje") {
     if (!payload.texto?.trim()) return;
+
+    // "Detener promociones" es un boton de las plantillas de marketing y
+    // Meta exige respetarlo: se corta todo el marketing para esa persona,
+    // aunque la conversacion normal sigue.
+    if (/detener promociones|no me escriban|no quiero recibir|dar de baja|baja de la lista/i.test(payload.texto)) {
+      await supabase
+        .from("whatsapp_conversaciones")
+        .update({ promociones_activas: false })
+        .eq("telefono", telefono);
+      await cancelarSeguimiento(supabase, { telefonoE164: telefono });
+      await enviarTexto(
+        telefono,
+        "Listo, no te vuelvo a escribir promociones 💚 Si en algun momento necesitas algo, aqui estoy.",
+      );
+      return;
+    }
     const resultado = await responderMensaje(supabase, {
       telefonoE164: telefono,
       texto: payload.texto.trim(),
@@ -279,26 +299,57 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
   }
 
   if (evento === "anulado") {
-    // Pasa por el flujo comun para que quede cancelado tambien en Shopify
-    // y el cliente reciba el aviso, igual que si se cancelara desde el
-    // panel o desde Shopify.
+    // Solo se cancela sola si el pedido todavia no salio de bodega. Si ya
+    // se preparo o se despacho, cancelarlo dejaria el paquete viajando con
+    // la transportadora: eso lo decide una persona.
+    const estado = pedido.shopify_order_id
+      ? await estadoOrden(pedido.shopify_order_id)
+      : null;
+
+    const seguro = !pedido.shopify_order_id || estado?.sePuedeCancelar;
+
     await supabase.from("confirmaciones").insert({
       pedido_id: pedido.id,
       usuario_id: "whatsapp-bot",
       usuario_nombre: "Agente WhatsApp",
       resultado: "rechazado",
-      notas: "El cliente anulo el pedido por WhatsApp.",
+      notas: seguro
+        ? "El cliente anulo el pedido por WhatsApp (sin preparar)."
+        : `El cliente pidio anular pero el pedido ya esta en "${estado?.fulfillmentStatus ?? "estado desconocido"}": requiere validacion.`,
     });
 
-    await cancelarPedido(supabase, pedido.id, {
-      origen: "cliente",
-      motivo: "el cliente lo anulo desde WhatsApp",
-      cancelarEnShopify: async (orderId) => {
-        await agregarTagsOrden(orderId, ["cancelado-whatsapp"]);
-        await agregarNotaOrden(orderId, "Cliente anulo el pedido por WhatsApp.");
-        return cancelarOrdenShopify(orderId);
-      },
-    });
+    if (seguro) {
+      await cancelarPedido(supabase, pedido.id, {
+        origen: "cliente",
+        motivo: "el cliente lo anulo desde WhatsApp",
+        cancelarEnShopify: async (orderId) => {
+          await agregarTagsOrden(orderId, ["cancelado-whatsapp"]);
+          await agregarNotaOrden(
+            orderId,
+            "Cliente anulo el pedido por WhatsApp.",
+          );
+          return cancelarOrdenShopify(orderId);
+        },
+      });
+      await cancelarSeguimiento(supabase, { pedidoId: pedido.id });
+    } else {
+      // El pedido ya avanzo: se frena la IA en ese chat y decide Diana.
+      await escalarAHumano(
+        supabase,
+        {
+          telefonoE164: telefono,
+          nombre: pedido.nombre ?? null,
+          pregunta: `Pidio anular el pedido ${pedido.shopify_order_id}, que ya esta en estado "${estado?.fulfillmentStatus ?? "desconocido"}"`,
+          motivo: "reclamo",
+        },
+        "cancelacion de un pedido que ya salio de bodega",
+      );
+      enviarPush("todos", {
+        titulo: "Piden cancelar un pedido ya despachado ⚠️",
+        cuerpo: `${pedido.nombre ?? telefono} — ${pedido.producto_nombre ?? "pedido"}`,
+        url: `/dashboard/pedidos/${pedido.id}`,
+      }).catch(() => {});
+    }
   }
 
   // "Modificar datos" y "hablar con un asesor" necesitan a una persona.

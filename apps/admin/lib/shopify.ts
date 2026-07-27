@@ -181,6 +181,44 @@ export async function crearOrdenDirecta(
   });
 }
 
+export type EstadoOrden = {
+  cancelada: boolean;
+  /** null o "unfulfilled" = todavia no salio de la bodega. */
+  fulfillmentStatus: string | null;
+  /** Si es seguro cancelarla sin intervencion humana. */
+  sePuedeCancelar: boolean;
+};
+
+/**
+ * Consulta si la orden todavia se puede cancelar sin riesgo.
+ *
+ * Solo es seguro cuando no se ha preparado: si ya salio, cancelarla sin
+ * mas deja el paquete viajando con la transportadora y el cobro pendiente.
+ * En ese caso decide una persona.
+ */
+export async function estadoOrden(orderId: string): Promise<EstadoOrden | null> {
+  return safeShopifyCall("estado de orden", async () => {
+    const res = await fetch(
+      `https://${STORE_DOMAIN}/admin/api/${API_VERSION}/orders/${orderId}.json?fields=id,cancelled_at,fulfillment_status`,
+      { headers: adminHeaders() },
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const { order } = (await res.json()) as {
+      order: { cancelled_at: string | null; fulfillment_status: string | null };
+    };
+
+    const sinPreparar =
+      !order.fulfillment_status || order.fulfillment_status === "unfulfilled";
+
+    return {
+      cancelada: Boolean(order.cancelled_at),
+      fulfillmentStatus: order.fulfillment_status,
+      sePuedeCancelar: !order.cancelled_at && sinPreparar,
+    };
+  });
+}
+
 /**
  * Cancela la orden en Shopify y devuelve el inventario al stock.
  *

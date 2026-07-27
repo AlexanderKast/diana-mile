@@ -2,12 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { procesarPendientes } from "@diana-mile/shared/botcake/outbox";
 import { enviarRecordatoriosPendientes } from "@diana-mile/shared/botcake/recordatorios";
+import {
+  enviarSeguimientosPendientes,
+  recuperarCarritosAbandonados,
+} from "@diana-mile/shared/botcake/seguimiento";
 
 /**
  * Cron de los agentes de WhatsApp:
- * 1. Reintenta los mensajes que quedaron pendientes o fallidos (el API de
- *    Botcake falla con frecuencia).
- * 2. Encola recordatorios de los pedidos sin confirmar.
+ * 1. Recordatorios de pedidos sin confirmar.
+ * 2. Seguimiento post-compra (consejos, comunidad, recompra).
+ * 3. Recuperacion de carritos abandonados.
+ * 4. Reintento de todo lo que quedo en la cola.
+ *
+ * El outbox se procesa al final para que lo encolado en esta misma corrida
+ * salga de una y no espere al siguiente ciclo.
  *
  * Vercel Cron lo invoca con Authorization: Bearer CRON_SECRET.
  */
@@ -19,10 +27,15 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminSupabaseClient();
 
-  // Primero se encolan los recordatorios nuevos y despues se procesa toda
-  // la cola, para que salgan en la misma corrida.
   const recordatorios = await enviarRecordatoriosPendientes(supabase);
+  const seguimientos = await enviarSeguimientosPendientes(supabase);
+  const carritos = await recuperarCarritosAbandonados(supabase);
   const outbox = await procesarPendientes(supabase);
 
-  return NextResponse.json({ recordatorios, outbox });
+  return NextResponse.json({
+    recordatorios,
+    seguimientos,
+    carritos,
+    outbox,
+  });
 }

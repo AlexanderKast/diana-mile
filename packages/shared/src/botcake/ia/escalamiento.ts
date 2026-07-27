@@ -40,15 +40,20 @@ export function detectarEscalada(respuesta: string): string | null {
   return razon || "no especificado";
 }
 
+/**
+ * Lo que se le dice a la persona mientras un humano toma la conversacion.
+ *
+ * Nunca se menciona que hay un asistente ni que "le pasamos el mensaje a
+ * Diana": para la clienta siempre esta hablando con Diana. Decirle que la
+ * derivan rompe la relacion y suena a call center.
+ */
 const MENSAJES_ESPERA: Record<MotivoEscalado, string> = {
   no_sabe:
-    "Esa te la confirmo bien para no darte un dato equivocado 💚 Ya le paso tu pregunta a Diana y te responde en un ratico.",
-  pidio_humano:
-    "Claro que si 💚 Ya le paso tu mensaje a Diana para que te escriba personalmente.",
+    "Dejame validar eso bien para no darte un dato equivocado y te confirmo en un momentico 💚",
+  pidio_humano: "Claro que si, dame un momentico y te escribo 💚",
   reclamo:
-    "Lamento mucho lo que pasó. Ya le paso tu caso a Diana para que lo revise personalmente y te responda.",
-  error_tecnico:
-    "Dame un momentico, ya le paso tu mensaje a una persona del equipo para que te responda 💚",
+    "Lamento mucho lo que pasó. Voy a revisar tu caso ahora mismo y te confirmo.",
+  error_tecnico: "Dame un momentico y te confirmo 💚",
 };
 
 /**

@@ -5,6 +5,10 @@ import {
 } from "@diana-mile/shared/supabase/server";
 import { agregarNotaOrden, agregarTagsOrden } from "@/lib/shopify";
 import { enviarPush } from "@/lib/push";
+import {
+  cancelarSeguimiento,
+  programarSeguimiento,
+} from "@diana-mile/shared/botcake/seguimiento";
 
 export async function POST(
   request: NextRequest,
@@ -104,6 +108,22 @@ export async function POST(
         `Devolución: ${motivo}`,
       );
     }
+  }
+
+  // El acompanamiento arranca con la entrega, no con el pedido: los
+  // consejos de uso solo sirven si ya tiene el producto en la mano.
+  if (accion === "entregado" && pedidoActualizado.telefono) {
+    await programarSeguimiento(supabase, {
+      pedidoId: id,
+      telefonoE164: pedidoActualizado.telefono,
+      producto: pedidoActualizado.producto_nombre ?? "tu pedido",
+    });
+  }
+
+  // Una devolucion corta el acompanamiento: no se le dan consejos de uso a
+  // quien devolvio el producto.
+  if (accion === "devolucion") {
+    await cancelarSeguimiento(supabase, { pedidoId: id });
   }
 
   if (accion === "entregado" && pedidoActualizado.telefono) {
