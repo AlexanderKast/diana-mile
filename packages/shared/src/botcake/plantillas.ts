@@ -54,6 +54,18 @@ export const PLANTILLAS = {
     categoria: "UTILITY",
   },
   /**
+   * Codigo de acceso a la cuenta de la tienda. Categoria AUTHENTICATION:
+   * Meta le pone caducidad y boton de copiar, y no deja usarla para otra
+   * cosa. La manda Supabase Auth a traves de /api/auth/otp-whatsapp.
+   * Vars: 1 el codigo.
+   * PENDIENTE: crear en Botcake y pegar aqui el id que devuelva Meta.
+   */
+  codigoAcceso: {
+    nombre: "codigo_acceso_milito",
+    id: "",
+    categoria: "AUTHENTICATION",
+  },
+  /**
    * Aviso interno a Diana cuando entra un pedido, venga de donde venga.
    * Va por plantilla porque su ventana de 24h con el WABA de la tienda
    * esta cerrada casi siempre.

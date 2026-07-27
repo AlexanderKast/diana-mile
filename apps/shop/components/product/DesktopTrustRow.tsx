@@ -1,11 +1,32 @@
 import Image from "next/image";
-import { TRUST_BADGES } from "@/components/product/TrustBadges";
+import {
+  getTrustBadges,
+  type ModoCompra,
+} from "@/components/product/TrustBadges";
 import { getAuthenticitySeals } from "@/components/product/AuthenticitySeals";
 
-// Solo desktop: junta los 6 sellos (TrustBadges + AuthenticitySeals) en una
+// Solo desktop: junta los sellos (TrustBadges + AuthenticitySeals) en una
 // sola fila en vez de las 2 filas separadas que se ven en mobile.
-export function DesktopTrustRow({ showAuthenticity = false }: { showAuthenticity?: boolean }) {
-  const items = [...TRUST_BADGES, ...getAuthenticitySeals(showAuthenticity)];
+//
+// En vitrina los dos juegos comparten sellos (compra segura, soporte), asi
+// que se deduplican por src — si no, la fila repetiria la misma imagen dos
+// veces y se veria como un error de maquetacion.
+export function DesktopTrustRow({
+  showAuthenticity = false,
+  modo = "cod",
+}: {
+  showAuthenticity?: boolean;
+  modo?: ModoCompra;
+}) {
+  const vistos = new Set<string>();
+  const items = [
+    ...getTrustBadges(modo),
+    ...getAuthenticitySeals(showAuthenticity),
+  ].filter((item) => {
+    if (vistos.has(item.src)) return false;
+    vistos.add(item.src);
+    return true;
+  });
 
   return (
     <div className="hidden md:flex items-center md:max-w-2xl">

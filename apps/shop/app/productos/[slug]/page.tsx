@@ -136,6 +136,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
   // esten ocultos, es que no se montan por ningun camino.
   const esCod = product.codDisponible;
   const enlaceVitrina = esCod ? null : hrefVitrina(product, numeroWhatsapp);
+  // Un solo valor gobierna todos los bloques de confianza de la pagina.
+  const modoCompra = esCod ? "cod" : "vitrina";
 
   const landing = resolveLanding(product);
   // Contenido escrito en Shopify Admin por el equipo — se sanitiza antes de
@@ -169,9 +171,12 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
             <div className="flex flex-col gap-2">
               <div className="md:hidden">
-                <TrustBadges />
+                <TrustBadges modo={modoCompra} />
               </div>
-              <DesktopTrustRow showAuthenticity={landing.authenticity} />
+              <DesktopTrustRow
+                showAuthenticity={landing.authenticity}
+                modo={modoCompra}
+              />
             </div>
 
             <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
@@ -410,7 +415,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         {landing.comparison && <SectionDivider />}
 
         {/* Reversion de riesgo -> pedir */}
-        <GuaranteeSection />
+        <GuaranteeSection modo={modoCompra} />
 
         {/* Comunidad como motivo extra para recibir el pedido */}
         <CommunitySection />
