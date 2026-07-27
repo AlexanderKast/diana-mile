@@ -68,7 +68,16 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
       if (sesion?.access_token) void supabase.realtime.setAuth(sesion.access_token);
     });
 
-    const aplicar = (operacion: string, fila?: Pedido, vieja?: Partial<Pedido>) =>
+    const aplicar = (operacion: string, fila?: Pedido, vieja?: Partial<Pedido>) => {
+      // Va aqui y no dentro del actualizador de abajo: las funciones que se
+      // le pasan a setState tienen que ser puras, y React descarta —o
+      // repite— los efectos que se cuelen dentro. El aviso se disparaba
+      // ahi y no salia nunca, aunque la fila si entraba en la tabla.
+      //
+      // Solo se avisa de las altas: si suena por cada cambio de estado, se
+      // deja de oir.
+      if (operacion === "INSERT" && fila?.id) setNuevo(fila);
+
       setPedidos((previos) => {
         if (operacion === "DELETE") {
           const id = vieja?.id;
@@ -79,12 +88,7 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
         const i = previos.findIndex((p) => p.id === fila.id);
 
         // Nuevo: arriba del todo, que es donde se mira primero.
-        if (i === -1) {
-          // Solo se avisa de las altas, no de cada cambio de estado: si
-          // suena por todo, se deja de oir.
-          if (operacion === "INSERT") setNuevo(fila);
-          return [fila, ...previos];
-        }
+        if (i === -1) return [fila, ...previos];
 
         // Actualizado: se reemplaza en su sitio para no reordenar la lista
         // bajo el cursor de quien la esta leyendo.
@@ -92,6 +96,7 @@ export function usarPedidosEnVivo(iniciales: Pedido[]) {
         copia[i] = fila;
         return copia;
       });
+    };
 
     /**
      * Se escucha una difusion y no "postgres changes".
