@@ -346,6 +346,29 @@ export async function responderMensaje(
           .slice(respuesta.indexOf(MARCA_CANCELAR) + MARCA_CANCELAR.length)
           .trim() || "no dio motivo";
 
+      // El prompt pide retener antes de cancelar, pero el modelo a veces
+      // se salta ese paso y cancela al primer "quiero cancelar". Se
+      // verifica aqui: si es la primera vez que lo menciona, no se
+      // cancela todavia — se le pregunta que paso. Una venta hecha no se
+      // deja ir por una respuesta apresurada.
+      const vecesQueLoPidio = [
+        ...previos.filter((m) => m.role === "user").map((m) => m.content),
+        texto,
+      ].filter((m) => /cancel|anul|ya no (lo )?quiero|devolver/i.test(m)).length;
+
+      if (vecesQueLoPidio < 2) {
+        const pregunta = `${nombre?.split(/\s+/)[0] ?? "Hola"}, claro que si. ¿Me cuentas que paso con el pedido? Si es algo que puedo resolver, lo miramos.`;
+        await enviarTexto(telefonoE164, pregunta);
+        await guardarRespuesta(
+          supabase,
+          conversacion.id,
+          pregunta,
+          expertoId,
+          tokens,
+        );
+        return { respondido: true, experto: expertoId, respuesta: pregunta };
+      }
+
       let aviso: string;
       let resuelto = false;
 
