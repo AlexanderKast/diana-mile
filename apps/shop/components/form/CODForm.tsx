@@ -674,7 +674,7 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
 
           {discountApplied && (
             <p className="rounded-2xl bg-lila-suave px-4 py-2.5 text-sm font-medium text-morado-oscuro text-center">
-              10% de descuento aplicado a tu pedido ✓
+              {pricing.discountPercent}% de descuento aplicado a tu pedido ✓
             </p>
           )}
 
@@ -738,7 +738,9 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
               ✓ Envío a {ciudad}, {departamento}
             </p>
             {envioPrioritario && <p>✓ {pricing.envioPrioritarioLabel}</p>}
-            {discountApplied && <p>✓ 10% de descuento aplicado</p>}
+            {discountApplied && (
+              <p>✓ {pricing.discountPercent}% de descuento aplicado</p>
+            )}
             <p>✓ Pago al recibir tu pedido</p>
           </div>
 

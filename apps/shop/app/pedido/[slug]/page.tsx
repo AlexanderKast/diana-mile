@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { getProductByHandle } from "@/lib/shopify";
 import { formatCOP } from "@diana-mile/shared/utils";
 import { CODForm } from "@/components/form/CODForm";
+import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
+import { getPricingConfig } from "@/lib/pricing-server";
 
 type PedidoPageProps = {
   params: Promise<{ slug: string }>;
@@ -23,7 +25,10 @@ export async function generateMetadata({ params }: PedidoPageProps): Promise<Met
 export default async function PedidoPage({ params, searchParams }: PedidoPageProps) {
   const { slug } = await params;
   const selectedVariantId = (await searchParams)?.variant;
-  const product = await getProductByHandle(slug);
+  const [product, pricing] = await Promise.all([
+    getProductByHandle(slug),
+    getPricingConfig(),
+  ]);
 
   if (!product) {
     notFound();
@@ -37,6 +42,10 @@ export default async function PedidoPage({ params, searchParams }: PedidoPagePro
   };
 
   return (
+    // CODForm lee el descuento y el envio prioritario del contexto del
+    // producto. Sin este proveedor, useOrderSheet lanza y la pagina entera
+    // responde 500 — que es como estaba.
+    <OrderSheetProvider product={product} pricing={pricing}>
     <div id="pedido" className="mx-auto w-full max-w-5xl px-4 py-10 md:py-16">
       <h1 className="animate-fade-in-up font-display text-3xl md:text-4xl text-carbon mb-8">
         Completa tu pedido
@@ -72,5 +81,6 @@ export default async function PedidoPage({ params, searchParams }: PedidoPagePro
         </div>
       </div>
     </div>
+    </OrderSheetProvider>
   );
 }

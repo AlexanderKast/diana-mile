@@ -801,10 +801,28 @@ export async function upsertCheckoutDraftOrder(
       );
     }
 
+    // El descuento va en la linea del producto, no en el pedido entero.
+    //
+    // A nivel de pedido Shopify lo reparte tambien sobre el envio
+    // prioritario, y ahi la cuenta deja de cuadrar: con $89.700 mas $12.000
+    // de envio y un 10%, la app le dice a la clienta $92.730 —descuento
+    // solo sobre el producto— y la orden queda en $91.530. Mil doscientos
+    // de diferencia entre lo que cobra el mensajero y lo que dice Shopify,
+    // que aparecen al cuadrar caja y no se sabe de donde salen.
     const lineItems: Record<string, unknown>[] = [
       {
         variant_id: toRestVariantId(input.variantId),
         quantity: input.quantity,
+        ...(input.discountPercent
+          ? {
+              applied_discount: {
+                description: "Oferta exit-intent",
+                title: "Descuento",
+                value_type: "percentage",
+                value: String(input.discountPercent),
+              },
+            }
+          : {}),
       },
     ];
     if (input.envioPrioritario) {
@@ -820,16 +838,6 @@ export async function upsertCheckoutDraftOrder(
         note: notePartes.join("\n"),
         tags: "COD, milito-life-shop, checkout-en-progreso",
         use_customer_default_address: false,
-        ...(input.discountPercent
-          ? {
-              applied_discount: {
-                description: "Oferta exit-intent",
-                title: "Descuento",
-                value_type: "percentage",
-                value: String(input.discountPercent),
-              },
-            }
-          : {}),
       },
     };
 
