@@ -2,8 +2,11 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import {
+  esDeNuestraLinea,
+  interpretarWhatsApp,
   procesar,
   type PayloadBotcake,
+  type PayloadWhatsApp,
 } from "@/lib/webhook-botcake";
 
 /**
@@ -37,23 +40,44 @@ export async function POST(request: NextRequest) {
   const secret = process.env.BOTCAKE_WEBHOOK_SECRET;
   const provisto = request.headers.get("x-webhook-secret");
 
-  let payload: PayloadBotcake | null;
+  let bruto: (PayloadBotcake & PayloadWhatsApp) | null;
   try {
-    payload = (await request.json()) as PayloadBotcake;
+    bruto = (await request.json()) as PayloadBotcake & PayloadWhatsApp;
   } catch {
-    payload = null;
+    bruto = null;
   }
 
-  // Ping de verificacion de la URL: sin destinatario no hay accion posible.
-  if (!payload || (!payload.telefono && !payload.psid)) {
+  if (!bruto) {
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
-  if (!secret || !secretValido(provisto, secret)) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  let evento: PayloadBotcake | null = null;
+
+  if (bruto.object === "whatsapp_business_account" || bruto.entry) {
+    // Compatibilidad: Botcake puede seguir apuntando a esta URL sin token
+    // si todavia no se actualizo en su panel. Se procesa validando que el
+    // evento sea de la linea de la tienda, pero se avisa en cada llamada:
+    // esta ruta no tiene autenticacion fuerte y deberia migrar a la de
+    // token, que es la unica forma de evitar que un tercero inyecte
+    // mensajes falsos.
+    if (!esDeNuestraLinea(bruto)) {
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+    console.warn(
+      "[webhook-botcake] recibido en la URL sin token — actualizar el callback en Botcake a /api/admin/webhooks/botcake/<token>",
+    );
+    evento = interpretarWhatsApp(bruto);
+  } else if (bruto.telefono || bruto.psid) {
+    if (!secret || !secretValido(provisto, secret)) {
+      return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+    }
+    evento = bruto;
   }
 
-  const evento = payload;
+  // Ping de verificacion, acuse de entrega o lectura: nada que procesar.
+  if (!evento) {
+    return NextResponse.json({ ok: true }, { status: 200 });
+  }
   waitUntil(
     procesar(evento).catch((err) => {
       console.error("[webhook-botcake] fallo al procesar:", err);
