@@ -30,6 +30,7 @@ import {
   problemasDeFormato,
   type OpcionesFormato,
 } from "./formato";
+import { crearPedidoDesdeChat, type PedidoDesdeChat } from "./pedido";
 
 export type ResultadoAgente = {
   respondido: boolean;
@@ -63,6 +64,31 @@ Ejemplo: ${MARCA_ESCALAR} pregunta si el producto sirve durante el embarazo
 
 Ese texto NUNCA lo ve la clienta: el sistema lo intercepta, le avisa a Diana y le responde a ella que le confirmas en un momento. Escalar no es fallar, es lo correcto. Inventar si es fallar.`;
 
+/** Marca con la que el modelo pide que se cree la orden. */
+const MARCA_PEDIDO = "[[PEDIDO]]";
+
+/**
+ * Instruccion para cerrar la venta dentro del chat. El pedido se crea con
+ * los mismos endpoints del formulario web, asi que entra a Shopify, a
+ * Supabase y al tracking igual que cualquier otro.
+ */
+const REGLA_TOMAR_PEDIDO = `CUANDO YA TENGAS TODOS LOS DATOS Y ELLA CONFIRME
+
+Tu no mandas a nadie a la pagina: el pedido lo tomas tu aqui mismo.
+
+En cuanto tengas los seis datos (nombre y apellido, celular, departamento, ciudad, barrio, direccion) Y la persona haya confirmado que estan bien, tu respuesta completa debe ser exactamente esto, sin ningun texto adicional:
+
+${MARCA_PEDIDO}{"nombre":"...","telefono":"...","departamento":"...","ciudad":"...","barrio":"...","direccion":"...","producto":"...","presentacion":"...","notas":"..."}
+
+- "producto" es el nombre del producto del catalogo tal como aparece arriba.
+- "presentacion" es la variante que eligio ("Pack 2 unidades", "1 unidad"). Si el producto no tiene presentaciones, dejalo vacio.
+- "notas" es cualquier indicacion de entrega que te haya dado (portería, horario). Vacio si no dijo nada.
+- El JSON tiene que ser valido y en una sola linea.
+
+Ese texto NUNCA lo ve la clienta: el sistema crea el pedido de verdad y le responde con el numero de orden. Si algo falta o esta mal, te lo devuelve para que se lo preguntes.
+
+NO uses esta marca si todavia falta un dato o si ella no ha confirmado. Y no la mezcles con texto: o mandas la marca sola, o mandas un mensaje normal.`;
+
 function construirSystemPrompt(
   experto: (typeof EXPERTOS)[ExpertoId],
   contexto: string,
@@ -80,12 +106,77 @@ function construirSystemPrompt(
     `TU ESPECIALIDAD EN ESTE MOMENTO:\n${experto.conocimiento}`,
     experto.vende ? TECNICAS_CIERRE : "",
     contexto,
+    // Solo quien vende puede tomar pedidos: en soporte no aplica.
+    experto.vende ? REGLA_TOMAR_PEDIDO : "",
     REGLA_NO_INVENTAR,
     instruccionesExtra,
     FORMATO_WHATSAPP,
   ]
     .filter(Boolean)
     .join("\n\n───\n\n");
+}
+
+/**
+ * Crea el pedido a partir de la marca que emitio el modelo y arma lo que
+ * se le responde a la clienta. Nunca lanza: si algo falla, la persona
+ * recibe un mensaje util y el caso queda para atenderlo a mano.
+ */
+async function tomarPedido(
+  respuesta: string,
+  telefonoE164: string,
+): Promise<{ mensaje: string; creado: boolean; detalle: string }> {
+  const crudo = respuesta.slice(respuesta.indexOf(MARCA_PEDIDO) + MARCA_PEDIDO.length);
+  // El modelo a veces envuelve el JSON en comillas de codigo.
+  const limpio = crudo.replace(/```(?:json)?/g, "").trim();
+
+  let datos: PedidoDesdeChat;
+  try {
+    const inicio = limpio.indexOf("{");
+    const fin = limpio.lastIndexOf("}");
+    datos = JSON.parse(limpio.slice(inicio, fin + 1)) as PedidoDesdeChat;
+  } catch {
+    return {
+      mensaje:
+        "Casi listo. Confirmame por favor tu nombre completo, celular, ciudad, barrio y direccion, y te dejo el pedido armado.",
+      creado: false,
+      detalle: "json invalido",
+    };
+  }
+
+  // El telefono del chat manda sobre el que se haya dictado: es el numero
+  // desde el que esta escribiendo y el que de verdad contesta.
+  const resultado = await crearPedidoDesdeChat({
+    ...datos,
+    telefono: datos.telefono?.trim() || telefonoE164,
+  });
+
+  if (resultado.ok) {
+    return {
+      mensaje: `¡Listo! 🎉 Tu pedido quedo con el numero *${resultado.orderNumber}*.\n\nTe llega a la direccion que me diste y pagas *$${resultado.total.toLocaleString("es-CO")}* cuando lo recibas.`,
+      creado: true,
+      detalle: resultado.orderNumber,
+    };
+  }
+
+  // Falta un dato concreto: se pregunta eso puntual, no todo de nuevo.
+  const pendientes = [
+    ...(resultado.faltantes ?? []),
+    ...(resultado.problemas ?? []),
+  ];
+  if (pendientes.length) {
+    return {
+      mensaje: `Casi listo, me falta un detalle: ${pendientes.join(" y ")}. ¿Me lo confirmas?`,
+      creado: false,
+      detalle: pendientes.join(" · "),
+    };
+  }
+
+  return {
+    mensaje:
+      "Ya tengo todos tus datos 💚 Estoy terminando de armar el pedido y te confirmo el numero en un momentico.",
+    creado: false,
+    detalle: resultado.motivo,
+  };
 }
 
 /**
@@ -177,40 +268,52 @@ export async function responderMensaje(
     };
 
     // El historial ya incluye el mensaje que acabamos de guardar.
-    let { texto: respuesta, tokens } = await chat([
+    const primera = await chat([
       { role: "system", content: system },
       ...previos,
     ]);
-    respuesta = limpiarFormato(respuesta, opcionesFormato);
+    let respuesta = primera.texto;
+    const tokens = primera.tokens;
 
-    // Lo que no se puede arreglar sin cambiar el sentido (mensaje muy
-    // largo, dos preguntas) se le devuelve al modelo una vez. Un reintento
-    // sale mas barato que mandarle a la clienta un mensaje mal formado.
-    const problemas = problemasDeFormato(respuesta, opcionesFormato);
-    if (problemas.length) {
-      try {
-        const reintento = await chat([
-          { role: "system", content: system },
-          ...previos,
-          { role: "assistant", content: respuesta },
-          {
-            role: "user",
-            content: `[CORRECCION DE FORMATO — no es la clienta quien escribe esto] Tu mensaje anterior ${problemas.join(" y ")}. Reescribelo respetando eso. Responde solo con el mensaje corregido.`,
-          },
-        ]);
-        const corregido = limpiarFormato(reintento.texto, opcionesFormato);
-        // Solo se acepta si de verdad quedo mejor.
-        if (!problemasDeFormato(corregido, opcionesFormato).length) {
-          respuesta = corregido;
-        }
-        tokens += reintento.tokens;
-      } catch (err) {
-        console.warn("[wa-agente] fallo el reintento de formato:", err);
+    // Las marcas se detectan sobre el texto crudo, ANTES de limpiar el
+    // formato: el limpiador esta pensado para mensajes de WhatsApp y le
+    // quitaria caracteres al JSON del pedido.
+    const traeMarcaPedido = respuesta.includes(MARCA_PEDIDO);
+    const razonEscalada = detectarEscalada(respuesta);
+
+    if (!traeMarcaPedido && !razonEscalada) {
+      respuesta = limpiarFormato(respuesta, opcionesFormato);
+    }
+
+    // El modelo junto todos los datos: se crea la orden de verdad.
+    if (traeMarcaPedido) {
+      const resultado = await tomarPedido(respuesta, telefonoE164);
+
+      await enviarTexto(telefonoE164, resultado.mensaje);
+      await guardarRespuesta(
+        supabase,
+        conversacion.id,
+        resultado.mensaje,
+        expertoId,
+        tokens,
+      );
+
+      if (!resultado.creado) {
+        // No se pudo cerrar: queda registro para poder rescatar la venta
+        // a mano en vez de que se pierda en silencio.
+        console.warn(`[wa-agente] pedido no creado: ${resultado.detalle}`);
       }
+
+      return {
+        respondido: true,
+        experto: expertoId,
+        respuesta: resultado.mensaje,
+        escalar: !resultado.creado,
+        motivo: resultado.creado ? undefined : `pedido: ${resultado.detalle}`,
+      };
     }
 
     // El modelo dijo que no sabe: esa marca jamas llega a la clienta.
-    const razonEscalada = detectarEscalada(respuesta);
     if (razonEscalada) {
       const res = await escalarAHumano(
         supabase,
@@ -232,6 +335,33 @@ export async function responderMensaje(
       };
     }
 
+    // Mensaje normal: lo que el limpiador no pudo arreglar sin cambiar el
+    // sentido (muy largo, dos preguntas) se le devuelve al modelo una vez.
+    // Un reintento sale mas barato que mandar un mensaje mal formado.
+    let totalTokens = tokens;
+    const problemas = problemasDeFormato(respuesta, opcionesFormato);
+    if (problemas.length) {
+      try {
+        const reintento = await chat([
+          { role: "system", content: system },
+          ...previos,
+          { role: "assistant", content: respuesta },
+          {
+            role: "user",
+            content: `[CORRECCION DE FORMATO — no es la clienta quien escribe esto] Tu mensaje anterior ${problemas.join(" y ")}. Reescribelo respetando eso. Responde solo con el mensaje corregido.`,
+          },
+        ]);
+        const corregido = limpiarFormato(reintento.texto, opcionesFormato);
+        // Solo se acepta si de verdad quedo mejor.
+        if (!problemasDeFormato(corregido, opcionesFormato).length) {
+          respuesta = corregido;
+        }
+        totalTokens += reintento.tokens;
+      } catch (err) {
+        console.warn("[wa-agente] fallo el reintento de formato:", err);
+      }
+    }
+
     const envio = await enviarTexto(telefonoE164, respuesta);
     if (!envio.success) {
       return {
@@ -246,7 +376,7 @@ export async function responderMensaje(
       conversacion.id,
       respuesta,
       expertoId,
-      tokens,
+      totalTokens,
     );
 
     return {

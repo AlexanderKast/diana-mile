@@ -1,0 +1,257 @@
+/**
+ * Cierre de venta desde el chat: convierte lo que la clienta dicta por
+ * WhatsApp en una orden real, exactamente igual que si hubiera llenado el
+ * formulario de la tienda.
+ *
+ * No duplica la logica del checkout: llama a los mismos endpoints
+ * (/api/orders/draft y /api/orders/complete), que son los que calculan el
+ * precio contra el catalogo, crean el cliente en Shopify, guardan en
+ * `pedidos` y disparan el tracking. Reimplementarlo aqui garantizaria que
+ * los dos caminos se desincronicen con el tiempo.
+ */
+
+import { validarDatosPedido, type DatosPedido } from "./datos-pedido";
+
+/** minusculas y sin tildes, para comparar lo que escribe la gente. */
+function clave(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+export type VarianteResuelta = {
+  handle: string;
+  variantId: string;
+  productoTitulo: string;
+  varianteTitulo: string;
+  precio: number;
+};
+
+const QUERY_VARIANTES = `{
+  products(first: 40, sortKey: BEST_SELLING) {
+    edges {
+      node {
+        title
+        handle
+        variants(first: 20) {
+          edges {
+            node { id title availableForSale price { amount } }
+          }
+        }
+      }
+    }
+  }
+}`;
+
+type NodoProducto = {
+  title: string;
+  handle: string;
+  variants: {
+    edges: {
+      node: {
+        id: string;
+        title: string;
+        availableForSale: boolean;
+        price: { amount: string };
+      };
+    }[];
+  };
+};
+
+async function traerProductos(): Promise<NodoProducto[]> {
+  const dominio = process.env.SHOPIFY_STORE_DOMAIN?.replace(
+    /^https?:\/\//,
+    "",
+  ).replace(/\/+$/, "");
+  const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+  if (!dominio || !token) return [];
+
+  const res = await fetch(`https://${dominio}/api/2026-04/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Storefront-Access-Token": token,
+    },
+    body: JSON.stringify({ query: QUERY_VARIANTES }),
+  });
+  if (!res.ok) return [];
+
+  const json = (await res.json()) as {
+    data?: { products?: { edges: { node: NodoProducto }[] } };
+  };
+  return (json.data?.products?.edges ?? []).map((e) => e.node);
+}
+
+/** Cuantas palabras del texto aparecen en el titulo: mide que tan bien calza. */
+function puntaje(texto: string, titulo: string): number {
+  const t = clave(titulo);
+  return clave(texto)
+    .split(/\s+/)
+    .filter((p) => p.length > 2 && t.includes(p)).length;
+}
+
+/**
+ * Resuelve el producto y la presentacion que menciono la clienta al id de
+ * variante que necesita el checkout. Devuelve null si no hay una
+ * coincidencia clara: es preferible preguntar a mandarle otro producto.
+ */
+export async function resolverVariante(
+  producto: string,
+  presentacion?: string | null,
+): Promise<VarianteResuelta | null> {
+  const productos = await traerProductos();
+  if (!productos.length || !producto?.trim()) return null;
+
+  let mejor: { nodo: NodoProducto; p: number } | null = null;
+  for (const nodo of productos) {
+    const p = puntaje(producto, nodo.title);
+    if (p > 0 && (!mejor || p > mejor.p)) mejor = { nodo, p };
+  }
+  if (!mejor) return null;
+
+  const disponibles = mejor.nodo.variants.edges
+    .map((e) => e.node)
+    .filter((v) => v.availableForSale);
+  if (!disponibles.length) return null;
+
+  // Con presentacion ("pack de 2", "x3"), se busca la que mejor calce;
+  // sin ella, la mas barata, que es la que la tienda trae por defecto.
+  let elegida = disponibles
+    .slice()
+    .sort((a, b) => parseFloat(a.price.amount) - parseFloat(b.price.amount))[0];
+
+  if (presentacion?.trim()) {
+    let mejorVar: { v: (typeof disponibles)[0]; p: number } | null = null;
+    for (const v of disponibles) {
+      let p = puntaje(presentacion, v.title);
+      // "pack de 2", "2 unidades" y "x2" deben caer en la misma variante.
+      const numeroPedido = presentacion.match(/\d+/)?.[0];
+      const numeroVariante = v.title.match(/\d+/)?.[0];
+      if (numeroPedido && numeroPedido === numeroVariante) p += 2;
+      if (p > 0 && (!mejorVar || p > mejorVar.p)) mejorVar = { v, p };
+    }
+    if (mejorVar) elegida = mejorVar.v;
+  }
+
+  return {
+    handle: mejor.nodo.handle,
+    variantId: elegida.id,
+    productoTitulo: mejor.nodo.title,
+    varianteTitulo: elegida.title,
+    precio: Math.round(parseFloat(elegida.price.amount)),
+  };
+}
+
+export type ResultadoPedido =
+  | { ok: true; orderNumber: string; total: number; producto: string }
+  | { ok: false; motivo: string; faltantes?: string[]; problemas?: string[] };
+
+export type PedidoDesdeChat = Partial<DatosPedido> & {
+  producto?: string;
+  presentacion?: string | null;
+  notas?: string | null;
+};
+
+/**
+ * Crea la orden. Usa los endpoints publicos de la tienda para no duplicar
+ * las reglas de precio ni el alta del cliente en Shopify.
+ */
+export async function crearPedidoDesdeChat(
+  entrada: PedidoDesdeChat,
+): Promise<ResultadoPedido> {
+  const sitio = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+  if (!sitio) {
+    return { ok: false, motivo: "falta NEXT_PUBLIC_SITE_URL" };
+  }
+
+  const validacion = validarDatosPedido(entrada);
+  if (!validacion.ok) {
+    return {
+      ok: false,
+      motivo: "datos incompletos",
+      faltantes: validacion.faltantes,
+      problemas: validacion.problemas,
+    };
+  }
+  const datos = validacion.datos;
+
+  const variante = await resolverVariante(
+    entrada.producto ?? "",
+    entrada.presentacion,
+  );
+  if (!variante) {
+    return { ok: false, motivo: "no se pudo identificar el producto" };
+  }
+
+  const comun = {
+    nombre: datos.nombre,
+    telefono: datos.telefonoE164,
+    departamento: datos.departamento,
+    ciudad: datos.ciudad,
+    barrio: datos.barrio,
+    direccion: datos.direccion,
+    variantId: variante.variantId,
+    slug: variante.handle,
+    // El pedido por chat va a precio de lista: el descuento del popup es
+    // de la web y aqui no aplica salvo que la asesora lo negocie aparte.
+    descuentoAplicado: false,
+    envioPrioritario: false,
+  };
+
+  try {
+    const resDraft = await fetch(`${sitio}/api/orders/draft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...comun, ubicacion: null, draftOrderId: null }),
+    });
+    const draft = (await resDraft.json().catch(() => null)) as {
+      draftOrderId?: string;
+      mensaje?: string;
+    } | null;
+
+    if (!resDraft.ok || !draft?.draftOrderId) {
+      return {
+        ok: false,
+        motivo: draft?.mensaje ?? `draft HTTP ${resDraft.status}`,
+      };
+    }
+
+    const resComplete = await fetch(`${sitio}/api/orders/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...comun,
+        draftOrderId: draft.draftOrderId,
+        notas: entrada.notas
+          ? `Pedido tomado por WhatsApp. ${entrada.notas}`
+          : "Pedido tomado por WhatsApp.",
+        ubicacion: null,
+      }),
+    });
+    const completo = (await resComplete.json().catch(() => null)) as {
+      orderNumber?: string;
+      total?: number;
+      mensaje?: string;
+    } | null;
+
+    if (!resComplete.ok || !completo?.orderNumber) {
+      return {
+        ok: false,
+        motivo: completo?.mensaje ?? `complete HTTP ${resComplete.status}`,
+      };
+    }
+
+    return {
+      ok: true,
+      orderNumber: completo.orderNumber,
+      total: completo.total ?? variante.precio,
+      producto: `${variante.productoTitulo} — ${variante.varianteTitulo}`,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      motivo: err instanceof Error ? err.message : "error desconocido",
+    };
+  }
+}

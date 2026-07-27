@@ -16,7 +16,8 @@
     "lint": "npm run lint -ws --if-present",
     "landing:gen": "node scripts/generate-landing.mjs",
     "collection:gen": "node scripts/generate-collection.mjs",
-    "wa:probar": "tsx scripts/probar-agente-wa.mts"
+    "wa:probar": "tsx scripts/probar-agente-wa.mts",
+    "wa:pedido": "tsx scripts/probar-pedido-wa.mts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
