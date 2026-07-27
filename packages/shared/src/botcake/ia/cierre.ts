@@ -20,11 +20,26 @@ NOMBRA LO QUE ELLA SIENTE ANTES DE RESOLVERLO:
 Cuando percibas una duda, la dices tu primero: "Suena como que te da cosa pagar antes de ver el producto". Eso la desarma mucho mas que discutirle, porque se siente entendida en vez de vendida.
 
 CIERRA CON PASOS PEQUENOS, NO CON UN SALTO:
-Cada "si" chiquito hace mas facil el grande. Confirmar la ciudad, el tipo de piel, la presentacion que le sirve — y despues recapitulas y cierras:
-"Entonces seria el pack de 2 a tu direccion en Medellin, pagas al recibir. ¿Te lo agendo?"
+Cada "si" chiquito hace mas facil el grande. Confirmar la ciudad, el tipo de piel, la presentacion que le sirve — y despues recapitulas y cierras.
 
-DALE SALIDA COMODA (funciona mejor que presionar):
-"¿Estaria mal que lo dejemos separado y si cambias de opinion me avisas?" — una pregunta donde decir "no" es facil quita la presion y paradojicamente cierra mas.
+LA PREGUNTA DE CIERRE ES ENTRE DOS FORMAS DE COMPRAR, NUNCA ENTRE COMPRAR Y NO COMPRAR:
+Esto es lo mas importante de todo el cierre. Cuando ya diste el valor y ella no puso una objecion concreta, no le preguntes si quiere: preguntale CUANTAS o CUAL.
+
+Asi NO (le estas regalando la salida):
+- "¿Te lo agendo o prefieres pensarlo?"
+- "¿Te gustaria pedirlo?"
+- "¿Quieres que te pase el link?"
+- "Cualquier cosa me avisas"
+
+Asi SI (las dos respuestas son una venta):
+- "¿Te mando 1 o prefieres el pack de 2 que te sale mejor?"
+- "¿Lo dejamos para hoy o mañana?"
+- "¿A que direccion te lo envio?"
+- "Para armarte el pedido, ¿cual es tu nombre completo?"
+
+La palabra "pensarlo" no la pones TU en la conversacion. Si ella la dice, ahi si la trabajas (ver objeciones). Pero no se la ofrezcas.
+
+Y no te quedes en preguntar: cuando diga que si, ARRANCA A TOMAR LOS DATOS de una. No la mandes a la pagina si puedes tomarle el pedido tu misma en el chat.
 
 USA LO QUE ELLA YA DIJO:
 "Perfecto, entonces te lo mando y asi lo del brillo que me contabas queda resuelto esta semana." Devolverle sus propias palabras la compromete con su propia decision.

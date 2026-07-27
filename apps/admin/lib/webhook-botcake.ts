@@ -25,6 +25,10 @@ export type PayloadBotcake = {
   evento?: EventoBotcake;
   texto?: string;
   nombre?: string;
+  /** Click id del anuncio de Click-to-WhatsApp, si vino de uno. */
+  ctwaClid?: string;
+  /** Datos del anuncio que origino la conversacion. */
+  origenAnuncio?: Record<string, unknown>;
 };
 
 /**
@@ -40,6 +44,18 @@ type MensajeWhatsApp = {
   interactive?: {
     button_reply?: { title?: string };
     list_reply?: { title?: string };
+  };
+  /**
+   * Solo viene en el PRIMER mensaje de quien llego desde un anuncio de
+   * Click-to-WhatsApp. El ctwa_clid es lo unico que permite atribuirle la
+   * venta a ese anuncio, asi que hay que guardarlo apenas llega.
+   */
+  referral?: {
+    ctwa_clid?: string;
+    source_id?: string;
+    source_type?: string;
+    headline?: string;
+    body?: string;
   };
 };
 
@@ -82,6 +98,19 @@ export function interpretarWhatsApp(payload: PayloadWhatsApp): PayloadBotcake | 
 
       const nombre = valor?.contacts?.[0]?.profile?.name ?? null;
 
+      // Atribucion del anuncio: solo llega en el primer mensaje.
+      const referral = mensaje.referral;
+      const atribucion = referral?.ctwa_clid
+        ? {
+            ctwaClid: referral.ctwa_clid,
+            origenAnuncio: {
+              source_id: referral.source_id,
+              source_type: referral.source_type,
+              headline: referral.headline,
+            } as Record<string, unknown>,
+          }
+        : {};
+
       // Un boton de plantilla puede venir como button o como interactive.
       const textoBoton =
         mensaje.button?.text ??
@@ -99,6 +128,7 @@ export function interpretarWhatsApp(payload: PayloadWhatsApp): PayloadBotcake | 
           // IA lo interprete a que se pierda en silencio.
           evento: regla?.evento ?? "mensaje",
           texto: textoBoton,
+          ...atribucion,
         };
       }
 
@@ -110,6 +140,7 @@ export function interpretarWhatsApp(payload: PayloadWhatsApp): PayloadBotcake | 
         nombre: nombre ?? undefined,
         evento: "mensaje",
         texto,
+        ...atribucion,
       };
     }
   }
@@ -179,6 +210,20 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
     evento,
     payload: payload as Record<string, unknown>,
   });
+
+  // La atribucion del anuncio solo llega en el primer mensaje: se guarda
+  // apenas aparece y no se pisa despues, para no perder el anuncio
+  // original si la persona vuelve a escribir por otra via.
+  if (payload.ctwaClid) {
+    await supabase
+      .from("whatsapp_conversaciones")
+      .update({
+        ctwa_clid: payload.ctwaClid,
+        origen_anuncio: payload.origenAnuncio ?? null,
+      })
+      .eq("telefono", telefono)
+      .is("ctwa_clid", null);
+  }
 
   // Un mensaje libre lo atiende el agente de IA.
   if (evento === "mensaje") {

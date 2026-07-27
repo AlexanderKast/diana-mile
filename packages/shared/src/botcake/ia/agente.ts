@@ -98,6 +98,8 @@ function construirSystemPrompt(
  */
 export async function responderMensaje(
   supabase: SupabaseClient,
+  // La atribucion del anuncio la persiste el webhook antes de llamar aqui:
+  // el agente no necesita conocerla para responder.
   entrada: { telefonoE164: string; texto: string; nombre?: string | null },
 ): Promise<ResultadoAgente> {
   const { telefonoE164, texto, nombre } = entrada;
