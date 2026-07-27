@@ -172,10 +172,30 @@ export async function POST(request: NextRequest) {
   const provisto = request.headers.get("x-webhook-secret");
 
   let payload: PayloadBotcake | null;
+  let crudo = "";
   try {
-    payload = (await request.json()) as PayloadBotcake;
+    crudo = await request.text();
+    payload = JSON.parse(crudo) as PayloadBotcake;
   } catch {
     payload = null;
+  }
+
+  // Diagnostico temporal: el webhook global de Botcake (Integraciones →
+  // API) no permite configurar headers, asi que hay que ver con que forma
+  // llega para saber como autenticarlo y como mapearlo.
+  if (process.env.BOTCAKE_WEBHOOK_DEBUG === "1") {
+    const cabeceras: Record<string, string> = {};
+    request.headers.forEach((valor, clave) => {
+      if (/^(x-|authorization|content-type|user-agent)/i.test(clave)) {
+        cabeceras[clave] = clave.toLowerCase().includes("auth")
+          ? `${valor.slice(0, 6)}…`
+          : valor;
+      }
+    });
+    console.warn(
+      "[webhook-botcake][debug]",
+      JSON.stringify({ cabeceras, cuerpo: crudo.slice(0, 800) }),
+    );
   }
 
   // Ping de verificacion: viene sin credenciales y sin datos de nadie. Se
