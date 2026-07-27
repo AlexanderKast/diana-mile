@@ -215,18 +215,56 @@ En el flow de la página, agregar un bloque de webhook que haga `POST` a
 
 ## Plantillas
 
-| Plantilla | Estado | Agente |
-|---|---|---|
-| `confirmacion_de_pedido_nuevo` | APPROVED | Confirmación (marca va como variable → "Milito Life") |
-| `recordatorio_confirmacion_milito` | PENDING | Recordatorio |
-| `pedido_enviado_milito` | PENDING | Envío |
-| `disculpas` | APPROVED | Manual |
+Todas aprobadas por Meta.
 
-Los `template_id` viven en `packages/shared/src/botcake/ia/../plantillas.ts`.
-Si se recrea una plantilla en Botcake, hay que actualizar el id ahí.
+| Plantilla | Categoría | Agente |
+|---|---|---|
+| `confirmacion_de_pedido_nuevo` | UTILITY | Confirmación (la marca va como variable) |
+| `recordatorio_confirmacion_milito` | UTILITY | Recordatorio a las 24h |
+| `pedido_enviado_milito` | UTILITY | Envío con guía |
+| `pedido_cancelado_milito` | UTILITY | Cancelación, venga de donde venga |
+| `aviso_asesor_requerido` | UTILITY | Aviso a Diana cuando el agente no sabe |
+| `carrito_abandonado_milito` | MARKETING | Recuperación de carrito |
+| `recompra_milito` | MARKETING | Recompra a los 30 días |
+| `invitacion_comunidad_milito` | MARKETING | Comunidad, 3 días tras la entrega |
+| `seguimiento_valor_milito` | MARKETING | Consejos post-compra |
+| `mensaje_diario_milito` | MARKETING | Mensaje de comunidad cada 3 días |
+| `disculpas` | MARKETING | Manual |
+
+Los ids **no van en el código**: viven en variables `BOTCAKE_TEMPLATE_*`
+(ver `plantillas.ts`), para poder recrear una plantilla en Botcake y
+cambiar solo la variable. Las de MARKETING llevan el botón "Detener
+promociones", que Meta exige y el sistema respeta apagando
+`promociones_activas` de esa persona.
 
 **Ojo**: crear plantillas por API no funciona (Botcake devuelve HTTP 500
 siempre). Se crean en la UI de Botcake o en WhatsApp Manager.
+
+## Ciclo de vida completo del cliente
+
+| Momento | Qué pasa |
+|---|---|
+| Escribe por primera vez | Responde el agente. Si viene de un anuncio, se guarda el `ctwa_clid` |
+| Abandona el checkout | A las 3h, recuperación de carrito (una sola vez) |
+| Hace el pedido | Confirmación inmediata, a cualquier hora |
+| No confirma | Recordatorio a las 24h, máximo 2 |
+| Se despacha | Aviso con número de guía |
+| **Se entrega** | Arranca el acompañamiento: consejo (día 1), comunidad (3), tip (10), resultados (21), recompra (30) |
+| Cancelan | Sincronizado en Shopify, panel y WhatsApp |
+| Siempre | Mensaje de comunidad cada 3 días, si está activo |
+
+Los días del acompañamiento se cuentan desde la **entrega**, no desde el
+pedido: un consejo de uso no sirve si todavía no tiene el producto.
+
+## Horario de envío
+
+Las automatizaciones solo escriben entre las **7am y 10pm hora de Colombia**
+(`horario.ts`, UTC-5 fijo). Lo que cae fuera espera en la cola hasta las 7am
+sin gastar reintentos.
+
+Salen a cualquier hora, a propósito: las **respuestas del agente** (esa
+conversación la abrió la persona), la **confirmación de un pedido recién
+hecho** (responde a algo que acaba de hacer) y los **avisos internos**.
 
 ---
 
@@ -244,9 +282,29 @@ siempre). Se crean en la UI de Botcake o en WhatsApp Manager.
   no están en el catálogo. Vale la pena volver a correr la prueba cada vez
   que se toque `voz.ts` o el conocimiento.
 
+## Para encender el mensaje de comunidad
+
+Arranca apagado a propósito: cada envío abre una conversación de marketing
+que Meta cobra (~USD 0,0125 en Colombia), así que con una base grande el
+costo mensual es real y esa decisión es del negocio.
+
+```sql
+UPDATE config SET valor = 'true' WHERE clave = 'mensaje_diario_activo';
+-- cada cuántos días (3 por defecto)
+UPDATE config SET valor = '2' WHERE clave = 'mensaje_diario_cada_dias';
+```
+
+Antes de encenderlo conviene correr `npm run wa:diario` unas cuantas veces
+para ver si el tono es el de la marca.
+
 ## Pendiente
 
-- Que Meta apruebe las 2 plantillas en PENDING.
-- Configurar el flow de webhook en la UI de Botcake.
-- Fase 2: agente de carrito abandonado y de recompra (necesitan plantillas
-  MARKETING nuevas).
+- Migrar el callback de Botcake a la URL con token
+  (`/api/admin/webhooks/botcake/<BOTCAKE_WEBHOOK_PATH_TOKEN>`). La ruta sin
+  token funciona pero no tiene autenticación fuerte.
+- Crear el flow "hablar con humano" en Botcake y poner su id en
+  `BOTCAKE_FLOW_HABLAR_HUMANO`, para que el escalamiento etiquete la
+  conversación (el API permite ejecutar flows pero no asignar tags).
+- Puente de atribución para el botón de WhatsApp de la landing: ese
+  tráfico no trae `ctwa_clid` y hoy pierde el rastro de la campaña.
+- Imagen en el mensaje de comunidad (falta decidir el generador).
