@@ -4,6 +4,7 @@ import { Fragment, useMemo, useState } from "react";
 import { cx, formatCOP } from "@diana-mile/shared/utils";
 import { Button } from "@diana-mile/shared/ui/Button";
 import type { EstadoPedido, Pedido, ResultadoConfirmacion } from "@diana-mile/shared/types";
+import { usarPedidosEnVivo } from "@/lib/usar-pedidos-en-vivo";
 
 type OrdersTableProps = {
   pedidos: Pedido[];
@@ -99,7 +100,11 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
   const [filaAbierta, setFilaAbierta] = useState<string | null>(null);
   const [panelAccion, setPanelAccion] = useState<PanelAccion>(null);
   const [pagina, setPagina] = useState(1);
-  const [pedidosLocal, setPedidosLocal] = useState<Pedido[]>(pedidos);
+  const {
+    pedidos: pedidosLocal,
+    setPedidos: setPedidosLocal,
+    enVivo,
+  } = usarPedidosEnVivo(pedidos);
   const [enviando, setEnviando] = useState(false);
   const [errorAccion, setErrorAccion] = useState<string | null>(null);
 
@@ -254,6 +259,16 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
 
   return (
     <div>
+      {/* Se avisa cuando NO esta en vivo, no cuando si: un punto verde
+          permanente se vuelve invisible a los cinco minutos, y lo que hay
+          que saber es justo lo contrario — que lo que estas viendo puede
+          estar viejo. */}
+      {!enVivo && (
+        <p className="mb-3 rounded-[2px] border border-arena bg-crema px-3 py-2 text-xs text-carbon-suave">
+          Sin conexión en vivo: los pedidos nuevos no aparecerán solos.
+          Recarga la página para verlos.
+        </p>
+      )}
       <div className="flex items-center gap-3 flex-wrap mb-4">
         <input
           type="text"
