@@ -67,6 +67,34 @@ Ese texto NUNCA lo ve la clienta: el sistema lo intercepta, le avisa a Diana y l
 /** Marca con la que el modelo pide que se cree la orden. */
 const MARCA_PEDIDO = "[[PEDIDO]]";
 
+/** Marca con la que el modelo pide cancelar el pedido de esa persona. */
+const MARCA_CANCELAR = "[[CANCELAR]]";
+
+/**
+ * Cancelacion pedida en la conversacion (no por el boton de la plantilla).
+ *
+ * El agente solo llega aqui despues de haber intentado retener: la regla
+ * de retencion vive en el conocimiento de la tienda. Y solo se ejecuta si
+ * el pedido no salio de bodega — eso lo decide la app, no el modelo.
+ */
+const REGLA_CANCELAR = `SI DESPUES DE INTENTAR RETENERLA IGUAL QUIERE CANCELAR
+
+Cuando ya entendiste por que se quiere ir, le ofreciste la alternativa que
+correspondia y aun asi insiste, no le pongas mas trabas: se cancela.
+
+Tu respuesta completa debe ser exactamente:
+${MARCA_CANCELAR} seguido del motivo corto que te dio.
+
+Ejemplo: ${MARCA_CANCELAR} ya no lo necesita
+
+Ese texto no lo ve la clienta: el sistema verifica si el pedido todavia se
+puede cancelar y le responde. Si ya salio para su ciudad no se puede
+cancelar solo, y ahi lo revisa una persona — por eso nunca le prometas tu
+que quedo cancelado.
+
+NO uses esta marca en el primer mensaje en que menciona cancelar: primero
+preguntas que paso y ofreces la alternativa. Solo si insiste.`;
+
 /**
  * Instruccion para cerrar la venta dentro del chat. El pedido se crea con
  * los mismos endpoints del formulario web, asi que entra a Shopify, a
@@ -112,6 +140,8 @@ function construirSystemPrompt(
     contexto,
     // Solo quien vende puede tomar pedidos: en soporte no aplica.
     experto.vende ? REGLA_TOMAR_PEDIDO : "",
+    // Cancelar aplica al reves: es cosa de soporte y de la tienda.
+    experto.escalaAHumano || experto.id === "tienda" ? REGLA_CANCELAR : "",
     REGLA_NO_INVENTAR,
     instruccionesExtra,
     FORMATO_WHATSAPP,
@@ -200,7 +230,20 @@ export async function responderMensaje(
   supabase: SupabaseClient,
   // La atribucion del anuncio la persiste el webhook antes de llamar aqui:
   // el agente no necesita conocerla para responder.
-  entrada: { telefonoE164: string; texto: string; nombre?: string | null },
+  entrada: {
+    telefonoE164: string;
+    texto: string;
+    nombre?: string | null;
+    /**
+     * Cancela el pedido si todavia se puede. La inyecta quien llama porque
+     * requiere Shopify, que vive en apps/admin. Sin esto el agente escala
+     * la cancelacion en vez de ejecutarla.
+     */
+    cancelarPedido?: (
+      pedidoId: string,
+      motivo: string,
+    ) => Promise<{ cancelado: boolean; motivo?: string }>;
+  },
 ): Promise<ResultadoAgente> {
   const { telefonoE164, texto, nombre } = entrada;
 
@@ -288,10 +331,55 @@ export async function responderMensaje(
     // formato: el limpiador esta pensado para mensajes de WhatsApp y le
     // quitaria caracteres al JSON del pedido.
     const traeMarcaPedido = respuesta.includes(MARCA_PEDIDO);
+    const traeMarcaCancelar = respuesta.includes(MARCA_CANCELAR);
     const razonEscalada = detectarEscalada(respuesta);
 
-    if (!traeMarcaPedido && !razonEscalada) {
+    if (!traeMarcaPedido && !traeMarcaCancelar && !razonEscalada) {
       respuesta = limpiarFormato(respuesta, opcionesFormato);
+    }
+
+    // Pidio cancelar y ya se intento retener: se ejecuta si el pedido
+    // todavia no salio de bodega.
+    if (traeMarcaCancelar) {
+      const motivo =
+        respuesta
+          .slice(respuesta.indexOf(MARCA_CANCELAR) + MARCA_CANCELAR.length)
+          .trim() || "no dio motivo";
+
+      let aviso: string;
+      let resuelto = false;
+
+      if (!pedido) {
+        aviso =
+          "No encuentro un pedido activo a tu nombre. ¿Me confirmas el numero de pedido o el nombre con el que lo hiciste?";
+      } else if (!entrada.cancelarPedido) {
+        aviso = "Dejame revisar tu pedido y te confirmo en un momentico 💚";
+      } else {
+        const res = await entrada.cancelarPedido(pedido.id, motivo);
+        resuelto = res.cancelado;
+        aviso = res.cancelado
+          ? `Listo, ya cancele tu pedido de ${pedido.producto}. No te va a llegar nada ni tienes que pagar nada.\n\nSi mas adelante lo quieres retomar, aqui estoy 💚`
+          : "Dejame validar el estado de tu pedido y te confirmo en un momentico 💚";
+      }
+
+      await enviarTexto(telefonoE164, aviso);
+      await guardarRespuesta(supabase, conversacion.id, aviso, expertoId, tokens);
+
+      if (!resuelto) {
+        await escalarAHumano(
+          supabase,
+          { ...datosBase, motivo: "reclamo" },
+          `pidio cancelar: ${motivo}`,
+        );
+      }
+
+      return {
+        respondido: true,
+        experto: expertoId,
+        respuesta: aviso,
+        escalar: !resuelto,
+        motivo: resuelto ? undefined : `cancelacion pendiente: ${motivo}`,
+      };
     }
 
     // El modelo junto todos los datos: se crea la orden de verdad.

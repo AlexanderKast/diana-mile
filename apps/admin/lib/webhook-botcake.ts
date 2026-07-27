@@ -257,6 +257,43 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
       telefonoE164: telefono,
       texto: payload.texto.trim(),
       nombre: payload.nombre ?? pedido?.nombre ?? null,
+      // El agente puede cancelar por si mismo, pero solo si el pedido
+      // todavia no salio de bodega: si ya va en camino decide una persona.
+      cancelarPedido: async (pedidoId, motivo) => {
+        const { data: p } = await supabase
+          .from("pedidos")
+          .select("shopify_order_id")
+          .eq("id", pedidoId)
+          .maybeSingle();
+
+        if (p?.shopify_order_id) {
+          const estado = await estadoOrden(p.shopify_order_id);
+          if (!estado?.sePuedeCancelar) {
+            return {
+              cancelado: false,
+              motivo: `ya esta en "${estado?.fulfillmentStatus ?? "estado desconocido"}"`,
+            };
+          }
+        }
+
+        const res = await cancelarPedido(supabase, pedidoId, {
+          origen: "cliente",
+          motivo,
+          cancelarEnShopify: async (orderId) => {
+            await agregarTagsOrden(orderId, ["cancelado-whatsapp"]);
+            await agregarNotaOrden(
+              orderId,
+              `Cliente cancelo por WhatsApp: ${motivo}`,
+            );
+            return cancelarOrdenShopify(orderId);
+          },
+        });
+
+        if (res.cancelado) {
+          await cancelarSeguimiento(supabase, { pedidoId });
+        }
+        return { cancelado: res.cancelado, motivo: res.motivo };
+      },
     });
 
     if (resultado.escalar) {

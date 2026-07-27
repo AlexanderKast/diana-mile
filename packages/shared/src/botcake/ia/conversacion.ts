@@ -8,6 +8,15 @@ const MEMORIA_MENSAJES = 12;
 /** Ventana de WhatsApp: solo se puede escribir texto libre dentro de 24h. */
 const VENTANA_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Cuanto espera un escalamiento antes de que la IA retome la conversacion.
+ *
+ * Si nadie del equipo entra a responder, dejar el bot apagado para siempre
+ * significa abandonar a esa persona: escribe, no le contestan, y se va.
+ * Pasado este tiempo es mejor que responda la IA a que no responda nadie.
+ */
+const HORAS_PARA_RETOMAR = 3;
+
 export type Conversacion = {
   id: string;
   telefono: string;
@@ -15,6 +24,7 @@ export type Conversacion = {
   ultimoExperto: ExpertoId | null;
   iaActiva: boolean;
   ultimoEntranteAt: string | null;
+  escaladoAt: string | null;
 };
 
 export async function obtenerOCrearConversacion(
@@ -24,25 +34,55 @@ export async function obtenerOCrearConversacion(
 ): Promise<Conversacion | null> {
   const { data: existente } = await supabase
     .from("whatsapp_conversaciones")
-    .select("id, telefono, nombre, ultimo_experto, ia_activa, ultimo_entrante_at")
+    .select(
+      "id, telefono, nombre, ultimo_experto, ia_activa, ultimo_entrante_at, escalado_at",
+    )
     .eq("telefono", telefonoE164)
     .maybeSingle();
 
   if (existente) {
+    let iaActiva = existente.ia_activa;
+
+    // Escalada vieja que nadie atendio: la IA retoma. Es preferible que
+    // responda ella a dejar a la persona escribiendo al vacio.
+    if (!iaActiva && existente.escalado_at) {
+      const horas =
+        (Date.now() - new Date(existente.escalado_at).getTime()) / 3_600_000;
+
+      if (horas >= HORAS_PARA_RETOMAR) {
+        await supabase
+          .from("whatsapp_conversaciones")
+          .update({
+            ia_activa: true,
+            escalado_at: null,
+            motivo_escalado: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existente.id);
+        iaActiva = true;
+        console.warn(
+          `[wa-conversacion] la IA retoma ${telefonoE164}: escalada sin atender hace ${horas.toFixed(1)}h`,
+        );
+      }
+    }
+
     return {
       id: existente.id,
       telefono: existente.telefono,
       nombre: existente.nombre ?? nombre ?? null,
       ultimoExperto: (existente.ultimo_experto as ExpertoId) ?? null,
-      iaActiva: existente.ia_activa,
+      iaActiva,
       ultimoEntranteAt: existente.ultimo_entrante_at,
+      escaladoAt: existente.escalado_at,
     };
   }
 
   const { data: creada, error } = await supabase
     .from("whatsapp_conversaciones")
     .insert({ telefono: telefonoE164, nombre: nombre ?? null })
-    .select("id, telefono, nombre, ultimo_experto, ia_activa, ultimo_entrante_at")
+    .select(
+      "id, telefono, nombre, ultimo_experto, ia_activa, ultimo_entrante_at, escalado_at",
+    )
     .single();
 
   if (error || !creada) {
@@ -57,6 +97,7 @@ export async function obtenerOCrearConversacion(
     ultimoExperto: null,
     iaActiva: creada.ia_activa,
     ultimoEntranteAt: creada.ultimo_entrante_at,
+    escaladoAt: null,
   };
 }
 
