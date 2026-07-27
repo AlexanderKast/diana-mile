@@ -9,6 +9,7 @@ import {
   cancelarSeguimiento,
   programarSeguimiento,
 } from "@diana-mile/shared/botcake/seguimiento";
+import { invitarComunidadVip } from "@diana-mile/shared/botcake/respuestas-boton";
 
 export async function POST(
   request: NextRequest,
@@ -117,6 +118,14 @@ export async function POST(
       pedidoId: id,
       telefonoE164: pedidoActualizado.telefono,
       producto: pedidoActualizado.producto_nombre ?? "tu pedido",
+    });
+
+    // La comunidad VIP se abre justo al recibir, que es cuando esta mas
+    // contenta con la marca. Va por texto libre si la ventana de 24h sigue
+    // abierta; si no, la invitacion formal sale en el seguimiento del dia 3.
+    await invitarComunidadVip(supabase, {
+      telefonoE164: pedidoActualizado.telefono,
+      nombre: pedidoActualizado.nombre,
     });
   }
 

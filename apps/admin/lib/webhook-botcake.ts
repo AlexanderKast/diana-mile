@@ -10,6 +10,12 @@ import { cancelarPedido } from "@diana-mile/shared/botcake/cancelacion";
 import { cancelarSeguimiento } from "@diana-mile/shared/botcake/seguimiento";
 import { escalarAHumano } from "@diana-mile/shared/botcake/ia/escalamiento";
 import { enviarTexto } from "@diana-mile/shared/botcake/client";
+import {
+  responderAnulado,
+  responderAsesor,
+  responderConfirmacion,
+  responderModificar,
+} from "@diana-mile/shared/botcake/respuestas-boton";
 import { enviarPush } from "@/lib/push";
 
 /**
@@ -38,6 +44,8 @@ export type PayloadBotcake = {
   ctwaClid?: string;
   /** Datos del anuncio que origino la conversacion. */
   origenAnuncio?: Record<string, unknown>;
+  /** Ubicacion compartida, para la entrega. */
+  ubicacion?: { lat: number; lng: number; direccion?: string };
 };
 
 /**
@@ -65,6 +73,13 @@ type MensajeWhatsApp = {
     source_type?: string;
     headline?: string;
     body?: string;
+  };
+  /** Ubicacion que comparte para que el mensajero la encuentre. */
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    name?: string;
+    address?: string;
   };
 };
 
@@ -119,6 +134,24 @@ export function interpretarWhatsApp(payload: PayloadWhatsApp): PayloadBotcake | 
             } as Record<string, unknown>,
           }
         : {};
+
+      // Ubicacion compartida: es lo que le pedimos tras confirmar para que
+      // el mensajero no ande dando vueltas.
+      const loc = mensaje.location;
+      if (typeof loc?.latitude === "number" && typeof loc?.longitude === "number") {
+        return {
+          telefono: mensaje.from,
+          nombre: nombre ?? undefined,
+          evento: "mensaje",
+          texto: "(compartio su ubicacion)",
+          ubicacion: {
+            lat: loc.latitude,
+            lng: loc.longitude,
+            direccion: loc.address ?? loc.name,
+          },
+          ...atribucion,
+        };
+      }
 
       // Un boton de plantilla puede venir como button o como interactive.
       const textoBoton =
@@ -194,7 +227,7 @@ async function pedidoDe(
 ) {
   const { data } = await supabase
     .from("pedidos")
-    .select("id, estado, shopify_order_id, nombre, producto_nombre")
+    .select("id, estado, shopify_order_id, nombre, producto_nombre, precio_total")
     .eq("telefono", telefono)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -232,6 +265,34 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
       })
       .eq("telefono", telefono)
       .is("ctwa_clid", null);
+  }
+
+  // Ubicacion compartida: se guarda en el pedido y se le agradece. No pasa
+  // por la IA porque no hay nada que interpretar.
+  if (payload.ubicacion) {
+    if (pedido) {
+      await supabase
+        .from("pedidos")
+        .update({
+          latitud: payload.ubicacion.lat,
+          longitud: payload.ubicacion.lng,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", pedido.id);
+
+      if (pedido.shopify_order_id) {
+        await agregarNotaOrden(
+          pedido.shopify_order_id,
+          `Ubicacion compartida por el cliente: https://maps.google.com/?q=${payload.ubicacion.lat},${payload.ubicacion.lng}`,
+        );
+      }
+    }
+
+    await enviarTexto(
+      telefono,
+      "¡Perfecto, gracias! Con eso el mensajero llega directo 💚",
+    );
+    return;
   }
 
   // Un mensaje libre lo atiende el agente de IA.
@@ -333,7 +394,45 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
         "Cliente confirmo el pedido por WhatsApp.",
       );
     }
+
+    // Confirmar y quedarse mudo es lo peor: es el momento en que mas
+    // necesita saber que todo va bien.
+    await responderConfirmacion(supabase, {
+      pedidoId: pedido.id,
+      telefonoE164: telefono,
+      nombre: pedido.nombre,
+      producto: pedido.producto_nombre ?? "pedido",
+      precioTotal: Number(pedido.precio_total ?? 0),
+    });
   }
+
+  if (evento === "modificar") {
+    await responderModificar({
+      pedidoId: pedido.id,
+      telefonoE164: telefono,
+      nombre: pedido.nombre,
+      producto: pedido.producto_nombre ?? "pedido",
+      precioTotal: Number(pedido.precio_total ?? 0),
+    });
+  }
+
+  if (evento === "asesor") {
+    await responderAsesor({
+      pedidoId: pedido.id,
+      telefonoE164: telefono,
+      nombre: pedido.nombre,
+      producto: pedido.producto_nombre ?? "pedido",
+      precioTotal: Number(pedido.precio_total ?? 0),
+    });
+  }
+
+  const datosBoton = {
+    pedidoId: pedido.id,
+    telefonoE164: telefono,
+    nombre: pedido.nombre,
+    producto: pedido.producto_nombre ?? "pedido",
+    precioTotal: Number(pedido.precio_total ?? 0),
+  };
 
   if (evento === "anulado") {
     // Solo se cancela sola si el pedido todavia no salio de bodega. Si ya
@@ -369,6 +468,7 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
         },
       });
       await cancelarSeguimiento(supabase, { pedidoId: pedido.id });
+      await responderAnulado(datosBoton, true);
     } else {
       // El pedido ya avanzo: se frena la IA en ese chat y decide Diana.
       await escalarAHumano(
@@ -381,6 +481,7 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
         },
         "cancelacion de un pedido que ya salio de bodega",
       );
+      await responderAnulado(datosBoton, false);
       enviarPush("todos", {
         titulo: "Piden cancelar un pedido ya despachado ⚠️",
         cuerpo: `${pedido.nombre ?? telefono} — ${pedido.producto_nombre ?? "pedido"}`,
