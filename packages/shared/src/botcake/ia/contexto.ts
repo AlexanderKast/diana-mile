@@ -106,6 +106,19 @@ type CacheCatalogo = { texto: string; expira: number };
 let cacheCatalogo: CacheCatalogo | null = null;
 const TTL_CATALOGO_MS = 10 * 60 * 1000;
 
+/** Lo que la tienda vende de verdad, para poder contrastar la respuesta. */
+export type CatalogoDatos = { titulos: string[]; precios: Set<number> };
+let ultimoCatalogo: CatalogoDatos | null = null;
+
+/**
+ * Titulos y precios reales de la ultima lectura del catalogo. Devuelve
+ * null si todavia no se ha leido ninguna: en ese caso no se puede
+ * verificar nada y no se bloquea nada, porque acusar en falso es peor.
+ */
+export function catalogoDatos(): CatalogoDatos | null {
+  return ultimoCatalogo;
+}
+
 // Se piden TODAS las variantes, no solo minVariantPrice: la tienda vende
 // packs (1, 2, 3 unidades) a precios distintos y el minimo es la unidad
 // suelta. Si el agente cita solo el minimo, le dice un precio mas bajo del
@@ -271,6 +284,19 @@ export async function catalogoResumen(): Promise<string | null> {
     });
 
     const texto = lineas.join("\n");
+    // Se guarda tambien en crudo: es contra esto que se verifica despues
+    // que el agente no ofrezca algo que la tienda no vende ni se invente
+    // un precio. Pedirselo en el prompt no alcanza, ya se vio.
+    ultimoCatalogo = {
+      titulos: productos.map(({ node }) => node.title),
+      precios: new Set(
+        productos.flatMap(({ node }) =>
+          node.variants.edges.map((v) =>
+            Math.round(parseFloat(v.node.price.amount)),
+          ),
+        ),
+      ),
+    };
     cacheCatalogo = { texto, expira: Date.now() + TTL_CATALOGO_MS };
     return texto;
   } catch (err) {

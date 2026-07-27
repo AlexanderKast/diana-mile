@@ -4,6 +4,7 @@ import { EXPERTOS, type ExpertoId } from "./expertos";
 import { chat, tieneApiKey } from "./mistral";
 import { elegirExperto } from "./router";
 import {
+  catalogoDatos,
   catalogoResumen,
   coberturaDe,
   datosConocidos,
@@ -11,6 +12,10 @@ import {
   linkComunidad,
   pedidoReciente,
 } from "./contexto";
+import {
+  correccionDeCatalogo,
+  problemasDeCatalogo,
+} from "./guardia-catalogo";
 import {
   dentroDeVentana,
   guardarEntrante,
@@ -65,6 +70,14 @@ const PIDE_HUMANO =
  * la regla mas importante del sistema: un dato inventado sobre un precio o
  * un pedido le cuesta la confianza a la marca.
  */
+const REGLA_CATALOGO = `REGLA DE ORO — SOLO EXISTE LO QUE ESTA EN EL CATALOGO.
+
+No ofreces, no recomiendas y no le pones precio a nada que no aparezca en el catalogo de arriba. Ni "te consigo", ni "creo que tambien manejamos", ni "eso lo puedes pedir". Da igual que exista en la marca o que sea justo lo que ella necesita: si no esta en esa lista, para esta conversacion no se vende.
+
+Puedes explicar en general que hace una linea o un tipo de producto, eso es conocimiento y ayuda. Lo que no puedes es dar a entender que lo tenemos.
+
+Si lo que ella busca no esta: se lo dices de frente, le ofreces lo que si hay y que mas se le parezca, y si insiste le dices que le confirmas con el equipo si se puede conseguir. Es lo unico honesto — prometerle algo que no le va a llegar te cuesta la venta, la clienta y la recompra.`;
+
 const REGLA_NO_INVENTAR = `SI NO SABES, NO RESPONDAS.
 
 Cuando te pregunten algo que no puedas responder con lo que tienes arriba —un precio que no esta en el catalogo, el estado de un pedido que no aparece, una fecha de entrega, una condicion medica, una promocion, una politica que no conoces, cualquier dato duro que no tengas— NO improvises, NO estimes, NO respondas "creo que" ni "normalmente".
@@ -188,6 +201,11 @@ function construirSystemPrompt(
     experto.vende ? REGLA_TOMAR_PEDIDO : "",
     // Cancelar aplica al reves: es cosa de soporte y de la tienda.
     experto.escalaAHumano || experto.id === "tienda" ? REGLA_CANCELAR : "",
+    // Va justo antes de la de no inventar porque son la misma idea: no
+    // afirmar lo que no se puede sostener. Se le da a todos los expertos,
+    // no solo a los que venden: el de entrenamiento o el de contenido
+    // tambien terminan recomendando un producto cuando viene a cuento.
+    REGLA_CATALOGO,
     REGLA_NO_INVENTAR,
     instruccionesExtra,
     FORMATO_WHATSAPP,
@@ -659,6 +677,60 @@ export async function responderMensaje(
       } catch (err) {
         console.warn("[wa-agente] fallo el reintento de formato:", err);
       }
+    }
+
+    // Regla de oro: no se ofrece lo que la tienda no vende, ni un precio
+    // que no cobra. Se comprueba contra el catalogo real y no se confia en
+    // que el prompt baste, porque no basta.
+    const datosCatalogo = catalogoDatos();
+    let problemaCatalogo = problemasDeCatalogo(respuesta, datosCatalogo);
+
+    if (problemaCatalogo) {
+      console.warn(
+        `[wa-agente] ${problemaCatalogo.tipo} fuera de catalogo: ${problemaCatalogo.detalle}`,
+      );
+      try {
+        const reintento = await chat([
+          { role: "system", content: system },
+          ...previos,
+          { role: "assistant", content: respuesta },
+          {
+            role: "user",
+            content: correccionDeCatalogo(problemaCatalogo),
+          },
+        ]);
+        totalTokens += reintento.tokens;
+        const corregido = limpiarFormato(reintento.texto, opcionesFormato);
+        problemaCatalogo = problemasDeCatalogo(corregido, datosCatalogo);
+        if (!problemaCatalogo) respuesta = corregido;
+      } catch (err) {
+        console.warn("[wa-agente] fallo el reintento de catalogo:", err);
+      }
+    }
+
+    // Insistio despues de que se le corrigiera: no se manda. Una promesa
+    // de algo que no existe cuesta mas que un rato de espera, y esto lo
+    // resuelve una persona en un minuto.
+    if (problemaCatalogo) {
+      const razon = `ofrece ${problemaCatalogo.tipo} fuera de catalogo: ${problemaCatalogo.detalle}`;
+      const res = await escalarAHumano(
+        supabase,
+        { ...datosBase, motivo: "no_sabe" },
+        razon,
+      );
+      await guardarRespuesta(
+        supabase,
+        conversacion.id,
+        `${MARCA_ESCALADO_HISTORIAL} ${razon})`,
+        expertoId,
+        totalTokens,
+      );
+      return {
+        respondido: res.mensajeEnviado,
+        experto: expertoId,
+        escalar: true,
+        motivo: razon,
+      };
     }
 
     const envio = await enviarTexto(telefonoE164, respuesta);
