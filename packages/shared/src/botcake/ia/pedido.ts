@@ -97,6 +97,37 @@ function puntaje(texto: string, titulo: string): number {
 }
 
 /**
+ * Cantidad que pidio, venga en cifra o en letras.
+ *
+ * La gente escribe "una sola barra" mucho mas seguido que "1 unidad", y
+ * sin esto esa frase pasaba de largo y se le mandaba el pack.
+ */
+const NUMEROS_EN_LETRAS: Record<string, string> = {
+  un: "1",
+  uno: "1",
+  una: "1",
+  dos: "2",
+  tres: "3",
+  cuatro: "4",
+  cinco: "5",
+  seis: "6",
+};
+
+function cantidadPedida(texto: string): string | null {
+  const t = clave(texto);
+  const cifra = t.match(/\d+/)?.[0];
+  if (cifra) return cifra;
+
+  for (const palabra of t.split(/\s+/)) {
+    const n = NUMEROS_EN_LETRAS[palabra];
+    if (n) return n;
+  }
+  // "sola", "solita", "sencilla" o "individual" tambien son una unidad.
+  if (/\b(sola|solita|solo|sencill|individual|unidad)\b/.test(t)) return "1";
+  return null;
+}
+
+/**
  * Resuelve el producto y la presentacion que menciono la clienta al id de
  * variante que necesita el checkout. Devuelve null si no hay una
  * coincidencia clara: es preferible preguntar a mandarle otro producto.
@@ -127,13 +158,13 @@ export async function resolverVariante(
     .sort((a, b) => parseFloat(a.price.amount) - parseFloat(b.price.amount))[0];
 
   if (presentacion?.trim()) {
-    const numeroPedido = presentacion.match(/\d+/)?.[0];
+    const numeroPedido = cantidadPedida(presentacion);
 
     let mejorVar: { v: (typeof disponibles)[0]; p: number } | null = null;
     for (const v of disponibles) {
       let p = puntaje(presentacion, v.title);
       // "pack de 2", "2 unidades" y "x2" deben caer en la misma variante.
-      const numeroVariante = v.title.match(/\d+/)?.[0];
+      const numeroVariante = cantidadPedida(v.title);
       if (numeroPedido && numeroPedido === numeroVariante) p += 2;
       if (p > 0 && (!mejorVar || p > mejorVar.p)) mejorVar = { v, p };
     }
@@ -144,7 +175,7 @@ export async function resolverVariante(
     // precio. Es preferible decirle que no hay a mandarle lo que no pidio.
     if (numeroPedido) {
       const coincideCantidad = disponibles.some(
-        (v) => v.title.match(/\d+/)?.[0] === numeroPedido,
+        (v) => cantidadPedida(v.title) === numeroPedido,
       );
       const pidioUnidad = numeroPedido === "1";
       const hayVarianteUnica =
