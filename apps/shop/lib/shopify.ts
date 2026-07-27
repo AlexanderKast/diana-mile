@@ -1,6 +1,7 @@
 import {
   Collection,
   CollectionLandingContent,
+  MotivoNoCod,
   Product,
   ProductLandingContent,
   ProductMetafields,
@@ -45,6 +46,10 @@ const MOCK_PRODUCTS: Product[] = [
       },
     ],
     resultadosReales: [],
+    codDisponible: true,
+    motivoNoCod: null,
+    skuOficial: "MOCK-SERUM-01",
+    linea: "Cuidado Facial",
     metafields: {
       nuskinDirectUrl: null,
       nuskinDirectPrecio: null,
@@ -163,6 +168,10 @@ const MOCK_PRODUCTS: Product[] = [
       },
     ],
     resultadosReales: [],
+    codDisponible: true,
+    motivoNoCod: null,
+    skuOficial: "MOCK-CREMA-02",
+    linea: "Cuidado Facial",
     metafields: {
       nuskinDirectUrl: null,
       nuskinDirectPrecio: null,
@@ -200,33 +209,38 @@ const MOCK_PRODUCTS: Product[] = [
       },
     },
   },
+  // Producto de VITRINA: ticket alto, no se puede pedir contraentrega. Sin
+  // este mock el modo sin credenciales solo ejercitaria el camino COD y la
+  // bifurcacion de la pagina de producto quedaria sin probar en local.
   {
     id: "mock-3",
-    handle: "contorno-ojos-dorado",
-    title: "Contorno de Ojos Dorado",
+    handle: "kit-ritual-completo",
+    title: "Kit Ritual Completo",
     description:
-      "Formula concentrada para la zona mas delicada del rostro. Reduce ojeras y lineas finas con particulas de oro coloidal.",
+      "Kit de inicio con el equipo y los consumibles del ritual completo. Por su valor, la entrega se coordina de forma personalizada.",
     descriptionHtml:
-      "<p>Formula concentrada para la zona mas delicada del rostro. Reduce ojeras y lineas finas con particulas de oro coloidal.</p>",
-    price: "199000",
+      "<p>Kit de inicio con el equipo y los consumibles del ritual completo. Por su valor, la entrega se coordina de forma personalizada.</p>",
+    price: "3087000",
     currencyCode: "COP",
-    images: [
-      { url: "/images/hero-home.jpg", altText: "Contorno de Ojos Dorado" },
-    ],
+    images: [{ url: "/images/hero-home.jpg", altText: "Kit Ritual Completo" }],
     variantId: "mock-variant-3",
     variants: [
       {
         id: "mock-variant-3",
         title: "1 unidad",
-        price: "199000",
+        price: "3087000",
         compareAtPrice: null,
         colorSwatch: null,
         image: null,
       },
     ],
     resultadosReales: [],
+    codDisponible: false,
+    motivoNoCod: "ticket_alto",
+    skuOficial: "MOCK-KIT-03",
+    linea: "Kits de Inicio",
     metafields: {
-      nuskinDirectUrl: null,
+      nuskinDirectUrl: "https://www.nuskin.com/es_CO/",
       nuskinDirectPrecio: null,
       ahorroPack2: null,
       ahorroPack3: null,
@@ -297,7 +311,11 @@ const METAFIELD_IDENTIFIERS_GQL = `[
   {namespace: "diana_mile", key: "nuskin_direct_precio"},
   {namespace: "diana_mile", key: "ahorro_pack2"},
   {namespace: "diana_mile", key: "ahorro_pack3"},
-  {namespace: "diana_mile", key: "landing_content"}
+  {namespace: "diana_mile", key: "landing_content"},
+  {namespace: "diana_mile", key: "cod_disponible"},
+  {namespace: "diana_mile", key: "motivo_no_cod"},
+  {namespace: "diana_mile", key: "sku_oficial"},
+  {namespace: "diana_mile", key: "linea"}
 ]`;
 
 const COLLECTION_METAFIELD_IDENTIFIERS_GQL = `[
@@ -395,6 +413,27 @@ function mapMetafields(
   };
 }
 
+const MOTIVOS_NO_COD: MotivoNoCod[] = [
+  "ticket_alto",
+  "solo_suscripcion",
+  "accesorio",
+];
+
+/**
+ * REGLA DE SEGURIDAD: solo el string exacto "true" habilita contraentrega.
+ * Null, undefined, vacio o cualquier otra cosa deja el producto en vitrina.
+ * Nunca al reves — un producto de $3M colandose al formulario COD cuesta
+ * mucho mas que uno de $80.000 que se pide por WhatsApp.
+ */
+function parseCodDisponible(value: string | undefined): boolean {
+  return value?.trim().toLowerCase() === "true";
+}
+
+function parseMotivoNoCod(value: string | undefined): MotivoNoCod | null {
+  const normalizado = value?.trim().toLowerCase();
+  return MOTIVOS_NO_COD.find((m) => m === normalizado) ?? null;
+}
+
 /**
  * El metafield `diana_mile.landing_content` es un JSON (tipo `json` en
  * Shopify) con el contenido editorial de la landing. Si esta vacio o mal
@@ -486,6 +525,17 @@ function mapNode(node: {
     }))
     .sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
+  // La Storefront API entrega TODO como string, incluido el boolean. El
+  // estado COD se resuelve aca, en el servidor, y viaja tipado con el
+  // producto — ningun componente vuelve a inferirlo.
+  const rawMetafields = new Map(
+    node.metafields
+      .filter((m): m is { key: string; value: string } => m !== null)
+      .map((m) => [m.key, m.value]),
+  );
+
+  const codDisponible = parseCodDisponible(rawMetafields.get("cod_disponible"));
+
   return {
     id: node.id,
     handle: node.handle,
@@ -502,6 +552,14 @@ function mapNode(node: {
         (m): m is { key: string; value: string } => m !== null,
       ),
     ),
+    codDisponible,
+    // Un producto contraentrega no arrastra motivo, aunque quede uno viejo
+    // escrito en Shopify de cuando estaba en vitrina.
+    motivoNoCod: codDisponible
+      ? null
+      : parseMotivoNoCod(rawMetafields.get("motivo_no_cod")),
+    skuOficial: rawMetafields.get("sku_oficial")?.trim() || null,
+    linea: rawMetafields.get("linea")?.trim() || null,
     resultadosReales: (node.resultadosReales?.references.edges ?? []).map(
       (e) => e.node.image,
     ),
@@ -562,6 +620,82 @@ export async function getProducts(): Promise<Product[]> {
       byId.set(product.id, product);
     }
   }
+  return Array.from(byId.values());
+}
+
+const PRODUCTS_BY_VENDOR_QUERY = `
+  query ProductsByVendor($query: String!, $cursor: String) {
+    products(first: 100, after: $cursor, query: $query) {
+      pageInfo { hasNextPage endCursor }
+      edges {
+        node {
+          id
+          handle
+          title
+          description
+          descriptionHtml
+          priceRange { minVariantPrice { amount currencyCode } }
+          images(first: 3) { edges { node { url altText } } }
+          options(first: 10) { name optionValues { name swatch { color } } }
+          variants(first: 10) { edges { node { id title price { amount } compareAtPrice { amount } selectedOptions { name value } image { url altText } } } }
+          metafields(identifiers: ${METAFIELD_IDENTIFIERS_GQL}) { key value }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Catalogo completo de la tienda: las 4 categorias curadas MAS todo el
+ * catalogo Nu Skin (vendor "Nu Skin"), deduplicado por id.
+ *
+ * getProducts() no basta aca porque solo devuelve lo que esta dentro de las
+ * colecciones curadas, y los 72 productos importados de la lista de precios
+ * de Nu Skin Colombia no pertenecen a ninguna. Se sigue excluyendo el resto
+ * del catalogo Shopify (importaciones genericas ajenas al posicionamiento).
+ *
+ * Ojo: la Storefront API solo ve productos ACTIVOS y publicados en el canal
+ * de ventas. Los que entran del CSV en borrador no aparecen aqui hasta que
+ * se publiquen desde Shopify Admin — eso es intencional.
+ */
+export async function getCatalogProducts(): Promise<Product[]> {
+  if (!isShopifyConfigured) return MOCK_PRODUCTS;
+
+  const byId = new Map<string, Product>();
+
+  const curados = await getProducts();
+  for (const product of curados) byId.set(product.id, product);
+
+  try {
+    let cursor: string | null = null;
+    do {
+      const data: {
+        products: {
+          pageInfo: { hasNextPage: boolean; endCursor: string };
+          edges: { node: Parameters<typeof mapNode>[0] }[];
+        };
+      } = await storefrontFetch(PRODUCTS_BY_VENDOR_QUERY, {
+        query: "vendor:'Nu Skin'",
+        cursor,
+      });
+
+      const productos = await overrideVariantColors(
+        data.products.edges.map((e) => mapNode(e.node)),
+      );
+      for (const product of productos) {
+        if (!byId.has(product.id)) byId.set(product.id, product);
+      }
+
+      cursor = data.products.pageInfo.hasNextPage
+        ? data.products.pageInfo.endCursor
+        : null;
+    } while (cursor);
+  } catch (error) {
+    // Si esta consulta falla, el catalogo sigue mostrando las categorias
+    // curadas en vez de quedar en blanco.
+    console.warn("No se pudo traer el catalogo Nu Skin completo:", error);
+  }
+
   return Array.from(byId.values());
 }
 

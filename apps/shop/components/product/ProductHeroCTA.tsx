@@ -24,6 +24,15 @@ function BagIcon({ className }: { className?: string }) {
   );
 }
 
+function ShieldIcon({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className={className} aria-hidden="true">
+      <path d="M10 2.5 4.5 4.8v4.4c0 3.3 2.3 6.4 5.5 7.3 3.2-.9 5.5-4 5.5-7.3V4.8L10 2.5Z" strokeLinejoin="round" />
+      <path d="m7.6 9.9 1.7 1.7 3.1-3.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ReturnIcon({ className }: { className?: string }) {
   return (
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
@@ -87,6 +96,13 @@ export function ProductHeroCTA({
           Tu elección: <strong>{selectedSkinLabel}</strong>
         </p>
       )}
+
+      {/* Distintivo de contraentrega: en un catalogo donde conviven productos
+          COD y de vitrina, esto le confirma de entrada en cual esta. */}
+      <div className="flex items-center justify-center gap-1.5 self-center rounded-lg bg-lila-suave px-3 py-1.5 text-xs font-semibold text-morado md:self-start">
+        <ShieldIcon />
+        Pagas al recibir
+      </div>
 
       <button
         type="button"

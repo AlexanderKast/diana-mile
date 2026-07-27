@@ -146,6 +146,12 @@ export type ProductLandingContent = {
   authenticity?: boolean;
 };
 
+/**
+ * Por que un producto NO se puede pedir contraentrega. Solo tiene sentido
+ * cuando `codDisponible` es false.
+ */
+export type MotivoNoCod = "ticket_alto" | "solo_suscripcion" | "accesorio";
+
 export type Product = {
   id: string;
   handle: string;
@@ -159,6 +165,22 @@ export type Product = {
   variantId: string;
   variants: ProductVariant[];
   metafields: ProductMetafields;
+  /**
+   * Si este producto se puede pedir contraentrega. Lo decide el servidor
+   * desde el metafield `diana_mile.cod_disponible` — NUNCA se infiere del
+   * precio ni se calcula en el cliente.
+   *
+   * El default seguro es false: un metafield ausente, ilegible o nulo deja
+   * el producto en vitrina. Un pedido contraentrega de $3M que nadie puede
+   * sostener es un problema mucho mas caro que una venta perdida.
+   */
+  codDisponible: boolean;
+  /** Motivo por el que no es apto para contraentrega. Null cuando si lo es. */
+  motivoNoCod: MotivoNoCod | null;
+  /** Codigo oficial Nu Skin (metafield `diana_mile.sku_oficial`). */
+  skuOficial: string | null;
+  /** Linea comercial: ageLOC, Epoch, Pharmanex... (metafield `diana_mile.linea`). */
+  linea: string | null;
   /** Fotos reales de antes/despues de clientas (metafield `diana_mile.resultados_reales`,
    * list.file_reference) — administrable desde Shopify Admin, sin tocar codigo. */
   resultadosReales: { url: string; altText: string | null }[];

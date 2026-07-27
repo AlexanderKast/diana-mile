@@ -87,6 +87,11 @@ export const NAV_GRUPOS: NavGroup[] = [
         roles: ["superadmin", "admin"],
       },
       {
+        label: "Catálogo Nu Skin",
+        href: "/dashboard/catalogo",
+        roles: ["superadmin", "admin"],
+      },
+      {
         label: "Configuración",
         href: "/dashboard/configuracion",
         roles: ["superadmin", "admin"],
@@ -156,7 +161,8 @@ const API_REGLAS: {
   {
     test: (p) =>
       p.startsWith("/api/admin/productos") ||
-      p.startsWith("/api/admin/categorias"),
+      p.startsWith("/api/admin/categorias") ||
+      p.startsWith("/api/admin/catalogo"),
     roles: ["superadmin", "admin"],
   },
   {

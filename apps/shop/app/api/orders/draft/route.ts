@@ -64,6 +64,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ultima barrera: si el frontend falla (o alguien postea a mano) un
+    // producto de vitrina NUNCA puede convertirse en un pedido contraentrega.
+    if (!product.codDisponible) {
+      return NextResponse.json(
+        {
+          mensaje:
+            "Este producto se gestiona de forma personalizada y no esta disponible para contraentrega. Escribele a Diana por WhatsApp para coordinarlo.",
+        },
+        { status: 400 },
+      );
+    }
+
     const lat =
       ubicacion &&
       typeof ubicacion.lat === "number" &&

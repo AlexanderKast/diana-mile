@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getProductByHandle } from "@/lib/shopify";
 import { formatCOP } from "@diana-mile/shared/utils";
 import { CODForm } from "@/components/form/CODForm";
@@ -32,6 +32,14 @@ export default async function PedidoPage({ params, searchParams }: PedidoPagePro
 
   if (!product) {
     notFound();
+  }
+
+  // Esta pagina se puede abrir con un enlace directo (/pedido/kit-loi), sin
+  // pasar por la ficha del producto. Un producto de vitrina no puede montar
+  // el CODForm por ningun camino: se devuelve a su ficha, donde esta el
+  // bloque para hablar con Diana.
+  if (!product.codDisponible) {
+    redirect(`/productos/${slug}`);
   }
 
   const imagen = product.images[0];

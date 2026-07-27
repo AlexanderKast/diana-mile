@@ -62,6 +62,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Se repite la barrera de /api/orders/draft a proposito: confirmar es el
+    // paso que crea la orden real, y un draft pudo haberse creado antes de
+    // que el producto pasara a vitrina.
+    if (!product.codDisponible) {
+      return NextResponse.json(
+        {
+          mensaje:
+            "Este producto se gestiona de forma personalizada y no esta disponible para contraentrega. Escribele a Diana por WhatsApp para coordinarlo.",
+        },
+        { status: 400 },
+      );
+    }
+
     const { orderId, orderNumber } = await completeDraftOrder(draftOrderId);
 
     let precioTotal: number | undefined;

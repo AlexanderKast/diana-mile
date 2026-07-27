@@ -130,6 +130,7 @@ const QUERY_CATALOGO = `{
         title
         handle
         availableForSale
+        codDisponible: metafield(namespace: "diana_mile", key: "cod_disponible") { value }
         variants(first: 20) {
           edges {
             node {
@@ -197,6 +198,7 @@ export async function catalogoResumen(): Promise<string | null> {
               title: string;
               handle: string;
               availableForSale: boolean;
+              codDisponible: { value: string } | null;
               variants: {
                 edges: {
                   node: {
@@ -279,8 +281,17 @@ export async function catalogoResumen(): Promise<string | null> {
       const sinStock = agotadas.length
         ? ` [agotadas por ahora: ${agotadas.join(", ")}]`
         : "";
+      // Mismo default seguro que la tienda: solo "true" habilita
+      // contraentrega. Sin esta marca el agente ofrece un kit de seis
+      // millones "pagas al recibir" y el pedido revienta despues en
+      // /api/orders/draft, que ya lo rechaza — pero para entonces la
+      // promesa ya se hizo.
+      const cod = node.codDisponible?.value?.trim().toLowerCase() === "true";
+      const modoCompra = cod
+        ? ""
+        : " (NO CONTRAENTREGA — se coordina con Diana, no le prometas pago al recibir ni le tomes el pedido)";
       const link = sitio ? ` — ${sitio}/productos/${node.handle}` : "";
-      return `- ${node.title}: ${detalle}${sinStock}${estado}${link}`;
+      return `- ${node.title}: ${detalle}${sinStock}${estado}${modoCompra}${link}`;
     });
 
     const texto = lineas.join("\n");

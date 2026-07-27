@@ -60,11 +60,10 @@ export const PLANTILLAS = {
    * Vars: 1 numero de orden, 2 cliente, 3 telefono, 4 ciudad, 5 producto,
    * 6 valor.
    * Boton URL: abre el panel.
-   * PENDIENTE: crear en Botcake y pegar aqui el id que devuelva Meta.
    */
   pedidoNuevo: {
     nombre: "pedido_nuevo_milito",
-    id: "",
+    id: "1374842761277813",
     categoria: "UTILITY",
   },
   /**

@@ -6,6 +6,13 @@ import sanitizeHtml from "sanitize-html";
 import { getProductByHandle } from "@/lib/shopify";
 import { resolveLanding } from "@/lib/product-content";
 import { getPricingConfig } from "@/lib/pricing-server";
+import { getWhatsappNumero } from "@/lib/whatsapp-server";
+import {
+  BandaVitrina,
+  BarraVitrinaMovil,
+  BloqueVitrina,
+  hrefVitrina,
+} from "@/components/product/BloqueVitrina";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductBenefits } from "@/components/product/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
@@ -114,14 +121,21 @@ export async function generateMetadata({
 
 export default async function ProductoPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const [product, pricing] = await Promise.all([
+  const [product, pricing, numeroWhatsapp] = await Promise.all([
     getProductByHandle(slug),
     getPricingConfig(),
+    getWhatsappNumero(),
   ]);
 
   if (!product) {
     notFound();
   }
+
+  // La bifurcacion se resuelve ACA, en el servidor. El bundle de un producto
+  // de vitrina no incluye el CODForm ni el popup de descuento: no es que
+  // esten ocultos, es que no se montan por ningun camino.
+  const esCod = product.codDisponible;
+  const enlaceVitrina = esCod ? null : hrefVitrina(product, numeroWhatsapp);
 
   const landing = resolveLanding(product);
   // Contenido escrito en Shopify Admin por el equipo — se sanitiza antes de
@@ -136,7 +150,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
 
   return (
     <OrderSheetProvider product={product} pricing={pricing}>
-      {pricing.discountPopupActivo && <ExitIntentPopup />}
+      {esCod && pricing.discountPopupActivo && <ExitIntentPopup />}
       <BackToTopButton />
       {/* Para que el boton de WhatsApp nombre este producto y no mande un
           "hola" generico desde la pagina donde mas se decide la compra. */}
@@ -177,9 +191,20 @@ export default async function ProductoPage({ params }: ProductPageProps) {
               </>
             )}
 
-            <ProductHeroCTA showAuthenticity={landing.authenticity} skinType={landing.skinType} />
-
-            <OrderBottomSheet />
+            {esCod ? (
+              <>
+                <ProductHeroCTA
+                  showAuthenticity={landing.authenticity}
+                  skinType={landing.skinType}
+                />
+                <OrderBottomSheet />
+              </>
+            ) : (
+              <BloqueVitrina
+                product={product}
+                numeroWhatsapp={numeroWhatsapp}
+              />
+            )}
           </div>
         </div>
 
@@ -341,7 +366,8 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           productName={product.title}
           items={landing.testimonials}
           heading={landing.testimonialsHeading}
-          showUsageStats={landing.authenticity}
+          showUsageStats={esCod && landing.authenticity}
+          vitrinaHref={enlaceVitrina}
         />
 
         {landing.ugc && <SectionDivider />}
@@ -389,11 +415,19 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         {/* Comunidad como motivo extra para recibir el pedido */}
         <CommunitySection />
 
-        <SocialCTABand
-          tone="lila-band"
-          title="Lista para transformar tu ritual de cuidado?"
-          buttonLabel="Reservar el mío · Contraentrega"
-        />
+        {esCod ? (
+          <SocialCTABand
+            tone="lila-band"
+            title="Lista para transformar tu ritual de cuidado?"
+            buttonLabel="Reservar el mío · Contraentrega"
+          />
+        ) : (
+          <BandaVitrina
+            product={product}
+            numeroWhatsapp={numeroWhatsapp}
+            title="Lista para transformar tu ritual de cuidado?"
+          />
+        )}
 
         {/* Objeciones */}
         {landing.faqs.length > 0 && (
@@ -414,15 +448,28 @@ export default async function ProductoPage({ params }: ProductPageProps) {
         <section className="seccion-joya text-carbon py-12 px-6 text-center flex flex-col items-center gap-4">
           <h2 className="font-display text-[28px]">{landing.closingHeading}</h2>
           <p className="text-sm text-carbon-suave">
-            Envio contraentrega - Pagas al recibir
+            {esCod
+              ? "Envio contraentrega - Pagas al recibir"
+              : "Entrega coordinada de forma personalizada con Diana"}
           </p>
-          <SocialCTABand tone="gold-solid" buttonLabel="Empezar mi ritual" />
+          {esCod ? (
+            <SocialCTABand tone="gold-solid" buttonLabel="Empezar mi ritual" />
+          ) : (
+            <BandaVitrina product={product} numeroWhatsapp={numeroWhatsapp} />
+          )}
           <div className="self-stretch md:self-auto">
             <AuthenticitySeals showAuthenticity={landing.authenticity} />
           </div>
         </section>
 
-        <ProductPurchaseFlow />
+        {esCod ? (
+          <ProductPurchaseFlow />
+        ) : (
+          <BarraVitrinaMovil
+            product={product}
+            numeroWhatsapp={numeroWhatsapp}
+          />
+        )}
       </main>
     </OrderSheetProvider>
   );

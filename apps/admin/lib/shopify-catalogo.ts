@@ -65,9 +65,10 @@ function parseMetafield<T>(
  */
 async function ensureDefinition(
   ownerType: "PRODUCT" | "COLLECTION",
-  key: "landing_content" | "collection_content",
+  key: string,
   name: string,
   description: string,
+  type: "json" | "boolean" | "single_line_text_field" = "json",
 ) {
   const data = await adminGraphQL<{
     metafieldDefinitionCreate: {
@@ -86,7 +87,7 @@ async function ensureDefinition(
         namespace: "diana_mile",
         key,
         description,
-        type: "json",
+        type,
         ownerType,
         access: { storefront: "PUBLIC_READ" },
       },
@@ -262,6 +263,180 @@ export async function guardarLandingProducto(
   const errs = data.metafieldsSet.userErrors;
   if (errs.length) {
     throw new Error("Error al escribir el metafield: " + JSON.stringify(errs));
+  }
+}
+
+// --- Catalogo Nu Skin: estado contraentrega ----------------------------
+
+export type ProductoCatalogoNuskin = {
+  id: string;
+  handle: string;
+  title: string;
+  status: string;
+  /** Metafield `diana_mile.sku_oficial` — el codigo de la lista de Nu Skin. */
+  skuOficial: string | null;
+  /** Metafield `diana_mile.linea`; cae al productType si el metafield falta. */
+  linea: string | null;
+  /** Precio de la primera variante, en COP y como numero. Null si no tiene. */
+  precio: number | null;
+  codDisponible: boolean;
+  motivoNoCod: string | null;
+};
+
+const CATALOGO_NUSKIN_QUERY = `
+  query CatalogoNuskin($cursor: String) {
+    products(first: 100, after: $cursor, query: "vendor:'Nu Skin'", sortKey: TITLE) {
+      pageInfo { hasNextPage endCursor }
+      edges {
+        node {
+          id
+          handle
+          title
+          status
+          productType
+          variants(first: 1) { edges { node { price } } }
+          codDisponible: metafield(namespace: "diana_mile", key: "cod_disponible") { value }
+          motivoNoCod: metafield(namespace: "diana_mile", key: "motivo_no_cod") { value }
+          skuOficial: metafield(namespace: "diana_mile", key: "sku_oficial") { value }
+          linea: metafield(namespace: "diana_mile", key: "linea") { value }
+        }
+      }
+    }
+  }
+`;
+
+type RawCatalogoNode = {
+  id: string;
+  handle: string;
+  title: string;
+  status: string;
+  productType: string | null;
+  variants: { edges: { node: { price: string } }[] };
+  codDisponible: RawMetafield;
+  motivoNoCod: RawMetafield;
+  skuOficial: RawMetafield;
+  linea: RawMetafield;
+};
+
+/**
+ * Todo el catalogo Nu Skin con su estado de contraentrega. A diferencia de
+ * la tienda, aca se listan tambien los borradores: Diana necesita ver y
+ * ajustar lo que todavia no ha publicado.
+ *
+ * Mismo default seguro que la tienda: cualquier cosa distinta del string
+ * "true" cuenta como NO apto para contraentrega.
+ */
+export async function listarProductosNuskin(): Promise<
+  ProductoCatalogoNuskin[]
+> {
+  requireConfigurado();
+
+  const productos: ProductoCatalogoNuskin[] = [];
+  let cursor: string | null = null;
+
+  do {
+    const data: {
+      products: {
+        pageInfo: { hasNextPage: boolean; endCursor: string };
+        edges: { node: RawCatalogoNode }[];
+      };
+    } = await adminGraphQL(CATALOGO_NUSKIN_QUERY, { cursor });
+
+    for (const edge of data.products.edges) {
+      const node = edge.node;
+      const precioRaw = node.variants.edges[0]?.node.price;
+      const codDisponible =
+        node.codDisponible?.value?.trim().toLowerCase() === "true";
+
+      productos.push({
+        id: node.id,
+        handle: node.handle,
+        title: node.title,
+        status: node.status,
+        skuOficial: node.skuOficial?.value?.trim() || null,
+        linea: node.linea?.value?.trim() || node.productType || null,
+        precio: precioRaw ? parseFloat(precioRaw) : null,
+        codDisponible,
+        motivoNoCod: codDisponible
+          ? null
+          : node.motivoNoCod?.value?.trim() || null,
+      });
+    }
+
+    cursor = data.products.pageInfo.hasNextPage
+      ? data.products.pageInfo.endCursor
+      : null;
+  } while (cursor);
+
+  return productos;
+}
+
+/**
+ * Cambia el estado de contraentrega de un producto. Se llama SOLO desde una
+ * route handler del servidor: el token de Shopify nunca sale al cliente.
+ *
+ * Cuando el producto pasa a contraentrega se borra el motivo, que ya no
+ * aplica y en la tienda quedaria colgando de la version anterior.
+ */
+export async function guardarCodDisponible(
+  ownerId: string,
+  codDisponible: boolean,
+): Promise<void> {
+  requireConfigurado();
+
+  await ensureDefinition(
+    "PRODUCT",
+    "cod_disponible",
+    "COD disponible",
+    "Gobierna el bloque de compra de la pagina de producto (true = contraentrega).",
+    "boolean",
+  );
+
+  const data = await adminGraphQL<{
+    metafieldsSet: { userErrors: { field: string; message: string }[] };
+  }>(
+    `mutation Set($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields { id }
+        userErrors { field message }
+      }
+    }`,
+    {
+      metafields: [
+        {
+          ownerId,
+          namespace: "diana_mile",
+          key: "cod_disponible",
+          type: "boolean",
+          value: String(codDisponible),
+        },
+      ],
+    },
+  );
+
+  const errs = data.metafieldsSet.userErrors;
+  if (errs.length) {
+    throw new Error("Error al escribir el metafield: " + JSON.stringify(errs));
+  }
+
+  if (codDisponible) {
+    await adminGraphQL(
+      `mutation Borrar($metafields: [MetafieldIdentifierInput!]!) {
+        metafieldsDelete(metafields: $metafields) {
+          deletedMetafields { key }
+          userErrors { field message }
+        }
+      }`,
+      {
+        metafields: [
+          {
+            ownerId,
+            namespace: "diana_mile",
+            key: "motivo_no_cod",
+          },
+        ],
+      },
+    );
   }
 }
 

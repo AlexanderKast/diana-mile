@@ -1,33 +1,39 @@
 import { Metadata } from "next";
-import { getProducts } from "@/lib/shopify";
-import { ProductCard } from "@/components/product/ProductCard";
+import { Suspense } from "react";
+import { getCatalogProducts } from "@/lib/shopify";
+import { CatalogoFiltrado } from "@/components/product/CatalogoFiltrado";
 
 export const metadata: Metadata = {
   title: "Productos — Milito Life Shop",
-  description: "Descubre la coleccion de bienestar y anti-edad de Milito Life Shop, disponible contraentrega en toda Colombia.",
+  description:
+    "Descubre la coleccion de bienestar y anti-edad de Milito Life Shop, disponible contraentrega en toda Colombia.",
 };
 
 export default async function ProductosPage() {
-  const products = await getProducts();
+  const products = await getCatalogProducts();
 
   return (
-    <main className="flex flex-col gap-8 pb-16">
-      <h1 className="text-center font-display text-3xl text-carbon pt-10">Productos</h1>
+    <main className="flex flex-col gap-6 pb-16">
+      <div className="flex flex-col items-center gap-2 px-6 pt-10 text-center">
+        <h1 className="font-display text-3xl text-carbon">Productos</h1>
+        <p className="max-w-md text-sm text-carbon-suave">
+          Los marcados <strong className="font-semibold text-morado">Contraentrega</strong> los
+          pides aquí y pagas al recibir. Los de{" "}
+          <strong className="font-semibold text-dorado-oscuro">Bajo pedido</strong> se
+          coordinan con Diana por WhatsApp.
+        </p>
+      </div>
 
       {products.length === 0 ? (
-        <p className="text-center text-sm text-ceniza px-6">Pronto nuevos productos.</p>
+        <p className="px-6 text-center text-sm text-ceniza">
+          Pronto nuevos productos.
+        </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-          {products.map((product, index) => (
-            <div
-              key={product.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 80}ms` }}
-            >
-              <ProductCard product={product} />
-            </div>
-          ))}
-        </div>
+        // useSearchParams necesita un limite de Suspense: sin esto Next
+        // fuerza toda la pagina a render dinamico.
+        <Suspense fallback={null}>
+          <CatalogoFiltrado productos={products} />
+        </Suspense>
       )}
     </main>
   );

@@ -28,7 +28,7 @@ export function ProductCard({ product }: { product: Product }) {
             alt={image.altText ?? product.title}
             fill
             className="object-cover transition-transform duration-[400ms] group-hover:scale-[1.02]"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : null}
 
@@ -37,6 +37,19 @@ export function ProductCard({ product }: { product: Product }) {
             {badgeLabel}
           </span>
         ) : null}
+
+        {/* Como se compra este producto, visible antes de entrar. Discreto a
+            proposito: informa, no compite con la foto. */}
+        <span
+          className={cx(
+            "absolute top-2 right-2 rounded-lg px-2 py-1 text-[10px] font-semibold",
+            product.codDisponible
+              ? "bg-lila-suave text-morado"
+              : "bg-crema text-dorado-oscuro"
+          )}
+        >
+          {product.codDisponible ? "Contraentrega" : "Bajo pedido"}
+        </span>
       </div>
 
       <h3 className="font-display text-lg text-carbon">{product.title}</h3>
