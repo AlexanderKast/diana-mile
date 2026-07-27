@@ -73,6 +73,9 @@ Ese texto NUNCA lo ve la clienta: el sistema lo intercepta, le avisa a Diana y l
 
 const CASOS = [
   "Hola, buenas tardes",
+  // Pregunto por las redes y el agente no supo decirle: el dato no estaba
+  // en ninguna parte. Debe responder @militolife y @militoshop sin escalar.
+  "Como los encuentro en Instagram?",
   // Precio de un producto que SI esta en el catalogo: debe citar las
   // presentaciones reales, no una cifra suelta.
   "Cuanto vale la barra exfoliante Epoch?",

@@ -13,6 +13,7 @@ import {
   pedidoReciente,
 } from "./contexto";
 import { confirmoHacePoco, esRepeticion } from "./guardas";
+import { cierreConRedes, REDES_MILITO, yaSeDieronLasRedes } from "./redes";
 import {
   correccionDeCatalogo,
   problemasDeCatalogo,
@@ -284,6 +285,7 @@ function construirSystemPrompt(
     // no solo a los que venden: el de entrenamiento o el de contenido
     // tambien terminan recomendando un producto cuando viene a cuento.
     adicional ? reglaAdicional(adicional.producto, adicional.precio) : "",
+    REDES_MILITO,
     REGLA_CATALOGO,
     REGLA_NO_INVENTAR,
     instruccionesExtra,
@@ -973,6 +975,23 @@ export async function responderMensaje(
       expertoId,
       totalTokens,
     );
+
+    // La conversacion se esta cerrando: se despide con las cuentas.
+    //
+    // Da igual si compro o no — quien hoy no compro puede comprar en un mes
+    // si mientras tanto te sigue viendo, y es lo unico barato que deja una
+    // conversacion que no cerro en venta. Va en un segundo mensaje para no
+    // deslucir la respuesta, y una sola vez por conversacion: repetirlo en
+    // cada despedida deja de leerse como invitacion.
+    if (opcionesFormato.despedida && !yaSeDieronLasRedes(previos)) {
+      const cierre = cierreConRedes(
+        (conversacion.nombre ?? nombre)?.split(/\s+/)[0],
+      );
+      const envioCierre = await enviarTexto(telefonoE164, cierre);
+      if (envioCierre.success) {
+        await guardarRespuesta(supabase, conversacion.id, cierre, expertoId, 0);
+      }
+    }
 
     // Se responde y la IA sigue encendida. Antes toda conversacion de
     // soporte apagaba el agente, aunque hubiera contestado bien: preguntar
