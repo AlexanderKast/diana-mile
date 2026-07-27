@@ -5,6 +5,7 @@ import { chat, tieneApiKey } from "./mistral";
 import { elegirExperto } from "./router";
 import {
   catalogoResumen,
+  coberturaDe,
   datosConocidos,
   formatearContexto,
   linkComunidad,
@@ -369,6 +370,13 @@ export async function responderMensaje(
 
     const experto = EXPERTOS[expertoId];
 
+    // La ciudad sale de su ultima compra o del pedido en curso; sin eso no
+    // hay a que ciudad mirarle la cobertura.
+    const ciudadConocida = conocidos?.ciudad ?? null;
+    const cobertura = ciudadConocida
+      ? await coberturaDe(supabase, ciudadConocida)
+      : null;
+
     const contexto = formatearContexto({
       nombre: conversacion.nombre ?? nombre ?? null,
       pedido,
@@ -377,6 +385,7 @@ export async function responderMensaje(
       catalogo: experto.necesitaCatalogo ? catalogo : null,
       comunidad,
       conocidos,
+      cobertura,
     });
 
     const system = construirSystemPrompt(

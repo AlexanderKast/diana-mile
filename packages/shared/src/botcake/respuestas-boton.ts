@@ -33,7 +33,43 @@ export type DatosPedidoBoton = {
   nombre: string | null;
   producto: string;
   precioTotal: number;
+  /** Para decirle el tiempo real de SU ciudad, no uno generico. */
+  ciudad?: string | null;
 };
+
+/**
+ * Tiempo de entrega de esa ciudad. Sale de la matriz de las
+ * transportadoras: no es lo mismo el Valle de Aburra, que se despacha
+ * desde Medellin en un dia, que un pueblo apartado que toma una semana.
+ */
+async function tiempoDeEntrega(
+  supabase: SupabaseClient,
+  ciudad: string | null | undefined,
+): Promise<string> {
+  if (ciudad?.trim()) {
+    const clave = ciudad
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const { data } = await supabase
+      .from("cobertura_entrega")
+      .select("dias_min, dias_max")
+      .eq("ciudad_clave", clave)
+      .maybeSingle();
+
+    if (data) {
+      return data.dias_min === data.dias_max
+        ? `en ${data.dias_max} dias habiles`
+        : `en ${data.dias_min} a ${data.dias_max} dias habiles`;
+    }
+  }
+
+  const config = await leerConfig(supabase, ["tiempo_entrega_texto"]);
+  return config.get("tiempo_entrega_texto") ?? TIEMPO_ENTREGA_POR_DEFECTO;
+}
 
 /**
  * Confirmacion: es el momento de mas confianza de toda la venta y hay que
@@ -45,11 +81,7 @@ export async function responderConfirmacion(
   supabase: SupabaseClient,
   datos: DatosPedidoBoton,
 ): Promise<void> {
-  const config = await leerConfig(supabase, [
-    "tiempo_entrega_texto",
-    "comunidad_whatsapp_link",
-  ]);
-  const tiempo = config.get("tiempo_entrega_texto") ?? TIEMPO_ENTREGA_POR_DEFECTO;
+  const tiempo = await tiempoDeEntrega(supabase, datos.ciudad);
   const primerNombre = (datos.nombre ?? "").split(/\s+/)[0];
 
   await enviarTexto(

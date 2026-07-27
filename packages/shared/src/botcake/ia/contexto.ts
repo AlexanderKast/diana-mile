@@ -272,12 +272,58 @@ export async function linkComunidad(
   return (data?.valor as string) || null;
 }
 
+export type Cobertura = {
+  ciudad: string;
+  departamento: string | null;
+  recaudo: boolean;
+  diasMin: number;
+  diasMax: number;
+};
+
+/**
+ * Cobertura y tiempo de entrega de una ciudad.
+ *
+ * Importa por dos cosas: el tiempo real (el despacho sale de Medellin, asi
+ * que el Valle de Aburra recibe mucho antes que el resto del pais) y sobre
+ * todo si ahi se puede cobrar contraentrega — solo el 42% de las ciudades
+ * lo admite, y prometerlo donde no hay recaudo deja un pedido incobrable.
+ */
+export async function coberturaDe(
+  supabase: SupabaseClient,
+  ciudad: string,
+): Promise<Cobertura | null> {
+  if (!ciudad?.trim()) return null;
+
+  const clave = ciudad
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const { data } = await supabase
+    .from("cobertura_entrega")
+    .select("ciudad, departamento, recaudo, dias_min, dias_max")
+    .eq("ciudad_clave", clave)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    ciudad: data.ciudad,
+    departamento: data.departamento,
+    recaudo: data.recaudo,
+    diasMin: data.dias_min,
+    diasMax: data.dias_max,
+  };
+}
+
 export type ContextoConversacion = {
   nombre: string | null;
   pedido: PedidoContexto | null;
   catalogo: string | null;
   comunidad: string | null;
   conocidos?: DatosConocidos | null;
+  cobertura?: Cobertura | null;
 };
 
 /** Arma el bloque de contexto que se mete en el system prompt. */
@@ -289,6 +335,15 @@ export function formatearContexto(ctx: ContextoConversacion): string {
       ? `La persona se llama ${ctx.nombre}.`
       : "Todavia no sabes su nombre. Puedes preguntarselo con naturalidad.",
   );
+
+  if (ctx.cobertura) {
+    const c = ctx.cobertura;
+    partes.push(
+      c.recaudo
+        ? `ENTREGA EN ${c.ciudad.toUpperCase()}: llega en ${c.diasMin} a ${c.diasMax} dias habiles y SI se puede pagar contra entrega. Ese es el tiempo que le dices, no inventes otro.`
+        : `⚠️ ENTREGA EN ${c.ciudad.toUpperCase()}: ahi NO hay pago contra entrega. NO se lo prometas. Puedes tomarle el pedido, pero le explicas que a su ciudad el pago va por adelantado y le confirmas como hacerlo. El tiempo es de ${c.diasMin} a ${c.diasMax} dias habiles.`,
+    );
+  }
 
   if (ctx.conocidos) {
     const c = ctx.conocidos;

@@ -227,7 +227,7 @@ async function pedidoDe(
 ) {
   const { data } = await supabase
     .from("pedidos")
-    .select("id, estado, shopify_order_id, nombre, producto_nombre, precio_total")
+    .select("id, estado, shopify_order_id, nombre, producto_nombre, precio_total, ciudad")
     .eq("telefono", telefono)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -403,6 +403,7 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
       nombre: pedido.nombre,
       producto: pedido.producto_nombre ?? "pedido",
       precioTotal: Number(pedido.precio_total ?? 0),
+      ciudad: pedido.ciudad,
     });
   }
 
