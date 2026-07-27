@@ -57,17 +57,31 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  /**
+   * Vale la sesion solo si trae telefono, igual que getClienteUser().
+   *
+   * Las paginas de /cuenta piden sesion CON telefono —es por ahi por donde
+   * encuentran los pedidos— y este proxy pedia solo sesion. Con una sesion
+   * sin telefono los dos se contradecian sin fin: el proxy dejaba entrar a
+   * /cuenta, la pagina rebotaba al login, el proxy veia sesion y devolvia a
+   * /cuenta. Eso es el ERR_TOO_MANY_REDIRECTS.
+   *
+   * Supabase devuelve "" y no null cuando no hay telefono, asi que no vale
+   * comprobar solo si existe la propiedad.
+   */
+  const sesionValida = Boolean(user?.phone?.trim());
+
   const { pathname } = request.nextUrl;
   const isLoginRoute = pathname === "/cuenta/login";
 
-  if (!user && !isLoginRoute) {
+  if (!sesionValida && !isLoginRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/cuenta/login";
     url.searchParams.set("next", pathname);
     return redirigirConservandoSesion(url, response);
   }
 
-  if (user && isLoginRoute) {
+  if (sesionValida && isLoginRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/cuenta";
     url.search = "";
