@@ -18,6 +18,8 @@ function verificarHmac(body: string, hmacHeader: string | null): boolean {
 
 type ShopifyAddress = {
   address1?: string;
+  first_name?: string | null;
+  last_name?: string | null;
   address2?: string;
   city?: string;
   province?: string;
@@ -37,6 +39,7 @@ type ShopifyOrder = {
   phone?: string;
   customer?: { first_name?: string; last_name?: string; phone?: string };
   shipping_address?: ShopifyAddress;
+  billing_address?: ShopifyAddress;
   line_items?: { title: string; quantity: number; variant_id?: number | null; sku?: string | null }[];
 };
 
@@ -54,7 +57,24 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
 
   const noteAttrs = new Map((order.note_attributes ?? []).map((a) => [a.name, a.value]));
   const address = order.shipping_address;
-  const nombre = address?.name ?? [order.customer?.first_name, order.customer?.last_name].filter(Boolean).join(" ");
+
+  /**
+   * Shopify manda los campos que no tienen valor como cadena vacia, no como
+   * null, y "" no dispara el ?? — asi que el primer hueco cortaba la
+   * cadena de alternativas y el pedido entraba como "Sin nombre" aunque el
+   * dato estuviera un campo mas abajo.
+   */
+  const primero = (...valores: (string | null | undefined)[]) =>
+    valores.map((v) => v?.trim()).find((v) => v) ?? "";
+
+  const nombre = primero(
+    address?.name,
+    [address?.first_name, address?.last_name].filter(Boolean).join(" "),
+    [order.customer?.first_name, order.customer?.last_name]
+      .filter(Boolean)
+      .join(" "),
+    order.billing_address?.name,
+  );
   const lineItem = order.line_items?.[0];
 
   await supabase.from("pedidos").insert({
