@@ -182,6 +182,43 @@ function anotar(ciudadCruda, { recaudo, dias, departamento, transportadora }) {
   console.log(`DOMINA: ${n} destinos desde Medellín`);
 }
 
+// ── COORDINADORA: solo dice a donde llega, ni dias ni recaudo ────────────
+// La hoja trae unicamente origen, destino y tipo de trayecto. No sirve para
+// prometer contraentrega, pero si aporta ~190 pueblos que ninguna otra
+// transportadora alcanza: saber que llegamos —aunque sea pagando por
+// adelantado— es mejor que no tener ni idea de esa ciudad.
+{
+  const filas = hoja("COORDINADORA");
+  const c = filas[0] ?? [];
+  const iOrigen = c.indexOf("CIUDAD ORIGEN");
+  const iDestino = c.indexOf("CIUDAD DESTINO");
+
+  let n = 0;
+  for (const f of filas.slice(1)) {
+    if (!esMedellin(f[iOrigen])) continue;
+    anotar(f[iDestino], { recaudo: false });
+    n++;
+  }
+  console.log(`COORDINADORA: ${n} destinos desde Medellín (sin dato de recaudo)`);
+}
+
+// ── SERVIENTREGA SIN RECAUDO: llega, pero no cobra al entregar ───────────
+{
+  const filas = hoja("SERVIENTREGA SIN RECAUDO");
+  const c = filas[0] ?? [];
+  const iOrigen = c.indexOf("CIUDAD ORIGEN");
+  const iDestino = c.indexOf("CIUDAD DESTINO");
+  const iDepto = c.indexOf("DEPARTAMENTO DESTINO");
+
+  let n = 0;
+  for (const f of filas.slice(1)) {
+    if (!esMedellin(f[iOrigen])) continue;
+    anotar(f[iDestino], { recaudo: false, departamento: f[iDepto] });
+    n++;
+  }
+  console.log(`SERVIENTREGA SIN RECAUDO: ${n} destinos desde Medellín`);
+}
+
 // ── TCC: reparto con recaudo por ciudad de destino ───────────────────────
 {
   const filas = hoja("TCC");
