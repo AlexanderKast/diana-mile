@@ -9,6 +9,10 @@ const CLAVES_COSTOS_VENTA = {
   fin_costo_fulfillment_default: "costoFulfillment",
   fin_costo_logistico_default: "costoLogistico",
   fin_pct_recaudo: "pctRecaudo",
+  fin_pasarela_pct: "pasarelaPct",
+  fin_pasarela_fijo: "pasarelaFijo",
+  fin_iva_comision: "ivaComision",
+  fin_flete_devolucion: "fleteDevolucion",
 } as const;
 
 /**

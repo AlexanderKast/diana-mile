@@ -36,15 +36,16 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
 
   const supabase = createAdminSupabaseClient();
 
-  const [pedidosRes, gastosRes] = await Promise.all([
+  const [pedidosRes, gastosRes, ivaRes] = await Promise.all([
     supabase
       .from("pedidos")
       .select(
-        "estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio, costo_plataforma, costo_fulfillment, costo_recaudo"
+        "estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio, costo_plataforma, costo_fulfillment, costo_recaudo, costo_devolucion, metodo_pago, fecha_consignacion"
       )
       .gte("created_at", desde)
       .lt("created_at", hasta),
     supabase.from("gastos").select("tipo, monto_cop").eq("periodo", periodoFinal),
+    supabase.from("config").select("valor").eq("clave", "fin_iva_tarifa").maybeSingle(),
   ]);
 
   const pedidos = pedidosRes.data ?? [];
@@ -83,17 +84,43 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
       costoPlataforma: p.costo_plataforma,
       costoFulfillment: p.costo_fulfillment,
       costoRecaudo: p.costo_recaudo,
+      costoDevolucion: p.costo_devolucion,
     })
   );
 
-  const sumar = (campo: "mercancia" | "envio" | "plataforma" | "fulfillment" | "recaudo") =>
-    desgloses.reduce((acc, d) => acc + d[campo], 0);
+  const sumar = (
+    campo: "mercancia" | "envio" | "plataforma" | "fulfillment" | "recaudo" | "devolucion",
+  ) => desgloses.reduce((acc, d) => acc + d[campo], 0);
 
   const costo_productos = sumar("mercancia");
   const costo_envios = sumar("envio");
   const costo_plataforma = sumar("plataforma");
   const costo_fulfillment = sumar("fulfillment");
   const costo_recaudo = sumar("recaudo");
+  const costo_devoluciones = sumar("devolucion");
+
+  const pedidos_anticipados = pedidos.filter(
+    (p) => p.metodo_pago === "anticipado",
+  ).length;
+
+  // Recaudo que la transportadora ya cobro pero no ha consignado. Es
+  // plata del negocio en manos de un tercero: mientras no se marque la
+  // consignacion, aqui se ve cuanta es. Una guia recaudada que nunca se
+  // consigna es la fuga clasica de contraentrega.
+  const efectivo_sin_consignar = pedidos
+    .filter((p) => p.estado === "entregado" && !p.fecha_consignacion)
+    .reduce((acc, p) => acc + (p.valor_recaudado ?? 0), 0);
+
+  // IVA implicito en lo recaudado. Los precios lo traen adentro: al
+  // legalizarse, esta fraccion no es utilidad sino impuesto por
+  // responder. Medirlo desde ya evita que ese dia el negocio "pierda"
+  // 16 puntos de golpe.
+  const tarifaIvaRaw = Number(ivaRes.data?.valor);
+  const tarifaIva =
+    Number.isFinite(tarifaIvaRaw) && tarifaIvaRaw >= 0 && tarifaIvaRaw < 1
+      ? tarifaIvaRaw
+      : 0.19;
+  const iva_implicito = ingresos_recaudados * (tarifaIva / (1 + tarifaIva));
 
   // Cuantos pedidos tienen algun costo sin registrar. Mientras haya
   // aunque sea uno, la utilidad de abajo es un TECHO: el costo real es
@@ -114,7 +141,8 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
     costo_envios -
     costo_plataforma -
     costo_fulfillment -
-    costo_recaudo;
+    costo_recaudo -
+    costo_devoluciones;
   const utilidad_neta = utilidad_bruta - gasto_publicidad - otros_gastos;
   const margen_neto = porcentaje(utilidad_neta, ingresos_recaudados);
 
@@ -140,7 +168,11 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
     costo_plataforma,
     costo_fulfillment,
     costo_recaudo,
+    costo_devoluciones,
     pedidos_sin_costear,
+    pedidos_anticipados,
+    efectivo_sin_consignar,
+    iva_implicito,
     gasto_publicidad,
     otros_gastos,
     utilidad_bruta,

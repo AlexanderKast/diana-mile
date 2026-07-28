@@ -50,6 +50,8 @@ export type PedidoCosteado = {
   costo_plataforma: number | null;
   costo_fulfillment: number | null;
   costo_recaudo: number | null;
+  costo_devolucion: number | null;
+  metodo_pago: string | null;
 };
 
 export type SupuestosSugeridos = {
@@ -61,6 +63,8 @@ export type SupuestosSugeridos = {
   costoMercancia: Supuesto;
   /** Envio, plataforma, fulfillment y % de recaudo, como estan configurados. */
   parametrosCosto: ParametrosCostosVenta;
+  /** Fraccion de ventas cobradas por pasarela (anticipado). */
+  pctAnticipado: Supuesto;
   costosFijosMes: Supuesto;
   inversionPublicidadSugerida: number;
 };
@@ -82,7 +86,7 @@ export async function leerSupuestos(): Promise<SupuestosSugeridos> {
     supabase
       .from("pedidos")
       .select(
-        "estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio, costo_plataforma, costo_fulfillment, costo_recaudo",
+        "estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio, costo_plataforma, costo_fulfillment, costo_recaudo, costo_devolucion, metodo_pago",
       )
       .gte("created_at", desde),
     supabase
@@ -106,6 +110,7 @@ export async function leerSupuestos(): Promise<SupuestosSugeridos> {
     margenBruto: await medirMargen(pedidos, parametrosCosto),
     costoMercancia: medirCostoMercancia(pedidos, parametrosCosto),
     parametrosCosto,
+    pctAnticipado: medirPctAnticipado(pedidos),
     costosFijosMes: await sumarFijos(fijosRes.data ?? []),
     inversionPublicidadSugerida: sugerirInversion(gastosRes.data ?? []),
   };
@@ -257,7 +262,35 @@ function desglose(p: PedidoCosteado) {
     costoPlataforma: p.costo_plataforma,
     costoFulfillment: p.costo_fulfillment,
     costoRecaudo: p.costo_recaudo,
+    costoDevolucion: p.costo_devolucion,
   });
+}
+
+/**
+ * Que fraccion de las ventas paga por pasarela.
+ *
+ * Cambia el costo de cobrar: la pasarela cobra % + fijo + IVA al vender,
+ * el recaudo cobra % al entregar. La proyeccion usa la mezcla real.
+ */
+function medirPctAnticipado(pedidos: PedidoCosteado[]): Supuesto {
+  const validos = pedidos.filter((p) => p.estado !== "cancelado" && p.estado !== "fraude");
+  const anticipados = validos.filter((p) => p.metodo_pago === "anticipado").length;
+
+  if (validos.length < MINIMO_PARA_MEDIR) {
+    return {
+      valor: 0,
+      origen: "estimado",
+      muestra: validos.length,
+      nota: `Solo ${validos.length} pedidos en la historia. Se asume todo contraentrega.`,
+    };
+  }
+
+  return {
+    valor: anticipados / validos.length,
+    origen: "medido",
+    muestra: validos.length,
+    nota: `${anticipados} de ${validos.length} pedidos pagaron por pasarela.`,
+  };
 }
 
 /**
@@ -366,5 +399,7 @@ export function aSupuestos(
     tasaDespacho: sugeridos.tasaDespacho.valor,
     tasaEntrega: sugeridos.tasaEntrega.valor,
     costosFijosMes: sugeridos.costosFijosMes.valor,
+    fleteIda: sugeridos.parametrosCosto.costoLogistico,
+    fleteDevolucion: sugeridos.parametrosCosto.fleteDevolucion,
   };
 }

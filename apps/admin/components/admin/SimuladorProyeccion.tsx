@@ -14,7 +14,7 @@ import {
 } from "@diana-mile/shared/finanzas/proyeccion";
 import {
   margenDesdeCostos,
-  comisionRecaudo,
+  costoDeCobro,
 } from "@diana-mile/shared/finanzas/costos-venta";
 import type { SupuestosSugeridos, Supuesto } from "@/lib/proyeccion-datos";
 import type { EscenarioGuardado } from "@/app/dashboard/financiero/proyeccion/page";
@@ -124,6 +124,18 @@ export function SimuladorProyeccion({
   const [pctRecaudo, setPctRecaudo] = useState(
     sugeridos.parametrosCosto.pctRecaudo * 100,
   );
+  const [fleteDev, setFleteDev] = useState(
+    sugeridos.parametrosCosto.fleteDevolucion,
+  );
+  const [pasarelaPct, setPasarelaPct] = useState(
+    sugeridos.parametrosCosto.pasarelaPct * 100,
+  );
+  const [pasarelaFijo, setPasarelaFijo] = useState(
+    sugeridos.parametrosCosto.pasarelaFijo,
+  );
+  const [pctAnticipado, setPctAnticipado] = useState(
+    Math.round(sugeridos.pctAnticipado.valor * 100),
+  );
 
   const [nombre, setNombre] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -137,13 +149,17 @@ export function SimuladorProyeccion({
       costoFulfillment: fulfillment,
       costoLogistico: envio,
       pctRecaudo: pctRecaudo / 100,
+      pasarelaPct: pasarelaPct / 100,
+      pasarelaFijo,
+      ivaComision: sugeridos.parametrosCosto.ivaComision,
+      fleteDevolucion: fleteDev,
     }),
-    [plataforma, fulfillment, envio, pctRecaudo],
+    [plataforma, fulfillment, envio, pctRecaudo, pasarelaPct, pasarelaFijo, fleteDev, sugeridos.parametrosCosto.ivaComision],
   );
 
   const margen = useMemo(
-    () => margenDesdeCostos(ticket, mercancia, parametrosCosto),
-    [ticket, mercancia, parametrosCosto],
+    () => margenDesdeCostos(ticket, mercancia, parametrosCosto, pctAnticipado / 100),
+    [ticket, mercancia, parametrosCosto, pctAnticipado],
   );
 
   const supuestos: SupuestosProyeccion = useMemo(
@@ -155,8 +171,10 @@ export function SimuladorProyeccion({
       tasaDespacho: despacho / 100,
       tasaEntrega: entrega / 100,
       costosFijosMes: fijos,
+      fleteIda: envio,
+      fleteDevolucion: fleteDev,
     }),
-    [inversion, part, ticket, margen, despacho, entrega, fijos],
+    [inversion, part, ticket, margen, despacho, entrega, fijos, envio, fleteDev],
   );
 
   const resultado = useMemo(() => proyectar(supuestos), [supuestos]);
@@ -177,12 +195,17 @@ export function SimuladorProyeccion({
   }, [
     inversion, part, ticket, despacho, entrega, fijos,
     mercancia, envio, plataforma, fulfillment, pctRecaudo,
+    fleteDev, pasarelaPct, pasarelaFijo, pctAnticipado,
   ]);
 
   const enVerde = resultado.utilidadNeta > 0;
-  const costoRecaudoPorPedido = comisionRecaudo(ticket, pctRecaudo / 100);
+  const costoCobroPorPedido = costoDeCobro(
+    ticket,
+    parametrosCosto,
+    pctAnticipado / 100,
+  );
   const costoTotalPorPedido =
-    mercancia + envio + plataforma + fulfillment + costoRecaudoPorPedido;
+    mercancia + envio + plataforma + fulfillment + costoCobroPorPedido;
 
   function cargar(escenario: EscenarioGuardado) {
     setInversion(escenario.inversion_publicidad);
@@ -196,6 +219,10 @@ export function SimuladorProyeccion({
     setPlataforma(escenario.costo_plataforma);
     setFulfillment(escenario.costo_fulfillment);
     setPctRecaudo(escenario.pct_recaudo * 100);
+    setPctAnticipado(Math.round(escenario.pct_anticipado * 100));
+    setFleteDev(escenario.costo_flete_devolucion);
+    setPasarelaPct(escenario.pasarela_pct * 100);
+    setPasarelaFijo(escenario.pasarela_fijo);
     setNombre(escenario.nombre);
     setCargado(escenario.id);
     setAviso(null);
@@ -232,6 +259,11 @@ export function SimuladorProyeccion({
           costoPlataforma: plataforma,
           costoFulfillment: fulfillment,
           pctRecaudo: pctRecaudo / 100,
+          pctAnticipado: pctAnticipado / 100,
+          fleteDevolucion: fleteDev,
+          pasarelaPct: pasarelaPct / 100,
+          pasarelaFijo,
+          ivaComision: sugeridos.parametrosCosto.ivaComision,
         }),
       });
       const json = await res.json();
@@ -447,6 +479,34 @@ export function SimuladorProyeccion({
             sufijo="%"
             paso={0.5}
           />
+          <Campo
+            label="Flete devolución"
+            valor={fleteDev}
+            onChange={setFleteDev}
+            sufijo="COP"
+            paso={500}
+          />
+          <Campo
+            label="Pasarela"
+            valor={pasarelaPct}
+            onChange={setPasarelaPct}
+            sufijo="%"
+            paso={0.1}
+          />
+          <Campo
+            label="Pasarela fijo"
+            valor={pasarelaFijo}
+            onChange={setPasarelaFijo}
+            sufijo="COP"
+            paso={100}
+          />
+          <Campo
+            label="Ventas anticipadas"
+            valor={pctAnticipado}
+            onChange={setPctAnticipado}
+            sufijo="%"
+            supuesto={sugeridos.pctAnticipado}
+          />
         </div>
 
         <div className="mt-4 pt-4 border-t border-arena/60 flex flex-wrap items-center justify-between gap-3">
@@ -456,7 +516,8 @@ export function SimuladorProyeccion({
             de un ticket de {formatCOP(ticket)}
             <span className="text-ceniza">
               {" "}
-              · recaudo {formatCOP(costoRecaudoPorPedido)}
+              · cobrar cuesta {formatCOP(costoCobroPorPedido)} con {pctAnticipado}%
+              anticipado
             </span>
           </div>
           <div
@@ -523,6 +584,18 @@ export function SimuladorProyeccion({
               <span className="text-carbon-suave">− Pauta</span>
               <span className="text-carbon-suave">
                 −{formatCOP(resultado.inversionPublicidad)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span
+                className="text-carbon-suave"
+                title="Despachos que no se entregan: pagan flete de ida y de vuelta sin dejar ingreso."
+              >
+                − Devoluciones ({Math.round(resultado.devolucionesMes).toLocaleString("es-CO")}{" "}
+                × doble flete)
+              </span>
+              <span className="text-carbon-suave">
+                −{formatCOP(resultado.costoDevoluciones)}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">

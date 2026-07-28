@@ -25,6 +25,18 @@ export type ParametrosCostosVenta = {
    * ticket: sobre un pedido grande no es un detalle.
    */
   pctRecaudo: number;
+  /** Comisión porcentual de la pasarela sobre lo cobrado (anticipado). */
+  pasarelaPct: number;
+  /** Cargo fijo de la pasarela por transacción, en COP. */
+  pasarelaFijo: number;
+  /** IVA que la pasarela cobra sobre SU comisión — no sobre la venta. */
+  ivaComision: number;
+  /**
+   * Flete de retorno cuando el pedido se devuelve. La transportadora
+   * cobra la vuelta además de la ida: un COD devuelto paga doble flete
+   * sin dejar un peso, y es la pérdida más grande de contraentrega.
+   */
+  fleteDevolucion: number;
 };
 
 export const COSTOS_VENTA_POR_DEFECTO: ParametrosCostosVenta = {
@@ -32,6 +44,10 @@ export const COSTOS_VENTA_POR_DEFECTO: ParametrosCostosVenta = {
   costoFulfillment: 2000,
   costoLogistico: 16000,
   pctRecaudo: 0.03,
+  pasarelaPct: 0.0299,
+  pasarelaFijo: 900,
+  ivaComision: 0.19,
+  fleteDevolucion: 16000,
 };
 
 /**
@@ -49,6 +65,8 @@ export type CostosDePedido = {
   costoPlataforma: number | null;
   costoFulfillment: number | null;
   costoRecaudo: number | null;
+  /** Flete de retorno. Solo existe en pedidos devueltos. */
+  costoDevolucion?: number | null;
 };
 
 export type DesgloseCostos = {
@@ -57,6 +75,7 @@ export type DesgloseCostos = {
   plataforma: number;
   fulfillment: number;
   recaudo: number;
+  devolucion: number;
   total: number;
   /**
    * Si algún componente venía en `null`. Cuando es true, el total es un
@@ -74,6 +93,7 @@ const ETIQUETAS: Record<keyof Omit<DesgloseCostos, "total" | "incompleto" | "fal
   plataforma: "plataforma",
   fulfillment: "fulfillment",
   recaudo: "recaudo",
+  devolucion: "devolución",
 };
 
 function valor(n: number | null | undefined): number {
@@ -104,6 +124,7 @@ export function desglosarCostos(pedido: CostosDePedido): DesgloseCostos {
   const plataforma = valor(pedido.costoPlataforma);
   const fulfillment = valor(pedido.costoFulfillment);
   const recaudo = valor(pedido.costoRecaudo);
+  const devolucion = valor(pedido.costoDevolucion);
 
   const faltantes: string[] = [];
   if (falta(pedido.costoProductoUnitario)) faltantes.push(ETIQUETAS.mercancia);
@@ -111,9 +132,10 @@ export function desglosarCostos(pedido: CostosDePedido): DesgloseCostos {
   if (falta(pedido.costoPlataforma)) faltantes.push(ETIQUETAS.plataforma);
   if (falta(pedido.costoFulfillment)) faltantes.push(ETIQUETAS.fulfillment);
 
-  // El recaudo NO entra en faltantes: solo existe cuando el pedido se
-  // entregó y se cobró. Marcarlo como faltante dejaría a todo pedido en
-  // curso pintado como incompleto sin que nadie pueda hacer nada.
+  // El recaudo y la devolución NO entran en faltantes: solo existen en
+  // desenlaces concretos (entregado / devuelto). Marcarlos como faltantes
+  // dejaría a todo pedido en curso pintado como incompleto sin que nadie
+  // pueda hacer nada.
 
   return {
     mercancia,
@@ -121,25 +143,62 @@ export function desglosarCostos(pedido: CostosDePedido): DesgloseCostos {
     plataforma,
     fulfillment,
     recaudo,
-    total: mercancia + envio + plataforma + fulfillment + recaudo,
+    devolucion,
+    total: mercancia + envio + plataforma + fulfillment + recaudo + devolucion,
     incompleto: faltantes.length > 0,
     faltantes,
   };
 }
 
 /**
- * Lo que se congela al CREAR el pedido.
+ * La comisión de la pasarela sobre un cobro anticipado.
  *
- * Solo lo que ya se sabe en ese momento. El flete real se conoce al
- * despachar y el recaudo al entregar; inventarlos aquí con un estimado
- * los volvería imposibles de distinguir de un dato medido.
+ * Porcentaje + cargo fijo, y sobre ESA comisión va el IVA — no sobre la
+ * venta. Así cobran las pasarelas colombianas (Wompi, ePayco, Mercado
+ * Pago, PayU); el número exacto vive en config.
  */
-export function costosAlVender(parametros: ParametrosCostosVenta): {
+export function comisionPasarela(
+  montoCobrado: number,
+  parametros: Pick<
+    ParametrosCostosVenta,
+    "pasarelaPct" | "pasarelaFijo" | "ivaComision"
+  >,
+): number {
+  const monto = valor(montoCobrado);
+  if (monto <= 0) return 0;
+  const base =
+    monto * valor(parametros.pasarelaPct) + valor(parametros.pasarelaFijo);
+  return base * (1 + valor(parametros.ivaComision));
+}
+
+export type MetodoPago = "contraentrega" | "anticipado";
+
+/**
+ * Lo que se congela al CREAR el pedido, según cómo se cobró.
+ *
+ * En anticipado la comisión de la pasarela SE SABE al vender — el cobro
+ * ya pasó — así que se congela aquí como costo de plataforma, calculada
+ * sobre el valor real del pedido y no con un default plano. En COD solo
+ * va el default de plataforma; el costo de cobrar (el recaudo) se conoce
+ * al entregar.
+ *
+ * El flete se conoce al despachar; inventarlo aquí con un estimado lo
+ * volvería imposible de distinguir de un dato medido.
+ */
+export function costosAlVender(
+  parametros: ParametrosCostosVenta,
+  venta?: { metodoPago: MetodoPago; total: number },
+): {
   costo_plataforma: number;
   costo_fulfillment: number;
 } {
+  const plataforma =
+    venta?.metodoPago === "anticipado"
+      ? comisionPasarela(venta.total, parametros)
+      : valor(parametros.costoPlataforma);
+
   return {
-    costo_plataforma: valor(parametros.costoPlataforma),
+    costo_plataforma: plataforma,
     costo_fulfillment: valor(parametros.costoFulfillment),
   };
 }
@@ -181,22 +240,48 @@ export function costosProyectadosPorPedido(
     plataforma,
     fulfillment,
     recaudo,
+    // La devolución no va por pedido vendido: va por despacho fallido, y
+    // eso lo proyecta el motor con las tasas. Aquí sería contarla doble.
+    devolucion: 0,
     total: mercancia + envio + plataforma + fulfillment + recaudo,
     incompleto: false,
     faltantes: [],
   };
 }
 
+/**
+ * Lo que cuesta COBRAR un pedido, según la mezcla de métodos de pago.
+ *
+ * `pctAnticipado` es la fracción de ventas que pagan por pasarela; el
+ * resto es contraentrega y paga comisión de recaudo. Las dos comisiones
+ * son distintas y ninguna es despreciable — promediar con la mezcla real
+ * es lo que deja que la proyección siga a la operación cuando el
+ * anticipado crece.
+ */
+export function costoDeCobro(
+  ticketPromedio: number,
+  parametros: ParametrosCostosVenta,
+  pctAnticipado = 0,
+): number {
+  const mezcla = Number.isFinite(pctAnticipado)
+    ? Math.min(Math.max(pctAnticipado, 0), 1)
+    : 0;
+  const porPasarela = comisionPasarela(ticketPromedio, parametros);
+  const porRecaudo = comisionRecaudo(ticketPromedio, parametros.pctRecaudo);
+  return mezcla * porPasarela + (1 - mezcla) * porRecaudo;
+}
+
 /** Suma los costos accesorios (todo menos la mercancía) de un pedido proyectado. */
 export function costosAccesorios(
   ticketPromedio: number,
   parametros: ParametrosCostosVenta,
+  pctAnticipado = 0,
 ): number {
   return (
     valor(parametros.costoLogistico) +
     valor(parametros.costoPlataforma) +
     valor(parametros.costoFulfillment) +
-    comisionRecaudo(ticketPromedio, parametros.pctRecaudo)
+    costoDeCobro(ticketPromedio, parametros, pctAnticipado)
   );
 }
 
@@ -212,10 +297,12 @@ export function margenDesdeCostos(
   ticketPromedio: number,
   costoMercancia: number,
   parametros: ParametrosCostosVenta,
+  pctAnticipado = 0,
 ): number {
   const ticket = valor(ticketPromedio);
   if (ticket <= 0) return 0;
-  const costos = valor(costoMercancia) + costosAccesorios(ticket, parametros);
+  const costos =
+    valor(costoMercancia) + costosAccesorios(ticket, parametros, pctAnticipado);
   // Puede dar negativo, y tiene que poder: significa que cada venta deja
   // saldo en contra. Toparlo en cero escondería exactamente eso.
   return (ticket - costos) / ticket;

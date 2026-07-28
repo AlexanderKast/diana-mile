@@ -24,6 +24,13 @@ import {
   repartirReinversion,
   type SupuestosProyeccion,
 } from "../packages/shared/src/finanzas/proyeccion.ts";
+import {
+  comisionPasarela,
+  costoDeCobro,
+  margenDesdeCostos,
+  desglosarCostos,
+  COSTOS_VENTA_POR_DEFECTO,
+} from "../packages/shared/src/finanzas/costos-venta.ts";
 
 let fallos = 0;
 let corridos = 0;
@@ -260,6 +267,83 @@ cerca("con 1.000 ventas", costoAdminPorVenta(3436, 1000), 3, 1);
 afirmar("sin ventas no divide por cero", costoAdminPorVenta(3436, 0) === 0);
 
 // ══════════════════════════════════════════════════════════════
+console.log("\n▸ Comisión de pasarela (anticipado)\n");
+
+// 100.000 al 2,99% + 900 fijo = 3.890; +19% de IVA sobre la comision = 4.629,1
+const PAS = { pasarelaPct: 0.0299, pasarelaFijo: 900, ivaComision: 0.19 };
+cerca("100.000 por pasarela", comisionPasarela(100_000, PAS), 4629.1, 0.5);
+afirmar("monto cero no cobra el fijo", comisionPasarela(0, PAS) === 0);
+
+console.log("\n▸ Costo de cobro segun la mezcla de pagos\n");
+
+const PARAMS_VENTA = { ...COSTOS_VENTA_POR_DEFECTO };
+const soloCod = costoDeCobro(100_000, PARAMS_VENTA, 0);
+const soloAnticipado = costoDeCobro(100_000, PARAMS_VENTA, 1);
+cerca("todo COD = comision de recaudo", soloCod, 3000, 1);
+cerca("todo anticipado = comision de pasarela", soloAnticipado, 4629.1, 0.5);
+cerca(
+  "mitad y mitad promedia las dos",
+  costoDeCobro(100_000, PARAMS_VENTA, 0.5),
+  (soloCod + soloAnticipado) / 2,
+  0.5,
+);
+afirmar(
+  "mas anticipado cambia el margen derivado",
+  margenDesdeCostos(150_000, 60_000, PARAMS_VENTA, 1) !==
+    margenDesdeCostos(150_000, 60_000, PARAMS_VENTA, 0),
+);
+
+console.log("\n▸ Devoluciones en la proyeccion\n");
+
+// Sin fletes de devolucion el modelo queda identico a la hoja (ya
+// verificado arriba). Con fletes, la utilidad baja exactamente en
+// devoluciones x (ida + vuelta).
+const CON_DEV: SupuestosProyeccion = { ...JUNIO, fleteIda: 16_000, fleteDevolucion: 16_000 };
+const sinDev = proyectar(JUNIO);
+const conDev = proyectar(CON_DEV);
+cerca(
+  "devoluciones del mes = despachadas x (1 - entrega)",
+  conDev.devolucionesMes,
+  sinDev.ventasMes * 0.8 * 0.2,
+  0.5,
+);
+cerca(
+  "la utilidad baja exactamente el costo de las devoluciones",
+  sinDev.utilidadNeta - conDev.utilidadNeta,
+  conDev.devolucionesMes * 32_000,
+  1,
+);
+afirmar(
+  "el punto de equilibrio sube al cargar las devoluciones",
+  conDev.puntoEquilibrio > sinDev.puntoEquilibrio,
+);
+
+// En el equilibrio con devoluciones la utilidad tambien da cero.
+const eqDev = conDev.puntoEquilibrio;
+const utilidadEqDev =
+  eqDev * JUNIO.ticketPromedio * JUNIO.margenBruto -
+  eqDev * (0.2 / 0.8) * 32_000 -
+  JUNIO.inversionPublicidad -
+  JUNIO.costosFijosMes;
+cerca("en el nuevo equilibrio la utilidad es cero", utilidadEqDev, 0, 1);
+
+console.log("\n▸ Desglose con devolucion\n");
+
+const devuelto = desglosarCostos({
+  costoProductoUnitario: 30_000,
+  cantidad: 1,
+  costoEnvio: 16_000,
+  costoPlataforma: 5_000,
+  costoFulfillment: 2_000,
+  costoRecaudo: null,
+  costoDevolucion: 16_000,
+});
+cerca("el total incluye el flete de vuelta", devuelto.total, 69_000, 1);
+afirmar(
+  "la devolucion no marca el pedido como incompleto",
+  !devuelto.faltantes.includes("devolución"),
+);
+
 console.log(
   `\n${"─".repeat(60)}\n${corridos - fallos}/${corridos} comprobaciones pasaron` +
     (fallos > 0 ? `  ·  ${fallos} FALLARON\n` : "\n"),

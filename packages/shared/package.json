@@ -41,7 +41,8 @@
     "./crm/pipeline": "./src/crm/pipeline.ts",
     "./whatsapp/mensajes": "./src/whatsapp/mensajes.ts",
     "./whatsapp/clics": "./src/whatsapp/clics.ts",
-    "./botcake/ia/upsell": "./src/botcake/ia/upsell.ts"
+    "./botcake/ia/upsell": "./src/botcake/ia/upsell.ts",
+    "./analitica/visitas": "./src/analitica/visitas.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

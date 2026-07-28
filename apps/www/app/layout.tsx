@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: "Milito Life.",
 };
 
+import { RegistroVisita } from "@diana-mile/shared/ui/RegistroVisita";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -13,7 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <RegistroVisita
+          sitio="www"
+          endpoint="https://shop.militolife.com/api/visitas"
+        />{children}</body>
     </html>
   );
 }

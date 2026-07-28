@@ -49,7 +49,7 @@ export async function POST(
 
   const { data: pedido, error: fetchError } = await supabase
     .from("pedidos")
-    .select("id, estado, precio_total")
+    .select("id, estado, precio_total, metodo_pago")
     .eq("id", id)
     .single();
 
@@ -67,18 +67,30 @@ export async function POST(
   const cobrado = valor_recaudado ?? pedido.precio_total;
   const parametros = await leerParametrosCostosVenta();
 
+  // La comision de recaudo es de CONTRAENTREGA: en anticipado la plata
+  // entro por pasarela y su comision quedo congelada al crear el pedido.
+  // Cobrar las dos seria pagar dos veces por el mismo cobro.
+  const costoRecaudo =
+    pedido.metodo_pago === "anticipado"
+      ? 0
+      : comisionRecaudo(cobrado, parametros.pctRecaudo);
+
   const update =
     accion === "entregado"
       ? {
           estado: "entregado" as const,
           fecha_entrega_real: new Date().toISOString().slice(0, 10),
           valor_recaudado: cobrado,
-          costo_recaudo: comisionRecaudo(cobrado, parametros.pctRecaudo),
+          costo_recaudo: costoRecaudo,
           updated_at: new Date().toISOString(),
         }
       : {
           estado: "devuelto" as const,
           devolucion_motivo: motivo,
+          // El pedido devuelto pago flete de vuelta ademas del de ida, sin
+          // dejar un peso. Se congela aqui — es la perdida mas grande de
+          // contraentrega y no se registraba en ninguna parte.
+          costo_devolucion: parametros.fleteDevolucion,
           updated_at: new Date().toISOString(),
         };
 

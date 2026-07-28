@@ -327,6 +327,12 @@ export type Pedido = {
   costo_fulfillment: number | null;
   /** Comision de la transportadora por recaudar. Se registra al entregar. */
   costo_recaudo: number | null;
+  /** Flete de retorno de una devolucion. Se congela al marcarla. */
+  costo_devolucion: number | null;
+  /** Como se cobro: contraentrega o anticipado por pasarela. */
+  metodo_pago: "contraentrega" | "anticipado";
+  /** Dia en que la transportadora consigno el recaudo. */
+  fecha_consignacion: string | null;
   precio_total: number | null;
   estado: EstadoPedido;
   canal_adquisicion: string | null;
@@ -443,11 +449,19 @@ export type MetricasFinancieras = {
   costo_fulfillment: number;
   /** Comision de la transportadora por recaudar el efectivo. */
   costo_recaudo: number;
+  /** Fletes de retorno de los pedidos devueltos: doble flete sin ingreso. */
+  costo_devoluciones: number;
   /**
    * Pedidos a los que les falta algun costo. Mientras sea > 0, la
    * utilidad es un TECHO: el costo real es ese o mas alto.
    */
   pedidos_sin_costear: number;
+  /** Pedidos cobrados por pasarela (anticipado) en el periodo. */
+  pedidos_anticipados: number;
+  /** Recaudo de entregados que la transportadora aun no consigna. */
+  efectivo_sin_consignar: number;
+  /** IVA implicito en lo recaudado: al legalizarse, no es utilidad. */
+  iva_implicito: number;
   gasto_publicidad: number;
   otros_gastos: number;
   utilidad_bruta: number;

@@ -51,6 +51,10 @@ export const NAV_GRUPOS: NavGroup[] = [
     titulo: "Día a día",
     items: [
       { label: "Dashboard", href: "/dashboard", roles: TODOS },
+      // Quedo fuera del menu en la consolidacion, y eso ademas la dejaba
+      // SIN gate de rol: lo que no esta en esta lista resuelve a null =
+      // sin restriccion.
+      { label: "Métricas", href: "/dashboard/metricas", roles: FINANZAS },
       { label: "Pipeline", href: "/dashboard/pipeline", roles: ADMIN },
       { label: "Pedidos", href: "/dashboard/pedidos", roles: ADMIN },
       { label: "WhatsApp", href: "/dashboard/conversaciones", roles: CON_CHAT },
@@ -189,7 +193,8 @@ const API_REGLAS: {
 }[] = [
   { test: (p) => p.endsWith("/confirmar"), roles: CON_CHAT },
   {
-    test: (p) => p.endsWith("/envio") || p.endsWith("/entrega"),
+    test: (p) =>
+      p.endsWith("/envio") || p.endsWith("/entrega") || p.endsWith("/consignacion"),
     roles: ["superadmin", "admin", "logistica"],
   },
   { test: (p) => p.startsWith("/api/admin/usuarios"), roles: ["superadmin"] },

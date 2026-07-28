@@ -151,9 +151,17 @@ export default async function MetricasPage({
 
   // La app va en su propia funcion: se le anadieron medidas despues y
   // reescribir la funcion grande entera por eso es pedir un error.
-  const [{ data, error }, { data: datosApp }] = await Promise.all([
+  const [{ data, error }, { data: datosApp }, { data: visitasRaw }] = await Promise.all([
     supabase.rpc("metricas_ecosistema", rango),
     supabase.rpc("metricas_app", rango),
+    // Las visitas propias, con su fuente ya clasificada al registrarse.
+    // Se agrupan aqui y no en SQL: son pocas filas y asi el bloque no
+    // depende de tocar la funcion grande de Postgres.
+    supabase
+      .from("visitas")
+      .select("fuente, medio, ruta, sitio")
+      .gte("created_at", rango.desde)
+      .lte("created_at", rango.hasta),
   ]);
 
   if (error || !data) {
@@ -170,6 +178,38 @@ export default async function MetricasPage({
   const m = data as Metricas;
   const { embudo, dinero, agente, atribucion, logistica } = m;
   const app = (datosApp as Record<string, number>) ?? m.app;
+
+  const visitas = (visitasRaw ?? []) as { fuente: string; medio: string; ruta: string | null; sitio: string }[];
+  const totalVisitas = visitas.length;
+  const visitasPago = visitas.filter((v) => v.medio === "pago").length;
+  const porFuente = new Map<string, { total: number; pago: number }>();
+  for (const v of visitas) {
+    const fila = porFuente.get(v.fuente) ?? { total: 0, pago: 0 };
+    fila.total += 1;
+    if (v.medio === "pago") fila.pago += 1;
+    porFuente.set(v.fuente, fila);
+  }
+  const fuentesOrdenadas = Array.from(porFuente.entries()).sort(
+    (a, b) => b[1].total - a[1].total,
+  );
+  const porSitio = new Map<string, number>();
+  for (const v of visitas) {
+    porSitio.set(v.sitio, (porSitio.get(v.sitio) ?? 0) + 1);
+  }
+  const ETIQUETA_SITIO: Record<string, string> = {
+    shop: "Tienda",
+    linktree: "Link en bio",
+    www: "Sitio principal",
+    app: "App",
+  };
+  const ETIQUETA_FUENTE: Record<string, string> = {
+    facebook: "Facebook",
+    instagram: "Instagram",
+    tiktok: "TikTok",
+    whatsapp: "WhatsApp",
+    google: "Google",
+    directo: "Directo",
+  };
 
   return (
     <div>
@@ -193,6 +233,41 @@ export default async function MetricasPage({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <Bloque
+          titulo="Visitas y de dónde llegan"
+          descripcion="Una visita por sesión, contada en nuestra base — no en Meta. La fuente sale de utm, click ids de anuncio y referrer; el navegador de WhatsApp no manda referrer, así que sin utm cae en Directo."
+        >
+          <Paso label="Visitas" valor={totalVisitas} />
+          <Paso label="Desde anuncios (pago)" valor={visitasPago} de={totalVisitas} />
+          {fuentesOrdenadas.length === 0 ? (
+            <p className="py-2.5 text-sm text-ceniza">
+              Todavía no hay visitas registradas. El contador arranca con el
+              próximo despliegue de la tienda.
+            </p>
+          ) : (
+            fuentesOrdenadas.slice(0, 8).map(([fuente, conteo]) => (
+              <Paso
+                key={fuente}
+                label={ETIQUETA_FUENTE[fuente] ?? fuente}
+                valor={conteo.total}
+                de={totalVisitas}
+                nota={conteo.pago > 0 ? `${conteo.pago} de pauta` : undefined}
+              />
+            ))
+          )}
+          {porSitio.size > 1 &&
+            Array.from(porSitio.entries())
+              .sort((a, b) => b[1] - a[1])
+              .map(([sitio, n]) => (
+                <Paso
+                  key={"sitio-" + sitio}
+                  label={"En " + (ETIQUETA_SITIO[sitio] ?? sitio)}
+                  valor={n}
+                  de={totalVisitas}
+                />
+              ))}
+        </Bloque>
+
         <Bloque
           titulo="Embudo"
           descripcion="Cuánta gente sobrevive a cada paso. El porcentaje es sobre el paso anterior."

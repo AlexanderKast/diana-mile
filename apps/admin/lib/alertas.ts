@@ -54,6 +54,7 @@ export const ETIQUETA_SEVERIDAD: Record<Severidad, string> = {
 
 const DIAS_LEAD_CALIENTE_SIN_TOCAR = 3;
 const DIAS_PEDIDO_ESTANCADO = 2;
+const DIAS_CONSIGNACION_TARDIA = 7;
 
 function haceDias(dias: number): string {
   return new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString();
@@ -206,7 +207,7 @@ async function alertasDePedidos(
 ): Promise<Alerta[]> {
   const alertas: Alerta[] = [];
 
-  const [entregadosSinRecaudo, sinCosto, estancados] = await Promise.all([
+  const [entregadosSinRecaudo, sinCosto, estancados, sinConsignar] = await Promise.all([
     supabase
       .from("pedidos")
       .select("id", { count: "exact", head: true })
@@ -222,6 +223,12 @@ async function alertasDePedidos(
       .select("id", { count: "exact", head: true })
       .eq("estado", "pendiente")
       .lt("created_at", haceDias(DIAS_PEDIDO_ESTANCADO)),
+    supabase
+      .from("pedidos")
+      .select("valor_recaudado")
+      .eq("estado", "entregado")
+      .is("fecha_consignacion", null)
+      .lt("fecha_entrega_real", haceDias(DIAS_CONSIGNACION_TARDIA).slice(0, 10)),
   ]);
 
   const nSinRecaudo = entregadosSinRecaudo.count ?? 0;
@@ -253,6 +260,27 @@ async function alertasDePedidos(
       href: "/dashboard/financiero/costos",
       accion: "Cargar costos y recalcular",
       silenciable: true,
+    });
+  }
+
+  const pendientesConsignar = sinConsignar.data ?? [];
+  const nSinConsignar = pendientesConsignar.length;
+  if (nSinConsignar > 0) {
+    const monto = pendientesConsignar.reduce(
+      (acc, p) => acc + (Number(p.valor_recaudado) || 0),
+      0,
+    );
+    alertas.push({
+      tipo: "recaudo_sin_consignar",
+      severidad: "alta",
+      titulo: `${plural(nSinConsignar, "Una entrega lleva", `${nSinConsignar} entregas llevan`)} más de ${DIAS_CONSIGNACION_TARDIA} días sin consignar`,
+      detalle:
+        `La transportadora recaudó ese dinero y no lo ha consignado (~${Math.round(monto).toLocaleString("es-CO")} pesos). ` +
+        "Una guía recaudada que nadie reclama es plata que se pierde en silencio.",
+      cantidad: nSinConsignar,
+      href: "/dashboard/logistica",
+      accion: "Revisar consignaciones",
+      silenciable: false,
     });
   }
 

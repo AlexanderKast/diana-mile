@@ -136,7 +136,13 @@ export async function POST(request: NextRequest) {
       // Plataforma y fulfillment se saben al vender, asi que se congelan
       // aqui. El flete se conoce al despachar y el recaudo al entregar:
       // estimarlos ahora los volveria indistinguibles de un dato medido.
-      const costosVenta = costosAlVender(parametrosCosto);
+      // El checkout de la tienda ES contraentrega: el formulario no cobra
+      // nada. Un pago anticipado entra por Shopify y lo clasifica el
+      // webhook.
+      const costosVenta = costosAlVender(parametrosCosto, {
+        metodoPago: "contraentrega",
+        total: precioTotal,
+      });
 
       const { data: pedidoInsertado, error: insertError } = await supabase
         .from("pedidos")
@@ -163,6 +169,7 @@ export async function POST(request: NextRequest) {
           costo_producto: costoProducto,
           costo_plataforma: costosVenta.costo_plataforma,
           costo_fulfillment: costosVenta.costo_fulfillment,
+          metodo_pago: "contraentrega",
           estado: "pendiente",
           // De donde salio la venta. Lo manda el agente cuando cierra por
           // chat; el formulario de la web no manda nada y cuenta como web.

@@ -59,6 +59,8 @@ export const viewport: Viewport = {
   themeColor: "#F2EDE6",
 };
 
+import { RegistroVisita } from "@diana-mile/shared/ui/RegistroVisita";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -71,6 +73,7 @@ export default function RootLayout({
       className={`${cormorant.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full overflow-x-hidden bg-crema text-morado-oscuro">
+        <RegistroVisita sitio="linktree" />
         <ProveedorWhatsApp>
           {children}
           <BotonWhatsAppFlotante

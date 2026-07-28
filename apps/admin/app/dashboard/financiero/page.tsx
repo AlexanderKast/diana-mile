@@ -70,6 +70,10 @@ export default async function FinancieroPage({
         <StatsCard label="Ingresos recaudados" value={formatCOP(metricas.ingresos_recaudados)} />
         <StatsCard label="Costo productos" value={formatCOP(metricas.costo_productos)} />
         <StatsCard label="Costo envios" value={formatCOP(metricas.costo_envios)} />
+        <StatsCard label="Cobro (pasarela + recaudo)" value={formatCOP(metricas.costo_plataforma + metricas.costo_recaudo)} />
+        <StatsCard label="Perdido en devoluciones" value={formatCOP(metricas.costo_devoluciones)} />
+        <StatsCard label="Recaudo sin consignar" value={formatCOP(metricas.efectivo_sin_consignar)} />
+        <StatsCard label="IVA implicito" value={formatCOP(metricas.iva_implicito)} />
         <StatsCard label="Gasto publicidad" value={formatCOP(metricas.gasto_publicidad)} />
         <StatsCard
           label={`Utilidad neta (${formatPct(metricas.margen_neto)})`}
@@ -85,6 +89,27 @@ export default async function FinancieroPage({
           value={metricas.roas !== null ? metricas.roas.toFixed(2) : "-"}
         />
       </div>
+
+      {metricas.pedidos_sin_costear > 0 && (
+        <div className="mb-6 -mt-4 rounded-[4px] border border-error/30 bg-error/5 px-5 py-3">
+          <p className="text-sm text-error">
+            {metricas.pedidos_sin_costear}{" "}
+            {metricas.pedidos_sin_costear === 1 ? "pedido tiene" : "pedidos tienen"}{" "}
+            costos sin registrar: la utilidad de arriba es un techo, el costo real
+            es ese o mas alto.
+          </p>
+        </div>
+      )}
+
+      {metricas.iva_implicito > 0 && (
+        <div className="mb-6 -mt-2 rounded-[4px] border border-dorado/40 bg-dorado/5 px-5 py-3">
+          <p className="text-sm text-carbon-suave">
+            El IVA implicito no es un gasto de hoy: es la parte de lo recaudado que,
+            al legalizarse el negocio, se debe como impuesto. Medirlo desde ya evita
+            que ese dia la utilidad "pierda" 16 puntos de golpe.
+          </p>
+        </div>
+      )}
 
       <div className="bg-blanco border border-arena rounded-[4px] p-5">
         <div className="flex items-center justify-between mb-4">

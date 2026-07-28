@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { MobileTabBar } from "@/components/site/MobileTabBar";
 import { InstallBanner } from "@/components/site/InstallBanner";
 import { TrackingScripts } from "@/components/tracking/TrackingScripts";
+import { RegistroVisita } from "@diana-mile/shared/ui/RegistroVisita";
 import { BotonWhatsApp } from "@/components/site/BotonWhatsApp";
 import { ProveedorWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 import { getPricingConfig } from "@/lib/pricing-server";
@@ -51,6 +52,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden">
         <TrackingScripts />
+        <RegistroVisita sitio="shop" />
         <ProveedorWhatsApp numero={whatsappNumero}>
           <div className="min-h-screen flex flex-col">
             <SiteHeader />

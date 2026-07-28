@@ -24,6 +24,10 @@ export type EscenarioGuardado = {
   costo_plataforma: number;
   costo_fulfillment: number;
   pct_recaudo: number;
+  pct_anticipado: number;
+  costo_flete_devolucion: number;
+  pasarela_pct: number;
+  pasarela_fijo: number;
 };
 
 /** Postgres devuelve DECIMAL como string; sin esto los inputs quedarían con texto. */
@@ -48,6 +52,10 @@ const NUMERICOS = [
   "costo_plataforma",
   "costo_fulfillment",
   "pct_recaudo",
+  "pct_anticipado",
+  "costo_flete_devolucion",
+  "pasarela_pct",
+  "pasarela_fijo",
 ];
 
 export default async function ProyeccionPage() {
@@ -58,7 +66,7 @@ export default async function ProyeccionPage() {
     supabase
       .from("proyecciones")
       .select(
-        "id, nombre, periodo, inversion_publicidad, part_publicidad, ticket_promedio, margen_bruto, tasa_despacho, tasa_entrega, costos_fijos_mes, costo_mercancia, costo_logistico, costo_plataforma, costo_fulfillment, pct_recaudo",
+        "id, nombre, periodo, inversion_publicidad, part_publicidad, ticket_promedio, margen_bruto, tasa_despacho, tasa_entrega, costos_fijos_mes, costo_mercancia, costo_logistico, costo_plataforma, costo_fulfillment, pct_recaudo, pct_anticipado, costo_flete_devolucion, pasarela_pct, pasarela_fijo",
       )
       .order("created_at", { ascending: false })
       .limit(20),

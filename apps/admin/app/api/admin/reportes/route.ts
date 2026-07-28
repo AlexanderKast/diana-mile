@@ -92,18 +92,29 @@ function calcularMetricasBasico(pedidos: Pedido[], gastos: Gasto[], periodo: str
       costoPlataforma: p.costo_plataforma ?? null,
       costoFulfillment: p.costo_fulfillment ?? null,
       costoRecaudo: p.costo_recaudo ?? null,
+      costoDevolucion: p.costo_devolucion ?? null,
     }),
   );
-  const sumar = (campo: "mercancia" | "envio" | "plataforma" | "fulfillment" | "recaudo") =>
-    desgloses.reduce((acc, d) => acc + d[campo], 0);
+  const sumar = (
+    campo: "mercancia" | "envio" | "plataforma" | "fulfillment" | "recaudo" | "devolucion",
+  ) => desgloses.reduce((acc, d) => acc + d[campo], 0);
 
   const costoProductos = sumar("mercancia");
   const costoEnvios = sumar("envio");
   const costoPlataforma = sumar("plataforma");
   const costoFulfillment = sumar("fulfillment");
   const costoRecaudo = sumar("recaudo");
+  const costoDevoluciones = sumar("devolucion");
   const costosDeVenta = desgloses.reduce((acc, d) => acc + d.total, 0);
   const pedidosSinCostear = desgloses.filter((d) => d.incompleto).length;
+  const pedidosAnticipados = pedidos.filter(
+    (p) => p.metodo_pago === "anticipado",
+  ).length;
+  const efectivoSinConsignar = pedidos
+    .filter((p) => p.estado === "entregado" && !p.fecha_consignacion)
+    .reduce((acc, p) => acc + (p.valor_recaudado ?? 0), 0);
+  // Tarifa fija aqui: el reporte es un export puntual y no lee config.
+  const ivaImplicito = ingresosRecaudados * (0.19 / 1.19);
 
   const gastoPublicidad = gastos
     .filter((g) => g.tipo.startsWith("publicidad_"))
@@ -137,7 +148,11 @@ function calcularMetricasBasico(pedidos: Pedido[], gastos: Gasto[], periodo: str
     costo_plataforma: Math.round(costoPlataforma),
     costo_fulfillment: Math.round(costoFulfillment),
     costo_recaudo: Math.round(costoRecaudo),
+    costo_devoluciones: Math.round(costoDevoluciones),
     pedidos_sin_costear: pedidosSinCostear,
+    pedidos_anticipados: pedidosAnticipados,
+    efectivo_sin_consignar: Math.round(efectivoSinConsignar),
+    iva_implicito: Math.round(ivaImplicito),
     gasto_publicidad: Math.round(gastoPublicidad),
     otros_gastos: Math.round(otrosGastos),
     utilidad_bruta: Math.round(utilidadBruta),

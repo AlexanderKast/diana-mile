@@ -39,6 +39,15 @@ export type SupuestosProyeccion = {
   tasaEntrega: number;
   /** Costos fijos del mes (nomina, plataformas, administrativos). */
   costosFijosMes: number;
+  /**
+   * Flete de ida de un despacho, en COP. Junto con `fleteDevolucion`
+   * cuantifica lo que cuesta cada despacho FALLIDO: el pedido devuelto
+   * pago ida y vuelta sin dejar un peso. La hoja original lo ignoraba, y
+   * es la perdida mas grande de contraentrega.
+   */
+  fleteIda?: number;
+  /** Flete de retorno de una devolucion, en COP. */
+  fleteDevolucion?: number;
 };
 
 export type ResultadoProyeccion = {
@@ -57,9 +66,15 @@ export type ResultadoProyeccion = {
   ventasDiarias: number;
   /** Costo por pedido objetivo: lo maximo que puede costar traer una venta. */
   cppObjetivo: number;
+  /** Despachos que no se entregaron: volvieron pagando doble flete. */
+  devolucionesMes: number;
+  /** Lo que cuestan esas devoluciones (flete de ida + retorno). */
+  costoDevoluciones: number;
   /**
    * Ventas que hay que ENTREGAR para no perder plata. Es el numero que
    * de verdad importa en contraentrega y el que la hoja no calculaba.
+   * Incluye el lastre de las devoluciones: cada entrega exitosa arrastra
+   * (1-e)/e despachos fallidos que hay que pagar.
    */
   puntoEquilibrio: number;
 };
@@ -92,17 +107,33 @@ export function proyectar(
   const entrega = fraccion(supuestos.tasaEntrega, 0.8);
   const fijos = noNegativo(supuestos.costosFijosMes);
 
+  const fleteIda = noNegativo(supuestos.fleteIda ?? 0);
+  const fleteVuelta = noNegativo(supuestos.fleteDevolucion ?? 0);
+
   const facturacion = inversionPublicidad / part;
   const despachado = facturacion * despacho;
   const recaudo = despachado * entrega;
   const ingresoBruto = recaudo * margen;
-  const utilidadNeta = ingresoBruto - inversionPublicidad - fijos;
 
   const ventasMes = facturacion / ticket;
 
-  // Cuanto deja cada pedido ENTREGADO, antes de publicidad. Es lo que
-  // tiene que cubrir los fijos y el costo de traer la venta.
-  const margenPorEntrega = ticket * margen;
+  // Los despachos que NO se entregan vuelven pagando flete de ida y de
+  // retorno, sin dejar ingreso. El margen no los ve — sale del recaudo,
+  // donde estos pedidos no existen — asi que se restan aparte. Con los
+  // fletes en cero el modelo queda identico a la hoja original, que es
+  // la referencia contra la que estan verificadas las demas formulas.
+  const devolucionesMes = ventasMes * despacho * (1 - entrega);
+  const costoDevoluciones = devolucionesMes * (fleteIda + fleteVuelta);
+
+  const utilidadNeta =
+    ingresoBruto - inversionPublicidad - fijos - costoDevoluciones;
+
+  // Cuanto deja cada pedido ENTREGADO, antes de publicidad, descontando
+  // el lastre de sus despachos fallidos: por cada entrega exitosa hay
+  // (1-e)/e devoluciones que pagar.
+  const devolucionesPorEntrega = entrega > 0 ? (1 - entrega) / entrega : 0;
+  const margenPorEntrega =
+    ticket * margen - devolucionesPorEntrega * (fleteIda + fleteVuelta);
   const entregasNecesarias =
     margenPorEntrega > 0 ? (inversionPublicidad + fijos) / margenPorEntrega : 0;
 
@@ -117,6 +148,8 @@ export function proyectar(
     utilidadNeta,
     margenNeto: facturacion > 0 ? utilidadNeta / facturacion : 0,
     facturacionDiaria: facturacion / DIAS_MES,
+    devolucionesMes,
+    costoDevoluciones,
     ventasMes,
     ventasDiarias: ventasMes / DIAS_MES,
     cppObjetivo: ventasMes > 0 ? inversionPublicidad / ventasMes : 0,

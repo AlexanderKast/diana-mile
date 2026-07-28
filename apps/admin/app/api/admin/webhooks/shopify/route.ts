@@ -98,7 +98,15 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
       costoUnitarioDeVariante(gidDeVariante(lineItem?.variant_id)),
       leerParametrosCostosVenta(),
     ]);
-    const costosVenta = costosAlVender(parametrosCosto);
+    // Si Shopify ya reporta la orden pagada al CREARSE, el cobro paso por
+    // una pasarela: es anticipado, y la comision de pasarela se congela
+    // aqui sobre el valor real en vez del default plano de COD.
+    const metodoPago =
+      order.financial_status === "paid" ? "anticipado" : "contraentrega";
+    const costosVenta = costosAlVender(parametrosCosto, {
+      metodoPago,
+      total: total ?? 0,
+    });
 
     const { data: creado } = await supabase
       .from("pedidos")
@@ -121,6 +129,7 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
         costo_producto: costoProducto,
         costo_plataforma: costosVenta.costo_plataforma,
         costo_fulfillment: costosVenta.costo_fulfillment,
+        metodo_pago: metodoPago,
         utm_source: noteAttrs.get("utm_source") ?? null,
         utm_campaign: noteAttrs.get("utm_campaign") ?? null,
         estado: "pendiente",

@@ -35,6 +35,11 @@ type Cuerpo = {
   costoPlataforma?: number;
   costoFulfillment?: number;
   pctRecaudo?: number;
+  pctAnticipado?: number;
+  fleteDevolucion?: number;
+  pasarelaPct?: number;
+  pasarelaFijo?: number;
+  ivaComision?: number;
 };
 
 /** Un monto en COP: finito y no negativo. */
@@ -47,6 +52,12 @@ function monto(valor: unknown): number | null {
 function fraccion(valor: unknown): number | null {
   const n = Number(valor);
   return Number.isFinite(n) && n > 0 && n <= 1 ? n : null;
+}
+
+/** Una fraccion que puede ser 0 (una comision del 0% es legitima). */
+function fraccionOCero(valor: unknown): number {
+  const n = Number(valor);
+  return Number.isFinite(n) && n >= 0 && n < 1 ? n : 0;
 }
 
 export async function POST(request: NextRequest) {
@@ -85,6 +96,16 @@ export async function POST(request: NextRequest) {
         ? recaudoRaw
         : null;
 
+    const anticipadoRaw = Number(body.pctAnticipado ?? 0);
+    const pctAnticipado =
+      Number.isFinite(anticipadoRaw) && anticipadoRaw >= 0 && anticipadoRaw <= 1
+        ? anticipadoRaw
+        : 0;
+    const fleteDevolucion = monto(body.fleteDevolucion) ?? 0;
+    const pasarelaPct = fraccionOCero(body.pasarelaPct);
+    const pasarelaFijo = monto(body.pasarelaFijo) ?? 0;
+    const ivaComision = fraccionOCero(body.ivaComision ?? 0.19);
+
     const faltantes: string[] = [];
     if (inversion === null) faltantes.push("inversión en pauta");
     if (part === null) faltantes.push("participación de pauta");
@@ -100,12 +121,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const margen = margenDesdeCostos(ticket!, mercancia, {
-      costoLogistico: logistico,
-      costoPlataforma: plataforma,
-      costoFulfillment: fulfillment,
-      pctRecaudo: recaudo!,
-    });
+    const margen = margenDesdeCostos(
+      ticket!,
+      mercancia,
+      {
+        costoLogistico: logistico,
+        costoPlataforma: plataforma,
+        costoFulfillment: fulfillment,
+        pctRecaudo: recaudo!,
+        pasarelaPct,
+        pasarelaFijo,
+        ivaComision,
+        fleteDevolucion,
+      },
+      pctAnticipado,
+    );
 
     const fila = {
       nombre,
@@ -122,6 +152,10 @@ export async function POST(request: NextRequest) {
       costo_plataforma: plataforma,
       costo_fulfillment: fulfillment,
       pct_recaudo: recaudo,
+      pct_anticipado: pctAnticipado,
+      costo_flete_devolucion: fleteDevolucion,
+      pasarela_pct: pasarelaPct,
+      pasarela_fijo: pasarelaFijo,
       creado_por: usuario.email ?? null,
     };
 

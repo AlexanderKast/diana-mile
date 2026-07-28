@@ -8,9 +8,11 @@ export function CategoryHero({ collection }: { collection: Collection }) {
 
   return (
     <section className="bg-crema">
-      <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 md:grid-cols-2 md:items-center md:gap-10 md:py-16">
+      <div className="mx-auto grid max-w-6xl gap-7 px-5 py-9 sm:gap-8 sm:px-6 sm:py-12 md:grid-cols-2 md:items-center md:gap-10 md:py-16">
         {collection.image ? (
-          <div className="relative order-1 aspect-[4/5] w-full overflow-hidden rounded-2xl md:order-2">
+          // Apaisada en movil: a 4/5 y ancho completo la foto medía ~490px de
+          // alto y empujaba el titulo y los sellos bajo el pliegue.
+          <div className="relative order-1 aspect-[16/11] w-full overflow-hidden rounded-2xl sm:aspect-[3/2] md:order-2 md:aspect-[4/5]">
             <Image
               src={collection.image.url}
               alt={collection.image.altText ?? collection.title}
@@ -23,14 +25,16 @@ export function CategoryHero({ collection }: { collection: Collection }) {
         ) : null}
 
         <div className="order-2 flex flex-col gap-3 md:order-1">
-          <p className="text-[11px] uppercase tracking-wide text-ceniza">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-carbon-suave sm:text-[11px]">
             {eyebrow}
           </p>
-          <h1 className="font-display text-3xl leading-tight text-carbon md:text-5xl">
+          <h1 className="font-display text-[32px] leading-tight tracking-tight text-carbon text-balance sm:text-[40px] md:text-5xl">
             {collection.title}
           </h1>
           <div className="linea-dorada w-12" />
-          <p className="max-w-md text-sm text-carbon-suave">{tagline}</p>
+          <p className="max-w-md text-[14px] leading-relaxed text-carbon-suave sm:text-sm">
+            {tagline}
+          </p>
           {/* Una categoria mezcla productos contraentrega y de vitrina, asi
               que aqui NO se puede prometer "Pago al recibir": en "Kits de
               inicio" seria mentira en los 17 productos. Se muestran los
@@ -42,13 +46,13 @@ export function CategoryHero({ collection }: { collection: Collection }) {
       </div>
 
       {collection.landingContent?.storyBody ? (
-        <div className="mx-auto max-w-3xl px-6 pb-12 text-center md:pb-16">
+        <div className="mx-auto max-w-3xl px-5 pb-10 text-center sm:px-6 sm:pb-12 md:pb-16">
           {collection.landingContent.storyHeading ? (
-            <h2 className="font-display text-xl text-carbon mb-3">
+            <h2 className="mb-3 font-display text-[20px] leading-tight text-carbon sm:text-xl">
               {collection.landingContent.storyHeading}
             </h2>
           ) : null}
-          <p className="text-sm leading-relaxed text-carbon-suave">
+          <p className="text-[14px] leading-relaxed text-carbon-suave sm:text-sm">
             {collection.landingContent.storyBody}
           </p>
         </div>

@@ -251,9 +251,13 @@ const MOCK_PRODUCTS: Product[] = [
 ];
 
 /**
- * Handles de las 4 categorias de la tienda. Deben existir como Collections
- * custom en Shopify Admin con estos mismos handles (autogenerados por
- * Shopify a partir del titulo al crearlas — no son arbitrarios).
+ * Handles de las categorias de la tienda, EN EL ORDEN EN QUE SE MUESTRAN.
+ * Deben existir como Collections custom en Shopify Admin con estos mismos
+ * handles (autogenerados por Shopify a partir del titulo al crearlas — no son
+ * arbitrarios).
+ *
+ * El orden importa: /categorias abre la primera a ancho completo como puerta
+ * de entrada del catalogo. Cambiar el orden aqui cambia cual se destaca.
  */
 export const COLLECTION_HANDLES = [
   "ritual-de-rostro",
