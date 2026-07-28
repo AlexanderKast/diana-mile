@@ -268,6 +268,54 @@ export const COLLECTION_HANDLES = [
   "kits-de-inicio",
 ] as const;
 
+/**
+ * Collections que existen en Shopify pero NO son navegacion de la tienda.
+ *
+ * Esta es la unica lista que hay que mantener a mano. `getCollections()`
+ * muestra todo lo demas que tenga productos publicados, asi que crear una
+ * categoria nueva en Shopify Admin la publica sola, sin tocar codigo ni
+ * desplegar. El precio de esa comodidad es este archivo: una collection
+ * interna nueva sale publicada hasta que se agregue aqui.
+ *
+ * Por que esta cada una:
+ *  · frontpage              — la crea Shopify sola en cada tienda, esta vacia.
+ *  · liteshop-import        — catalogo importado de referencia, uso interno.
+ *  · ritual-epoch           — legacy: duplica "Ritual de rostro" con 1 producto.
+ *  · rituales-de-piel       — legacy vacia de la version anterior de la tienda.
+ *  · suplementos-y-bienestar— legacy vacia, la reemplazo "Bienestar por dentro".
+ *  · tendencia-milito       — "Tendencias" NO es una categoria mala: es que hoy
+ *                             sus dos unicos productos publicados son vendor
+ *                             "Liteshop Import" ("BASE O'CHEAL", "BASE EN BARRA
+ *                             COREANA 3 EN 1... + OBSEQUIO"), y estan tambien
+ *                             en `liteshop-import`. Sin esta linea, la
+ *                             importacion de referencia que se excluye arriba
+ *                             se publicaba igual por esta otra puerta, con
+ *                             titulos en mayusculas y fotos de landing. Cuando
+ *                             tenga producto propio, se borra esta linea y
+ *                             aparece sola.
+ *
+ * Las tres legacy siguen en Shopify a peticion de Alexander (27/07/2026): no
+ * se borran desde aqui. Vacias ya no se mostrarian por el filtro de
+ * productos, pero quedan listadas para que tampoco aparezcan si alguien les
+ * mete un producto por error.
+ */
+const COLLECTION_HANDLES_OCULTOS: readonly string[] = [
+  "frontpage",
+  "liteshop-import",
+  "ritual-epoch",
+  "rituales-de-piel",
+  "suplementos-y-bienestar",
+  "tendencia-milito",
+];
+
+const COLLECTION_HANDLES_QUERY = `
+  query CollectionHandles($first: Int!) {
+    collections(first: $first) {
+      edges { node { handle } }
+    }
+  }
+`;
+
 const MOCK_COLLECTIONS: Collection[] = [
   {
     id: "mock-collection-ritual-de-rostro",
@@ -771,17 +819,60 @@ function mapCollectionNode(node: {
 }
 
 /**
- * Trae SOLO las categorias curadas de la tienda (COLLECTION_HANDLES), no
- * todas las collections que existan en Shopify — la tienda tiene otras
- * (ej. "Home page", "Liteshop Import") que no son parte de esta navegacion.
+ * Las categorias que se muestran en la tienda, en orden.
+ *
+ * Antes esto devolvia exactamente los seis handles de `COLLECTION_HANDLES` y
+ * nada mas. El problema no era lo que mostraba sino lo que callaba: crear una
+ * categoria en Shopify Admin no hacia absolutamente nada —no aparecia en el
+ * home, ni en /categorias, ni en el menu— hasta que alguien editaba este
+ * archivo y desplegaba. Para quien administra la tienda desde Shopify, eso se
+ * siente como que la categoria "no se guardo".
+ *
+ * Ahora se leen todas las collections de Shopify y se descartan dos cosas: las
+ * de `COLLECTION_HANDLES_OCULTOS` (internas y legacy) y las que no tienen
+ * ningun producto publicado — una categoria vacia en el escaparate parece una
+ * tienda a medio montar, y ademas es un clic que no lleva a nada.
+ *
+ * El orden: primero las curadas en el orden de `COLLECTION_HANDLES` (la
+ * primera abre /categorias a ancho completo, asi que ese orden es una decision
+ * de merchandising), y despues las nuevas en el orden que trae Shopify.
+ *
+ * Si la consulta de handles falla, cae a la lista curada: es preferible una
+ * tienda con seis categorias a una sin ninguna.
  */
 export async function getCollections(): Promise<Collection[]> {
   if (!isShopifyConfigured) return MOCK_COLLECTIONS;
 
+  let handles: string[] = [...COLLECTION_HANDLES];
+
+  try {
+    const data = await storefrontFetch<{
+      collections: { edges: { node: { handle: string } }[] };
+    }>(COLLECTION_HANDLES_QUERY, { first: 50 });
+
+    const enShopify = data.collections.edges.map((e) => e.node.handle);
+    const curadas: readonly string[] = COLLECTION_HANDLES;
+
+    handles = [
+      ...COLLECTION_HANDLES.filter((h) => enShopify.includes(h)),
+      ...enShopify.filter(
+        (h) => !curadas.includes(h) && !COLLECTION_HANDLES_OCULTOS.includes(h),
+      ),
+    ];
+  } catch (error) {
+    console.warn(
+      "No se pudo listar las collections de Shopify, se usa la lista curada:",
+      error,
+    );
+  }
+
   const collections = await Promise.all(
-    COLLECTION_HANDLES.map((handle) => getCollectionByHandle(handle)),
+    handles.map((handle) => getCollectionByHandle(handle)),
   );
-  return collections.filter((c): c is Collection => c !== null);
+
+  return collections.filter(
+    (c): c is Collection => c !== null && c.products.length > 0,
+  );
 }
 
 export async function getCollectionByHandle(

@@ -49,15 +49,26 @@ export async function SiteHeader() {
           >
             Productos
           </Link>
-          {collections.map((collection) => (
+          {/* Solo las primeras cuatro. Las categorias ya no son una lista fija
+              de seis: `getCollections()` muestra las que existan en Shopify,
+              asi que el menu podia crecer hasta desbordar la barra. Las demas
+              viven en /categorias, que ahora es una pagina de catalogo de
+              verdad y no un simple indice. */}
+          {collections.slice(0, 4).map((collection) => (
             <Link
               key={collection.id}
               href={`/categorias/${collection.handle}`}
-              className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon md:inline-flex"
+              className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon lg:inline-flex"
             >
               {collection.title}
             </Link>
           ))}
+          <Link
+            href="/categorias"
+            className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon md:inline-flex"
+          >
+            Categorías
+          </Link>
           <Link
             href="/cuenta"
             className="hidden rounded-lg px-3 py-2 transition-colors hover:bg-crema hover:text-carbon md:inline-flex"
