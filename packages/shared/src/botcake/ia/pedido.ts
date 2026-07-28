@@ -375,6 +375,8 @@ export async function crearPedidoDesdeChat(
       body: JSON.stringify({
         ...comun,
         draftOrderId: draft.draftOrderId,
+        // Sin esto no se puede medir cuanto cierra el chat frente a la web.
+        canal: "whatsapp",
         notas: entrada.notas
           ? `Pedido tomado por WhatsApp. ${entrada.notas}`
           : "Pedido tomado por WhatsApp.",

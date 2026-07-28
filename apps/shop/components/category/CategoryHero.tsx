@@ -31,8 +31,12 @@ export function CategoryHero({ collection }: { collection: Collection }) {
           </h1>
           <div className="linea-dorada w-12" />
           <p className="max-w-md text-sm text-carbon-suave">{tagline}</p>
+          {/* Una categoria mezcla productos contraentrega y de vitrina, asi
+              que aqui NO se puede prometer "Pago al recibir": en "Kits de
+              inicio" seria mentira en los 17 productos. Se muestran los
+              sellos que valen para ambos. */}
           <div className="mt-2">
-            <TrustBadges />
+            <TrustBadges modo="vitrina" />
           </div>
         </div>
       </div>

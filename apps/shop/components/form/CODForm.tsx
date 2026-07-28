@@ -443,9 +443,9 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         </div>
 
         <p className="text-sm text-carbon-suave">
-          Tomaste una gran decisión. En los próximos días vas a notar la
-          diferencia en tu piel — igual que miles de mujeres que ya forman parte
-          de la comunidad Milito Life Shop.
+          Tomaste una gran decisión. Estás estrenando un ritual que Nu Skin
+          vende en medio mundo — y aquí lo pagas solo cuando lo tengas en las
+          manos.
         </p>
 
         <div className="flex flex-col gap-2.5 w-full">

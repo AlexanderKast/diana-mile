@@ -48,6 +48,29 @@ export function InstallBanner({ activo = true }: { activo?: boolean }) {
   const [mostrarIOS, setMostrarIOS] = useState(false);
   const [visible, setVisible] = useState(false);
 
+  // La instalacion se anota cuando de verdad ocurre. El evento lo dispara
+  // el navegador, asi que llega tambien si la persona instala desde el menu
+  // sin pasar por el banner — que es como se instala la mitad de las veces.
+  useEffect(() => {
+    function alInstalar() {
+      const cuerpo = JSON.stringify({
+        tipo: "instalacion",
+        ruta: window.location.pathname,
+        plataforma: esIOS() ? "ios" : "android-escritorio",
+      });
+      try {
+        navigator.sendBeacon?.(
+          "/api/eventos",
+          new Blob([cuerpo], { type: "application/json" }),
+        );
+      } catch {
+        // Que no se registre no puede estropearle la instalacion a nadie.
+      }
+    }
+    window.addEventListener("appinstalled", alInstalar);
+    return () => window.removeEventListener("appinstalled", alInstalar);
+  }, []);
+
   useEffect(() => {
     if (!activo || esStandalone() || estaDismisseado()) return;
 

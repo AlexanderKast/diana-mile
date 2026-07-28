@@ -27,6 +27,9 @@ import {
 } from "./conversacion";
 import { FALLBACK_HUMANO, FORMATO_WHATSAPP, VOZ_MILITO } from "./voz";
 import { TECNICAS_CIERRE } from "./cierre";
+import { bloquePersuasion } from "./persuasion";
+import { sincronizarLeadDesdeChat } from "../../crm/lead-agente";
+import type { FaseAgente } from "../../crm/scoring";
 import {
   detectarEscalada,
   escalarAHumano,
@@ -259,6 +262,7 @@ function construirSystemPrompt(
   contexto: string,
   aprendido = "",
   adicional: OfertaUpsell | null = null,
+  fase: FaseAgente = "descubrimiento",
 ): string {
   const instruccionesExtra = experto.escalaAHumano
     ? `\n\nATENCION — ESTA CONVERSACION ES DE SOPORTE: la persona esta preguntando por un pedido o tiene un problema.
@@ -271,7 +275,11 @@ function construirSystemPrompt(
   return [
     VOZ_MILITO,
     `TU ESPECIALIDAD EN ESTE MOMENTO:\n${experto.conocimiento}`,
-    experto.vende ? TECNICAS_CIERRE : "",
+    // El marco de persuasion sustituye al bloque plano de tecnicas: se le da
+    // solo lo que toca en esta fase. TECNICAS_CIERRE sigue entrando en la
+    // fase de cierre, donde su detalle de toma de datos si aplica.
+    experto.vende ? bloquePersuasion(fase) : "",
+    experto.vende && fase === "cierre" ? TECNICAS_CIERRE : "",
     contexto,
     // Va antes de la regla de no inventar: si ya sabe la respuesta, no
     // tiene por que escalar.
@@ -541,11 +549,34 @@ export async function responderMensaje(
     // El adicional ofrecido y sin responder viaja en el prompt: sin eso,
     // un "si" suelto no significa nada y habria que volver a preguntar.
     const adicional = await ofertaPendiente(supabase, conversacion.id);
+
+    // Califica al prospecto CON este mensaje, antes de responderle.
+    //
+    // Aca es donde el embudo deja de ser un tablero que alguien llena a mano:
+    // cada mensaje mueve el score, el score decide la fase, y la fase decide
+    // con que instrucciones se le habla. Un lead frio recibe al setter —que
+    // pregunta y no pide direccion—; uno caliente recibe al closer. Si esto
+    // falla, `sincronizarLeadDesdeChat` devuelve la fase mas conservadora y
+    // la conversacion sigue igual.
+    const estadoLead = await sincronizarLeadDesdeChat(
+      supabase,
+      telefonoE164,
+      conversacion.nombre ?? nombre ?? null,
+      {
+        texto,
+        ciudad: ciudadConocida,
+        ciudadConRecaudo: cobertura?.recaudo,
+        escalada: Boolean(conversacion.escaladoAt),
+        cerroPedido: Boolean(pedido),
+      },
+    );
+
     const system = construirSystemPrompt(
       experto,
       contexto,
       formatearAprendido(aprendido),
       adicional,
+      estadoLead.fase,
     );
     if (aprendido.length) {
       void marcarUsado(

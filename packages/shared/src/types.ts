@@ -244,6 +244,51 @@ export type Lead = {
   convertido: boolean;
   shopify_draft_order_id: string | null;
   created_at: string;
+  /**
+   * Embudo COMERCIAL. No confundir con `Pedido.estado`, que es el operativo:
+   * un lead `cerrado` es justo el que arranca un pedido `pendiente`.
+   */
+  etapa: EtapaLead;
+  /** 0-100. Lo calcula `@diana-mile/shared/crm/scoring`, no la base. */
+  score: number;
+  temperatura: TemperaturaLead;
+  /** Estimacion por etapa x temperatura, recalibrable. No es un modelo. */
+  probabilidad_cierre: number | null;
+  valor_estimado: number | null;
+  /** Obligatorio cuando `etapa` es "perdido" — lo fuerza un CHECK en la base. */
+  motivo_perdida: string | null;
+  asignado_a: string | null;
+  ultima_interaccion_at: string | null;
+  updated_at: string;
+  pedido_id: string | null;
+};
+
+export type EtapaLead =
+  | "nuevo"
+  | "calificado"
+  | "negociacion"
+  | "cerrado"
+  | "perdido";
+
+export type TemperaturaLead = "frio" | "tibio" | "caliente";
+
+export type TipoActividadLead =
+  | "mensaje_entrante"
+  | "mensaje_saliente"
+  | "llamada"
+  | "cambio_etapa"
+  | "nota"
+  | "pedido"
+  | "objecion";
+
+export type LeadActividad = {
+  id: string;
+  lead_id: string;
+  tipo: TipoActividadLead;
+  detalle: string | null;
+  payload: Record<string, unknown> | null;
+  creado_por: string | null;
+  created_at: string;
 };
 
 export type EstadoPedido =

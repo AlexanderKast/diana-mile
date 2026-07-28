@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       slug,
       descuentoAplicado,
       envioPrioritario,
+      canal,
     } = body ?? {};
 
     if (!draftOrderId || !nombre || !telefono || !variantId || !slug) {
@@ -143,6 +144,9 @@ export async function POST(request: NextRequest) {
           cantidad: 1,
           precio_total: precioTotal,
           estado: "pendiente",
+          // De donde salio la venta. Lo manda el agente cuando cierra por
+          // chat; el formulario de la web no manda nada y cuenta como web.
+          canal_venta: canal === "whatsapp" ? "whatsapp" : "web",
           notas: notas || null,
         })
         .select("id")

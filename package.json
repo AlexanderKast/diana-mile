@@ -25,7 +25,9 @@
     "shopify:webhooks": "node scripts/webhooks-shopify.mjs",
     "nuskin:metafields": "node scripts/setup-metafields-nuskin.mjs",
     "nuskin:backfill": "node scripts/backfill-nuskin.mjs",
-    "wa:guardas": "tsx scripts/probar-guardas.mts"
+    "wa:guardas": "tsx scripts/probar-guardas.mts",
+    "crm:scoring": "tsx scripts/probar-scoring.mts",
+    "wa:persuasion": "tsx scripts/probar-persuasion.mts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

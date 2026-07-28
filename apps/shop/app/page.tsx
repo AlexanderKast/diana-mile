@@ -11,9 +11,9 @@ import { SocialProofSection } from "@/components/site/SocialProofSection";
 import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Bienestar probado por Diana Mile",
+  title: "Milito Life Shop — Rituales Nu Skin, contraentrega en Colombia",
   description:
-    "Bienestar, piel y tendencia probados por Diana Mile, entrenadora física y personal de salud. Pago contraentrega en buena parte de Colombia, productos 100% originales.",
+    "Los rituales de Nu Skin que ya siguen miles de mujeres en el mundo, ahora en Colombia. Pago contraentrega en buena parte del país, producto 100% original.",
 };
 
 const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
@@ -32,9 +32,9 @@ const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
 const PILARES = [
   {
     numero: "01",
-    titulo: "Probado antes que tú",
+    titulo: "Probado aquí antes de llegarte",
     descripcion:
-      "Cada producto que ves aquí pasó primero por el ritual de Diana. Si no le funcionó, no llegó a la tienda.",
+      "Nu Skin fabrica cientos de productos. Aquí solo llega lo que Diana usó primero: si no le funcionó, no entró al catálogo.",
   },
   {
     numero: "02",
@@ -74,14 +74,14 @@ export default async function HomePage() {
               Distribuidora independiente Nu Skin
             </p>
             <h1 className="mt-5 font-display text-[44px] leading-[0.95] tracking-tight text-carbon md:text-[76px]">
-              Probado por Diana,
+              Lo que el mundo
               <br />
-              hecho para ti
+              ya usa
             </h1>
             <div className="linea-dorada mt-7 w-16" />
             <p className="mt-7 max-w-md text-[15px] leading-relaxed text-carbon-suave">
-              Bienestar, piel y tendencia — lo que uso y recomiendo con mi
-              nombre. Pago contraentrega en buena parte de Colombia.
+              Los rituales de Nu Skin que ya siguen miles de mujeres en el
+              mundo. Aquí los pides pagando al recibir.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link href="/productos">

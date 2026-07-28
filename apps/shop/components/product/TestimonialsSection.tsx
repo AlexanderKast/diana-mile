@@ -3,20 +3,6 @@
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 import type { LandingTestimonial } from "@diana-mile/shared/types";
 
-function IconStar() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 20 20"
-      fill="var(--dorado)"
-      aria-hidden="true"
-    >
-      <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L10 1.5z" />
-    </svg>
-  );
-}
-
 export function TestimonialsSection({
   productName,
   items,
@@ -81,11 +67,14 @@ export function TestimonialsSection({
               key={item.title}
               className="min-w-[85%] snap-center flex flex-col gap-3 bg-blanco border border-arena rounded-2xl p-5 md:min-w-0"
             >
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <IconStar key={i} />
-                ))}
-              </div>
+              {/* Aqui habia cinco estrellas doradas fijas en cada tarjeta.
+                  Nadie las puso: son afirmaciones sobre como se compra
+                  ("pagas al recibir", "soporte por WhatsApp"), no
+                  valoraciones de nadie. Pintar una calificacion que no
+                  existe es la version silenciosa de inventar una resena.
+                  Cuando haya reseñas reales, la estrella vuelve con su
+                  numero al lado. */}
+              <div className="linea-dorada w-8" />
               <p className="text-[14px] font-semibold text-carbon">
                 {item.title}
               </p>

@@ -25,6 +25,7 @@ export const NAV_GRUPOS: NavGroup[] = [
     titulo: "Operaciones",
     items: [
       { label: "Dashboard", href: "/dashboard", roles: TODOS },
+      { label: "Métricas", href: "/dashboard/metricas", roles: TODOS },
       {
         label: "Pedidos",
         href: "/dashboard/pedidos",
@@ -36,6 +37,11 @@ export const NAV_GRUPOS: NavGroup[] = [
         roles: ["superadmin", "admin"],
       },
       {
+        label: "Pipeline",
+        href: "/dashboard/pipeline",
+        roles: ["superadmin", "admin"],
+      },
+      {
         label: "Confirmación",
         href: "/dashboard/confirmacion",
         roles: ["superadmin", "admin", "confirmador"],
@@ -44,6 +50,11 @@ export const NAV_GRUPOS: NavGroup[] = [
         label: "Logística",
         href: "/dashboard/logistica",
         roles: ["superadmin", "admin", "logistica"],
+      },
+      {
+        label: "Conversaciones",
+        href: "/dashboard/conversaciones",
+        roles: ["superadmin", "admin", "confirmador"],
       },
       {
         label: "WhatsApp",
@@ -169,6 +180,14 @@ const API_REGLAS: {
     test: (p) =>
       p.startsWith("/api/admin/orders") || p.startsWith("/api/admin/leads"),
     roles: ["superadmin", "admin"],
+  },
+  {
+    // Quien confirma pedidos tambien atiende el chat: sin esto caeria al
+    // default y no podria responderle a nadie.
+    test: (p) =>
+      p.startsWith("/api/admin/conversaciones") ||
+      p.startsWith("/api/admin/whatsapp"),
+    roles: ["superadmin", "admin", "confirmador"],
   },
 ];
 

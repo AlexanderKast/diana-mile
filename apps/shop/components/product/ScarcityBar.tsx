@@ -77,7 +77,11 @@ export function ScarcityBar() {
         {despacho.modo === "manana" && `Pide hoy y sale mañana antes de las ${DESPACHO_HORA}:00 AM`}
         {despacho.modo === "lunes" && "Pide hoy y sale el lunes"}
       </p>
-      <p className="mt-1 text-xs text-carbon-suave">Entrega en 2 a 5 días hábiles, según tu ciudad</p>
+      {/* El resto de la pagina promete 24-72h. Decir "2 a 5 dias" a diez
+          centimetros del boton de pedir es contradecirse en el peor momento.
+          El rango real por municipio vive en `cobertura_entrega` y se lo damos
+          a la clienta cuando ya sabemos su ciudad — aqui todavia no. */}
+      <p className="mt-1 text-xs text-carbon-suave">Entrega en 24-72h en ciudades principales</p>
     </div>
   );
 }
