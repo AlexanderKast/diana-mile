@@ -28,11 +28,17 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-arena/80 bg-blanco/95 backdrop-blur">
-      <div className="mx-auto flex min-h-[60px] max-w-6xl items-center justify-between gap-4 px-5 md:px-6">
-        <div className="flex items-center gap-1">
+      {/* `h-[var(--alto-header)]` y no `min-h-`: la barra de busqueda del
+          catalogo se pega justo debajo con ese mismo valor, asi que el header
+          tiene que medir exactamente eso. Con `min-h-` el logo se partia en dos
+          lineas cuando el menu apretaba, el header crecia y la barra fija
+          quedaba tapada. De ahi tambien el `whitespace-nowrap` y el
+          `shrink-0`. */}
+      <div className="mx-auto flex h-[var(--alto-header)] max-w-6xl items-center justify-between gap-4 px-5 md:px-6">
+        <div className="flex shrink-0 items-center gap-1">
           <Link
             href="/"
-            className="font-display text-2xl text-carbon"
+            className="whitespace-nowrap font-display text-[21px] text-carbon sm:text-2xl"
             aria-label="Milito Life Shop inicio"
           >
             Milito Life Shop

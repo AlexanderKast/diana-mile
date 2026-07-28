@@ -26,7 +26,12 @@ export function ProductCard({ product }: { product: Product }) {
         )
       : parseFloat(product.price);
 
-  const badgeLabel = product.title.includes("Epoch") ? "Epoch®" : null;
+  // La linea real del metafield antes que adivinarla del titulo. En un
+  // catalogo donde media docena de productos se llaman "ageLOC Tru Face" algo,
+  // saber si es ageLOC, Epoch o Pharmanex es lo que los distingue de un
+  // vistazo. Se conserva el caso de Epoch para los productos sin linea puesta.
+  const badgeLabel =
+    product.linea ?? (product.title.includes("Epoch") ? "Epoch®" : null);
 
   return (
     <Link
@@ -48,14 +53,12 @@ export function ProductCard({ product }: { product: Product }) {
           />
         ) : null}
 
-        {badgeLabel ? (
-          <span className="absolute left-2 top-2 rounded-md bg-blanco/90 px-1.5 py-0.5 text-[9.5px] font-semibold text-carbon backdrop-blur-sm">
-            {badgeLabel}
-          </span>
-        ) : null}
-
         {/* Como se compra este producto, visible antes de entrar. Discreto a
-            proposito: informa, no compite con la foto. */}
+            proposito: informa, no compite con la foto.
+
+            Es el UNICO rotulo sobre la foto. La linea estuvo un momento aqui
+            tambien, arriba a la izquierda, y en una tarjeta de ~170px los dos
+            se tocaban: "Cuidado Diario" quedaba recortado a "Cuidado D". */}
         <span
           className={cx(
             "absolute right-2 top-2 rounded-md px-1.5 py-0.5 text-[9.5px] font-semibold backdrop-blur-sm",
@@ -68,9 +71,21 @@ export function ProductCard({ product }: { product: Product }) {
         </span>
       </div>
 
-      <h3 className="line-clamp-2 font-display text-[15px] leading-snug text-carbon sm:text-[17px]">
-        {product.title}
-      </h3>
+      <div>
+        {badgeLabel ? (
+          <p className="truncate text-[9.5px] font-semibold uppercase tracking-[0.1em] text-dorado-oscuro sm:text-[10px]">
+            {badgeLabel}
+          </p>
+        ) : null}
+        <h3
+          className={cx(
+            "line-clamp-2 font-display text-[15px] leading-snug text-carbon sm:text-[17px]",
+            badgeLabel && "mt-1",
+          )}
+        >
+          {product.title}
+        </h3>
+      </div>
 
       <div className="mt-auto flex items-baseline justify-between gap-2 border-t border-arena/70 pt-2.5">
         <span className="font-display text-[17px] font-semibold leading-none text-dorado-oscuro sm:text-[19px]">

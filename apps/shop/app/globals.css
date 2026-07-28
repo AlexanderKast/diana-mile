@@ -26,6 +26,12 @@
   --rojo-alerta: #dc2626;
   --verde-ok: #22c55e;
   --azul-verified: #1da1f2;
+
+  /* Alto del header fijo. Lo usa cualquier otra barra que se quiera pegar
+     debajo de el (hoy la de busqueda y orden del catalogo). Un solo sitio
+     donde cambiarlo: con el numero escrito a mano en cada componente, tocar
+     el header dejaba esas barras tapadas a mitad de scroll. */
+  --alto-header: 60px;
 }
 
 @theme inline {
