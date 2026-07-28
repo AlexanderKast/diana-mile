@@ -48,7 +48,10 @@ export default async function CategoriaPage({ params }: CategoryPageProps) {
           Pronto nuevos productos en esta categoría.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
+        // Misma reja que el catalogo (`CatalogoFiltrado`): antes esta pagina
+        // iba a una sola columna en movil y el catalogo a dos, asi que el
+        // mismo producto cambiaba de tamaño segun por donde entraras.
+        <div className="grid grid-cols-2 gap-3 px-5 py-2 sm:gap-5 sm:px-6 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
           {collection.products.map((product, index) => (
             <div
               key={product.id}

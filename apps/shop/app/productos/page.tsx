@@ -6,7 +6,7 @@ import { CatalogoFiltrado } from "@/components/product/CatalogoFiltrado";
 export const metadata: Metadata = {
   title: "Productos — Milito Life Shop",
   description:
-    "Descubre la coleccion de bienestar y anti-edad de Milito Life Shop, disponible contraentrega en toda Colombia.",
+    "Catálogo Nu Skin de Milito Life Shop: cuidado facial, cuerpo, bienestar y tecnología en casa, con pago contraentrega en buena parte de Colombia.",
 };
 
 export default async function ProductosPage() {
@@ -14,13 +14,15 @@ export default async function ProductosPage() {
 
   return (
     <main className="flex flex-col gap-6 pb-16">
-      <div className="flex flex-col items-center gap-2 px-6 pt-10 text-center">
-        <h1 className="font-display text-3xl text-carbon">Productos</h1>
-        <p className="max-w-md text-sm text-carbon-suave">
+      <div className="flex flex-col items-center gap-2 px-5 pt-8 text-center sm:px-6 sm:pt-10">
+        <h1 className="font-display text-[30px] leading-tight text-carbon sm:text-[38px]">
+          Productos
+        </h1>
+        <p className="max-w-md text-[13.5px] leading-relaxed text-carbon-suave sm:text-sm">
           Los marcados <strong className="font-semibold text-morado">Contraentrega</strong> los
           pides aquí y pagas al recibir. Los de{" "}
           <strong className="font-semibold text-dorado-oscuro">Bajo pedido</strong> se
-          coordinan con Diana por WhatsApp.
+          coordinan con Milito por WhatsApp.
         </p>
       </div>
 

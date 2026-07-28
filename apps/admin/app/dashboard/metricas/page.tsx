@@ -225,7 +225,7 @@ export default async function MetricasPage({
           <Paso label="Conversaciones" valor={agente.conversaciones} />
           <Paso label="Mensajes" valor={agente.mensajes} />
           <Paso
-            label="Escaladas a Diana"
+            label="Escaladas a Milito"
             valor={agente.escaladas}
             de={agente.conversaciones}
           />

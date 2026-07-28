@@ -9,7 +9,7 @@ import { LinkCard } from "@/components/linktree/LinkCard";
 import { SocialCircleButton } from "@/components/linktree/SocialCircleButton";
 import { CheckIcon } from "@/components/linktree/SocialIcons";
 
-const NOMBRE = "Diana Mile";
+const NOMBRE = "Milito";
 const TAGLINE_DEFAULT = "Creadora UGC · Entrenadora deportiva · Empresaria";
 const FOTO_DEFAULT = "/images/diana-profile.jpg";
 

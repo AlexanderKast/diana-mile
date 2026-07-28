@@ -101,7 +101,7 @@ ${MARCA_ESCALAR} seguido de una frase corta diciendo que te falta.
 
 Ejemplo: ${MARCA_ESCALAR} pregunta si el producto sirve durante el embarazo
 
-Ese texto NUNCA lo ve la clienta: el sistema lo intercepta, le avisa a Diana y le responde a ella que le confirmas en un momento. Escalar no es fallar, es lo correcto. Inventar si es fallar.`;
+Ese texto NUNCA lo ve la clienta: el sistema lo intercepta, le avisa al equipo y le responde a ella que le confirmas en un momento. Escalar no es fallar, es lo correcto. Inventar si es fallar.`;
 
 /** Marca con la que el modelo pide que se cree la orden. */
 const MARCA_PEDIDO = "[[PEDIDO]]";
@@ -228,7 +228,7 @@ Si dice que no, o cambia de tema, NO insistas ni se lo vuelvas a ofrecer: le res
 }
 
 /** Marcador con que queda anotada una escalada en el historial. */
-const MARCA_ESCALADO_HISTORIAL = "(escalado a Diana:";
+const MARCA_ESCALADO_HISTORIAL = "(escalado a Milito:";
 
 /**
  * Si a esta persona ya se le contesto algo despues de que se escalara.

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Diana Mile",
-    short_name: "Diana Mile",
+    name: "Milito Life",
+    short_name: "Milito Life",
     description: "Wellness & Antiaging — todos mis enlaces en un solo lugar.",
     start_url: "/",
     display: "standalone",

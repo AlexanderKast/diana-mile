@@ -79,7 +79,14 @@ function calcularMetricasBasico(pedidos: Pedido[], gastos: Gasto[], periodo: str
 
   const ingresosBrutos = pedidos.reduce((acc, p) => acc + (p.precio_total ?? 0), 0);
   const ingresosRecaudados = pedidos.reduce((acc, p) => acc + (p.valor_recaudado ?? 0), 0);
-  const costoProductos = pedidos.reduce((acc, p) => acc + (p.costo_producto ?? 0), 0);
+  // `costo_producto` es el costo UNITARIO: hay que multiplicarlo por la
+  // cantidad, como ya hace lib/financiero.ts. Sin eso, un pedido de 3
+  // unidades cuenta el costo de una sola y el reporte da una utilidad
+  // mas alta que la del panel para el mismo mes.
+  const costoProductos = pedidos.reduce(
+    (acc, p) => acc + (p.costo_producto ?? 0) * (p.cantidad ?? 1),
+    0,
+  );
   const costoEnvios = pedidos.reduce((acc, p) => acc + (p.costo_envio ?? 0), 0);
 
   const gastoPublicidad = gastos

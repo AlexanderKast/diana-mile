@@ -13,18 +13,18 @@ export default async function CategoriasPage() {
 
   return (
     <main className="pb-24">
-      <section className="bg-crema px-6 py-16 md:py-24">
+      <section className="bg-crema px-5 py-12 sm:px-6 sm:py-16 lg:py-24">
         <div className="mx-auto max-w-6xl">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-carbon-suave sm:text-[11px]">
             El catálogo
           </p>
-          <h1 className="mt-3 max-w-2xl font-display text-[40px] leading-[0.98] tracking-tight text-carbon md:text-[64px]">
+          <h1 className="mt-3 max-w-2xl font-display text-[34px] leading-[0.98] tracking-tight text-carbon sm:text-[44px] lg:text-[64px]">
             Seis maneras de empezar
           </h1>
-          <div className="linea-dorada mt-6 w-16" />
-          <p className="mt-6 max-w-md text-[15px] leading-relaxed text-carbon-suave">
-            No están ordenadas como las ordena Nu Skin, sino por lo que quieres
-            lograr.
+          <div className="linea-dorada mt-5 w-14 sm:mt-6 sm:w-16" />
+          <p className="mt-5 max-w-md text-[14.5px] leading-relaxed text-carbon-suave sm:mt-6 sm:text-[15px]">
+            Están agrupadas por lo que quieres lograr, no por el orden del
+            catálogo de Nu Skin.
           </p>
         </div>
       </section>
@@ -34,8 +34,8 @@ export default async function CategoriasPage() {
           Pronto nuevas categorías.
         </p>
       ) : (
-        <div className="mx-auto max-w-6xl px-6 pt-14">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+        <div className="mx-auto max-w-6xl px-5 pt-10 sm:px-6 sm:pt-14">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:gap-6">
             {collections.map((collection, i) => (
               <div
                 key={collection.id}

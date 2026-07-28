@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@diana-mile/shared/ui/Button";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import type { CoberturaResumen } from "@/lib/cobertura-server";
 
 /**
@@ -15,6 +16,14 @@ import type { CoberturaResumen } from "@/lib/cobertura-server";
  * transportadora. Son numeros verificables, se actualizan solos, y dicen
  * algo que a la clienta de verdad le importa: si llegan a su municipio y en
  * cuantos dias.
+ *
+ * La version corta de estas mismas cifras vive en `TrustStrip`, pegada al
+ * hero: el dato tiene que llegar antes del primer scroll. Aqui queda el
+ * detalle y el CTA.
+ *
+ * En movil las tres cifras van en fila (cifra a la izquierda, explicacion a
+ * la derecha) en vez de apiladas con `gap-10`: mismos datos, un tercio del
+ * alto.
  */
 export function SocialProofSection({
   cobertura,
@@ -41,36 +50,34 @@ export function SocialProofSection({
     {
       cifra: `${cobertura.diasMin}-${cobertura.diasMax}`,
       titulo: "días de entrega",
-      detalle: "según tu municipio — te lo confirmamos antes de despachar",
+      detalle: "depende de tu municipio. Te lo confirmamos antes de despachar",
     },
   ];
 
   return (
-    <section className="bg-blanco px-6 py-20 md:py-28">
+    <section className="seccion-aire bg-blanco px-5 sm:px-6">
       <div className="mx-auto max-w-5xl">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
-          Cobertura real
-        </p>
-        <h2 className="mt-3 max-w-2xl font-display text-[32px] leading-[1.1] tracking-tight text-carbon md:text-[44px]">
-          No prometemos cobertura nacional. La medimos.
-        </h2>
-        <div className="linea-dorada mt-6 w-16" />
+        <SectionHeading
+          eyebrow="Envíos"
+          titulo="Hasta dónde llegamos"
+          descripcion="Estos números salen de la matriz de la transportadora y se actualizan cuando ella cambia su cobertura."
+        />
 
-        <dl className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+        <dl className="mt-9 grid gap-0 sm:mt-12 sm:grid-cols-3 sm:gap-8">
           {DATOS.map((d, i) => (
             <div
               key={d.titulo}
-              className="animate-fade-in-up border-t border-arena pt-5"
+              className="animate-fade-in-up flex items-baseline gap-4 border-t border-arena py-4 sm:block sm:py-0 sm:pt-5"
               style={{ animationDelay: `${i * 90}ms` }}
             >
-              <dt className="font-display text-[46px] leading-none text-carbon md:text-[56px]">
+              <dt className="w-[84px] shrink-0 font-display text-[32px] leading-none text-carbon sm:w-auto sm:text-[46px] lg:text-[56px]">
                 {d.cifra}
               </dt>
-              <dd className="mt-2">
-                <span className="text-[13px] uppercase tracking-[0.14em] text-dorado-oscuro">
+              <dd className="sm:mt-2">
+                <span className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-dorado-oscuro sm:text-[13px]">
                   {d.titulo}
                 </span>
-                <p className="mt-3 text-[14px] leading-relaxed text-carbon-suave">
+                <p className="mt-1 text-[13px] leading-relaxed text-carbon-suave sm:mt-3 sm:text-[14px]">
                   {d.detalle}
                 </p>
               </dd>
@@ -78,9 +85,11 @@ export function SocialProofSection({
           ))}
         </dl>
 
-        <div className="mt-14">
+        <div className="mt-9 sm:mt-14">
           <Link href="/productos">
-            <Button variant="primary">Ver el catálogo →</Button>
+            <Button variant="primary" className="w-full sm:w-auto">
+              Ver el catálogo →
+            </Button>
           </Link>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminSupabaseClient, getAdminUser } from "@diana-mile/shared/supabase/server";
 import type { RolUsuario } from "@diana-mile/shared/types";
 import Sidebar from "@/components/admin/Sidebar";
+import { SubNav } from "@/components/admin/SubNav";
 import { SessionProvider } from "@/lib/session";
 
 export default async function AdminLayout({
@@ -48,6 +49,7 @@ export default async function AdminLayout({
       <div className="min-h-screen bg-crema">
         <Sidebar />
         <main className="md:ml-56 min-h-screen bg-crema p-6 pt-20 md:pt-6">
+          <SubNav />
           {children}
         </main>
       </div>

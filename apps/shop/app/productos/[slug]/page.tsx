@@ -455,7 +455,7 @@ export default async function ProductoPage({ params }: ProductPageProps) {
           <p className="text-sm text-carbon-suave">
             {esCod
               ? "Envio contraentrega - Pagas al recibir"
-              : "Entrega coordinada de forma personalizada con Diana"}
+              : "Entrega coordinada de forma personalizada con Milito"}
           </p>
           {esCod ? (
             <SocialCTABand tone="gold-solid" buttonLabel="Empezar mi ritual" />

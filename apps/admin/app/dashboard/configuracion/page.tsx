@@ -240,7 +240,7 @@ export default function ConfiguracionPage() {
           label="Titulo del Linktree"
           value={linktreeTitulo}
           onChange={(e) => setLinktreeTitulo(e.target.value)}
-          placeholder="Diana Mile"
+          placeholder="Milito"
         />
         <Input
           label="Subtitulo del Linktree"

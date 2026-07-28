@@ -1,96 +1,90 @@
-"use client";
+import Link from "next/link";
+import { calcularAlertas, COLOR_SEVERIDAD, ETIQUETA_SEVERIDAD } from "@/lib/alertas";
+import { SilenciarAlerta } from "@/components/admin/SilenciarAlerta";
 
-import { useState } from "react";
-import { Button } from "@diana-mile/shared/ui/Button";
-import { Input, Textarea } from "@diana-mile/shared/ui/Input";
+export const metadata = {
+  title: "Alertas | Milito Life Shop Admin",
+};
 
-export default function NotificacionesPage() {
-  const [titulo, setTitulo] = useState("");
-  const [cuerpo, setCuerpo] = useState("");
-  const [url, setUrl] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [resultado, setResultado] = useState<{
-    enviados: number;
-    fallidos: number;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+// Se calculan contra los datos de este instante. Cachearlas mostraria
+// problemas ya resueltos, que es como se le enseña a la gente a ignorar
+// las alertas.
+export const dynamic = "force-dynamic";
 
-  async function handleEnviar() {
-    setError(null);
-    setResultado(null);
-
-    if (!titulo.trim() || !cuerpo.trim()) {
-      setError("El título y el mensaje son obligatorios.");
-      return;
-    }
-
-    setEnviando(true);
-    try {
-      const res = await fetch("/api/admin/notificaciones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titulo, cuerpo, url: url || undefined }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Error");
-      setResultado(json);
-      setTitulo("");
-      setCuerpo("");
-      setUrl("");
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "No se pudo enviar la notificación.",
-      );
-    } finally {
-      setEnviando(false);
-    }
-  }
+export default async function AlertasPage() {
+  const alertas = await calcularAlertas();
+  const criticas = alertas.filter((a) => a.severidad === "critica");
 
   return (
     <div>
-      <h1 className="font-display text-2xl text-carbon mb-2">
-        Notificaciones push
-      </h1>
-      <p className="text-sm text-carbon-suave mb-6">
-        Se envía a todos los que hayan activado notificaciones en la tienda
-        (recompra, contenido nuevo, promociones). Los cambios de estado de
-        pedido ya notifican automáticamente al cliente correspondiente.
-      </p>
-
-      <div className="bg-blanco border border-arena rounded-[4px] p-5 max-w-lg flex flex-col gap-4">
-        <Input
-          label="Título"
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          placeholder="Nuevo contenido disponible"
-        />
-        <Textarea
-          label="Mensaje"
-          rows={4}
-          value={cuerpo}
-          onChange={(e) => setCuerpo(e.target.value)}
-          placeholder="Ya subimos una nueva rutina a tu cuenta."
-        />
-        <Input
-          label="Enlace al tocar (opcional)"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="/cuenta/contenido"
-        />
-
-        {error && <p className="text-xs text-error">{error}</p>}
-        {resultado && (
-          <p className="text-xs text-dorado-oscuro">
-            Enviado a {resultado.enviados} suscriptor
-            {resultado.enviados === 1 ? "" : "es"}
-            {resultado.fallidos > 0 ? ` (${resultado.fallidos} fallidos)` : ""}.
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
+        <div>
+          <h1 className="font-display text-2xl text-carbon mb-1">Alertas</h1>
+          <p className="text-sm text-carbon-suave max-w-2xl">
+            Lo que necesita atención ahora mismo, calculado contra los datos
+            reales. Cada una lleva a la página donde se arregla.
           </p>
-        )}
-
-        <Button disabled={enviando} onClick={handleEnviar} className="w-fit">
-          {enviando ? "Enviando..." : "Enviar a todos"}
-        </Button>
+        </div>
+        <Link
+          href="/dashboard/notificaciones/push"
+          className="text-sm text-morado hover:text-morado-oscuro transition-colors whitespace-nowrap"
+        >
+          Enviar push a clientas →
+        </Link>
       </div>
+
+      {alertas.length === 0 ? (
+        <div className="bg-blanco border border-arena rounded-[4px] p-8 text-center">
+          <p className="font-display text-xl text-carbon mb-1">Todo en orden</p>
+          <p className="text-sm text-carbon-suave">
+            No hay nada pendiente: los productos están costeados, los pedidos al
+            día y el pipeline atendido.
+          </p>
+        </div>
+      ) : (
+        <>
+          {criticas.length > 0 && (
+            <p className="text-sm text-error mb-4">
+              {criticas.length}{" "}
+              {criticas.length === 1
+                ? "alerta crítica afecta"
+                : "alertas críticas afectan"}{" "}
+              los números que muestra el panel.
+            </p>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {alertas.map((alerta) => (
+              <div
+                key={alerta.tipo}
+                className={`border rounded-[4px] p-5 ${COLOR_SEVERIDAD[alerta.severidad]}`}
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wide opacity-70">
+                        {ETIQUETA_SEVERIDAD[alerta.severidad]}
+                      </span>
+                    </div>
+                    <p className="font-display text-lg leading-snug">{alerta.titulo}</p>
+                    <p className="text-sm mt-1 opacity-90">{alerta.detalle}</p>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {alerta.silenciable && <SilenciarAlerta tipo={alerta.tipo} />}
+                    <Link
+                      href={alerta.href}
+                      className="px-4 py-2 text-sm font-semibold bg-carbon text-blanco rounded-[4px] hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                    >
+                      {alerta.accion}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

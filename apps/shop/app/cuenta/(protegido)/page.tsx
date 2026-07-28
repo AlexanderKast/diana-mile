@@ -52,7 +52,7 @@ export default async function CuentaPage() {
           <p className="font-display text-lg text-carbon">Contenido premium</p>
           <p className="text-sm text-carbon-suave">
             {haComprado
-              ? "Rutinas, guías y planes de Diana."
+              ? "Rutinas, guías y planes de Milito."
               : "Se desbloquea con tu primera compra."}
           </p>
         </Link>

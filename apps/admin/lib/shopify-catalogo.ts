@@ -559,3 +559,154 @@ export async function guardarLandingCategoria(
     throw new Error("Error al escribir el metafield: " + JSON.stringify(errs));
   }
 }
+
+// ════════════════════════════════════════════════════════════════════
+// COSTEO
+// ════════════════════════════════════════════════════════════════════
+
+export type VarianteCosteo = {
+  /** gid de la variante. Es la llave contra `costos_producto`. */
+  id: string;
+  productoId: string;
+  productoTitulo: string;
+  varianteTitulo: string;
+  handle: string;
+  estado: string;
+  precio: number;
+  /** Necesario para escribir el costo de vuelta en Shopify. */
+  inventoryItemId: string | null;
+  /** `unitCost` de Shopify. Sirve para detectar desincronizacion. */
+  costoShopify: number | null;
+  codDisponible: boolean;
+};
+
+const VARIANTES_COSTEO_QUERY = `
+  query VariantesCosteo($cursor: String) {
+    productVariants(first: 100, after: $cursor, query: "vendor:'Nu Skin'") {
+      pageInfo { hasNextPage endCursor }
+      edges {
+        node {
+          id
+          title
+          price
+          inventoryItem { id unitCost { amount } }
+          product {
+            id
+            title
+            handle
+            status
+            codDisponible: metafield(namespace: "diana_mile", key: "cod_disponible") { value }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type RawVarianteCosteo = {
+  id: string;
+  title: string;
+  price: string;
+  inventoryItem: {
+    id: string;
+    unitCost: { amount: string } | null;
+  } | null;
+  product: {
+    id: string;
+    title: string;
+    handle: string;
+    status: string;
+    codDisponible: RawMetafield;
+  };
+};
+
+/**
+ * Todas las variantes Nu Skin con lo que hace falta para costearlas.
+ *
+ * Se consulta a nivel de VARIANTE y no de producto porque el costo vive
+ * ahi: un pack de 3 cuesta el triple que la unidad, y costear por
+ * producto le daria al pack un margen que no tiene.
+ *
+ * Se listan tambien los borradores: un producto sin publicar igual hay
+ * que costearlo antes de decidir a que precio sale.
+ */
+export async function listarVariantesParaCosteo(): Promise<VarianteCosteo[]> {
+  requireConfigurado();
+
+  const variantes: VarianteCosteo[] = [];
+  let cursor: string | null = null;
+
+  do {
+    const data: {
+      productVariants: {
+        pageInfo: { hasNextPage: boolean; endCursor: string };
+        edges: { node: RawVarianteCosteo }[];
+      };
+    } = await adminGraphQL(VARIANTES_COSTEO_QUERY, { cursor });
+
+    for (const edge of data.productVariants.edges) {
+      const node = edge.node;
+      const precio = parseFloat(node.price);
+      const costoRaw = node.inventoryItem?.unitCost?.amount;
+      const costoShopify = costoRaw != null ? parseFloat(costoRaw) : null;
+
+      variantes.push({
+        id: node.id,
+        productoId: node.product.id,
+        productoTitulo: node.product.title,
+        varianteTitulo: node.title,
+        handle: node.product.handle,
+        estado: node.product.status,
+        precio: Number.isFinite(precio) ? precio : 0,
+        inventoryItemId: node.inventoryItem?.id ?? null,
+        costoShopify: Number.isFinite(costoShopify as number) ? costoShopify : null,
+        codDisponible:
+          node.product.codDisponible?.value?.trim().toLowerCase() === "true",
+      });
+    }
+
+    cursor = data.productVariants.pageInfo.hasNextPage
+      ? data.productVariants.pageInfo.endCursor
+      : null;
+  } while (cursor);
+
+  return variantes;
+}
+
+/**
+ * Escribe el costo unitario en el `inventoryItem` de Shopify.
+ *
+ * La fuente de verdad es nuestra tabla `costos_producto`; esto es un
+ * espejo, para que el costo tambien se vea en el admin de Shopify y en
+ * sus informes de margen. Por eso quien llama debe tratar un fallo aqui
+ * como advertencia y no como error: que Shopify rechace el espejo no
+ * puede impedir que el costo quede guardado donde de verdad se usa.
+ */
+export async function guardarCostoEnShopify(
+  inventoryItemId: string,
+  costoUnitario: number,
+): Promise<void> {
+  requireConfigurado();
+
+  const data = await adminGraphQL<{
+    inventoryItemUpdate: {
+      userErrors: { field: string[]; message: string }[];
+    };
+  }>(
+    `mutation GuardarCosto($id: ID!, $input: InventoryItemInput!) {
+      inventoryItemUpdate(id: $id, input: $input) {
+        inventoryItem { id unitCost { amount } }
+        userErrors { field message }
+      }
+    }`,
+    {
+      id: inventoryItemId,
+      input: { cost: costoUnitario.toFixed(2) },
+    },
+  );
+
+  const errs = data.inventoryItemUpdate.userErrors;
+  if (errs.length) {
+    throw new Error("Shopify rechazo el costo: " + JSON.stringify(errs));
+  }
+}

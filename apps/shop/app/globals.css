@@ -190,3 +190,79 @@ a {
     animation: none;
   }
 }
+
+/* ── Carrusel horizontal con snap ────────────────────────────────────────
+   Patron de tienda en movil: una fila que se desliza y encaja, en vez de
+   una reja de tarjetas diminutas. Sin barra visible, pero sin romper el
+   scroll por teclado ni el foco.
+
+   OJO: aqui NO van `display` ni `overflow`. Este archivo se carga despues de
+   las utilities de Tailwind, asi que una regla propia con `display: flex` le
+   gana a `sm:grid` y el carrusel nunca volvia a ser reja en escritorio. El
+   display y el overflow se controlan con clases (`flex overflow-x-auto
+   sm:grid sm:overflow-visible`) y aqui queda solo el comportamiento de snap. */
+.carrusel-snap {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1.25rem;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.carrusel-snap::-webkit-scrollbar {
+  display: none;
+}
+
+.carrusel-snap > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+/* Titulos sobre foto: el degradado solo no garantiza contraste cuando la
+   imagen es clara justo debajo del texto. */
+.sombra-texto {
+  text-shadow: 0 1px 12px rgba(26, 23, 20, 0.55);
+}
+
+/* Escala de aire vertical unica para toda la tienda. En movil el ritmo era
+   80px por seccion (py-20) en las ocho secciones del home: 1.300px de vacio
+   y 18 pantallas de scroll. Aqui el aire crece con el ancho en vez de
+   arrancar en su valor de escritorio. */
+.seccion-aire {
+  padding-top: 3.5rem;
+  padding-bottom: 3.5rem;
+}
+
+@media (min-width: 640px) {
+  .seccion-aire {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .seccion-aire {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
+}
+
+/* Variante corta, para bandas de cierre y CTAs intermedios. */
+.seccion-aire-corta {
+  padding-top: 2.75rem;
+  padding-bottom: 2.75rem;
+}
+
+@media (min-width: 640px) {
+  .seccion-aire-corta {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .seccion-aire-corta {
+    padding-top: 5.5rem;
+    padding-bottom: 5.5rem;
+  }
+}

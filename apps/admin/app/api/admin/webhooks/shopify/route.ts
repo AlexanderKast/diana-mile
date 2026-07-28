@@ -4,6 +4,10 @@ import { waitUntil } from "@vercel/functions";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { cancelarPorShopifyOrderId } from "@diana-mile/shared/botcake/cancelacion";
 import { encolarAvisoPedidoNuevo } from "@diana-mile/shared/botcake/agentes";
+import {
+  costoUnitarioDeVariante,
+  gidDeVariante,
+} from "@diana-mile/shared/finanzas/costo-pedido";
 
 const WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET;
 
@@ -85,6 +89,13 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
   let pedidoId = existente?.id as string | undefined;
 
   if (!existente) {
+    // El webhook REST manda el id de variante como numero; el resto del
+    // sistema usa el gid de GraphQL. Sin normalizar, la busqueda no
+    // encuentra nada y todo pedido que entra por Shopify queda sin costo.
+    const costoProducto = await costoUnitarioDeVariante(
+      gidDeVariante(lineItem?.variant_id),
+    );
+
     const { data: creado } = await supabase
       .from("pedidos")
       .insert({
@@ -98,8 +109,12 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
         departamento: address?.province ?? null,
         producto_nombre: lineItem?.title ?? "Producto Shopify",
         producto_sku: lineItem?.sku ?? null,
+        // Sin esto no hay forma de recalcular el costo despues si el
+        // producto se costea mas tarde.
+        variant_id: gidDeVariante(lineItem?.variant_id),
         cantidad: lineItem?.quantity ?? 1,
         precio_total: total,
+        costo_producto: costoProducto,
         utm_source: noteAttrs.get("utm_source") ?? null,
         utm_campaign: noteAttrs.get("utm_campaign") ?? null,
         estado: "pendiente",

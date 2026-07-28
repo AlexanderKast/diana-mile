@@ -8,6 +8,7 @@ import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { encolarConfirmacionPedido } from "@diana-mile/shared/botcake/agentes";
 import { normalizeColombianMobile } from "@/lib/phone";
 import { getPricingConfig } from "@/lib/pricing-server";
+import { costoUnitarioDeVariante } from "@diana-mile/shared/finanzas/costo-pedido";
 import { signTelefonoToken } from "@/lib/push-token";
 import { sendMetaCapiEvent } from "@/lib/tracking/meta-capi";
 import { sendTikTokEvent } from "@/lib/tracking/tiktok-events";
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           mensaje:
-            "Este producto se gestiona de forma personalizada y no esta disponible para contraentrega. Escribele a Diana por WhatsApp para coordinarlo.",
+            "Este producto se gestiona de forma personalizada y no esta disponible para contraentrega. Escribele a Milito por WhatsApp para coordinarlo.",
         },
         { status: 400 },
       );
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           mensaje:
-            "Esta presentacion supera el monto que manejamos contraentrega. Escribele a Diana por WhatsApp y lo coordinan directamente.",
+            "Esta presentacion supera el monto que manejamos contraentrega. Escribele a Milito por WhatsApp y lo coordinan directamente.",
         },
         { status: 400 },
       );
@@ -121,6 +122,11 @@ export async function POST(request: NextRequest) {
         precioConDescuento +
         (envioPrioritario ? parseFloat(pricing.envioPrioritarioPrecio) : 0);
 
+      // El costo que rige HOY, congelado en el pedido. Si se consultara
+      // despues, la utilidad de un mes ya cerrado cambiaria sola cada vez
+      // que Nu Skin actualiza su lista de precios.
+      const costoProducto = await costoUnitarioDeVariante(variantId);
+
       const { data: pedidoInsertado, error: insertError } = await supabase
         .from("pedidos")
         .insert({
@@ -143,6 +149,7 @@ export async function POST(request: NextRequest) {
           variant_id: variantId,
           cantidad: 1,
           precio_total: precioTotal,
+          costo_producto: costoProducto,
           estado: "pendiente",
           // De donde salio la venta. Lo manda el agente cuando cierra por
           // chat; el formulario de la web no manda nada y cuenta como web.

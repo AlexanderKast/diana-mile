@@ -33,7 +33,7 @@ const COPY = {
   vitrina: {
     titulo: "Comprar así también es seguro",
     cuerpo:
-      "Diana coordina contigo cada paso antes de que pagues: qué llega, cuándo y cómo. Producto original de Nu Skin, con la misma garantía de reposición si algo llega mal.",
+      "Milito coordina contigo cada paso antes de que pagues: qué llega, cuándo y cómo. Producto original de Nu Skin, con la misma garantía de reposición si algo llega mal.",
   },
 } as const;
 

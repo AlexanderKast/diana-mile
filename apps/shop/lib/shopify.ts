@@ -301,7 +301,7 @@ const MOCK_COLLECTIONS: Collection[] = [
     handle: "bienestar-por-dentro",
     title: "Bienestar por dentro",
     description:
-      "Bienestar desde adentro — lo que Diana recomienda desde su experiencia como entrenadora física.",
+      "Bienestar desde adentro — lo que Milito recomienda desde su experiencia como entrenadora física.",
     image: null,
     landingContent: null,
     products: [],

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Milito Life Shop",
     short_name: "Milito Life Shop",
-    description: "Bienestar, piel y tendencia probados por Diana Mile.",
+    description: "Bienestar, piel y tendencia probados por Milito.",
     start_url: "/",
     display: "standalone",
     background_color: "#FAFAF8",

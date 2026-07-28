@@ -138,7 +138,8 @@ export function CatalogoFiltrado({ productos }: { productos: Product[] }) {
         )}
       </div>
 
-      <p className="px-6 text-xs text-ceniza">
+      {/* `ceniza` sobre blanco da 2.9:1 y a 12px no pasa WCAG AA. */}
+      <p className="px-5 text-xs text-carbon-suave sm:px-6">
         {visibles.length}{" "}
         {visibles.length === 1 ? "producto" : "productos"}
       </p>
@@ -160,7 +161,7 @@ export function CatalogoFiltrado({ productos }: { productos: Product[] }) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 px-5 sm:gap-5 sm:px-6 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
           {visibles.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

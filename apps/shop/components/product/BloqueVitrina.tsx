@@ -82,7 +82,7 @@ function ExternoIcon({ className }: { className?: string }) {
  */
 export function mensajeVitrina(product: Product): string {
   const sku = product.skuOficial ? ` (código ${product.skuOficial})` : "";
-  return `Hola Diana, me interesa el ${product.title}${sku} y quiero saber cómo lo puedo adquirir.`;
+  return `Hola Milito, me interesa el ${product.title}${sku} y quiero saber cómo lo puedo adquirir.`;
 }
 
 /** El enlace de WhatsApp del producto, o null si no hay un numero utilizable. */
@@ -103,7 +103,7 @@ export function BloqueVitrina({
   const precio = product.variants[0]?.price ?? product.price;
   const explicacion = product.motivoNoCod
     ? EXPLICACION[product.motivoNoCod]
-    : "Escríbele a Diana y coordinan juntas la entrega";
+    : "Escríbele a Milito y coordinan juntas la entrega";
   const hrefWhatsapp = hrefVitrina(product, numeroWhatsapp);
   const urlOficial = product.metafields.nuskinDirectUrl;
 
@@ -135,7 +135,7 @@ export function BloqueVitrina({
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-morado px-6 text-base font-bold tracking-wide text-blanco shadow-[0_6px_20px_rgba(107,78,140,0.35)] transition-all duration-200 hover:bg-morado-oscuro hover:scale-[1.02] active:scale-[0.97]"
           >
             <WhatsAppIcon />
-            Hablar con Diana
+            Hablar con Milito
           </a>
         )}
 
@@ -189,7 +189,7 @@ export function BarraVitrinaMovil({
           className="flex h-full w-full items-center justify-center gap-2 text-lg font-bold tracking-wide"
         >
           <WhatsAppIcon />
-          Hablar con Diana
+          Hablar con Milito
         </a>
       </div>
       <div className="h-16 md:hidden" />
@@ -222,7 +222,7 @@ export function BandaVitrina({
         className="flex min-h-[48px] w-full max-w-sm items-center justify-center gap-2 rounded-lg bg-morado px-6 text-base font-semibold tracking-wide text-blanco transition-all duration-200 hover:bg-morado-oscuro hover:scale-[1.02] active:scale-[0.97]"
       >
         <WhatsAppIcon />
-        Hablar con Diana
+        Hablar con Milito
       </a>
     </div>
   );

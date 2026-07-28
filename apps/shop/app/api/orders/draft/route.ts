@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           mensaje:
-            "Este producto se gestiona de forma personalizada y no esta disponible para contraentrega. Escribele a Diana por WhatsApp para coordinarlo.",
+            "Este producto se gestiona de forma personalizada y no esta disponible para contraentrega. Escribele a Milito por WhatsApp para coordinarlo.",
         },
         { status: 400 },
       );
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           mensaje:
-            "Esta presentacion supera el monto que manejamos contraentrega. Escribele a Diana por WhatsApp y lo coordinan directamente.",
+            "Esta presentacion supera el monto que manejamos contraentrega. Escribele a Milito por WhatsApp y lo coordinan directamente.",
         },
         { status: 400 },
       );

@@ -6,19 +6,21 @@ import { getCoberturaResumen } from "@/lib/cobertura-server";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CategoryCard } from "@/components/category/CategoryCard";
-import { DianaStory } from "@/components/site/DianaStory";
+import { HistoriaMilito } from "@/components/site/HistoriaMilito";
 import { SocialProofSection } from "@/components/site/SocialProofSection";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { TrustStrip } from "@/components/ui/TrustStrip";
 import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Rituales Nu Skin, contraentrega en Colombia",
+  title: "Milito Life Shop — Nu Skin original con pago contraentrega",
   description:
-    "Los rituales de Nu Skin que ya siguen miles de mujeres en el mundo, ahora en Colombia. Pago contraentrega en buena parte del país, producto 100% original.",
+    "Catálogo Nu Skin original en Colombia con asesoría de Milito. En buena parte del país pagas cuando el mensajero te lo entrega, no antes.",
 };
 
 const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
   process.env.NEXT_PUBLIC_WHATSAPP_NUMERO,
-  "Hola Diana, quiero información sobre tu acompañamiento de entrenamiento",
+  "Hola Milito, quiero información sobre tu acompañamiento de entrenamiento",
 );
 
 /**
@@ -32,21 +34,21 @@ const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
 const PILARES = [
   {
     numero: "01",
-    titulo: "Probado aquí antes de llegarte",
+    titulo: "Te asesoran antes de comprar",
     descripcion:
-      "Nu Skin fabrica cientos de productos. Aquí solo llega lo que Diana usó primero: si no le funcionó, no entró al catálogo.",
+      "Nu Skin tiene cientos de productos y no todos son para ti. Escríbele a Milito con tu caso y ella te dice cuál te sirve y cuál no vale la pena.",
   },
   {
     numero: "02",
-    titulo: "Pagas al recibir",
+    titulo: "Pagas cuando te llega",
     descripcion:
-      "En la mayor parte del país pagas cuando ya lo tienes en las manos. Los de mayor valor se coordinan contigo, uno a uno.",
+      "En la mayor parte del país pagas al mensajero, no antes. Los pedidos de mayor valor se cuadran contigo por WhatsApp.",
   },
   {
     numero: "03",
-    titulo: "100% original",
+    titulo: "Producto original",
     descripcion:
-      "Producto auténtico de Nu Skin, sin intermediarios dudosos. Milito Life Shop es distribuidora independiente.",
+      "Milito Life Shop es distribuidora independiente de Nu Skin. El producto viene de la marca, no de un tercero que revende.",
   },
 ];
 
@@ -60,44 +62,56 @@ export default async function HomePage() {
   // Se destacan los que se pueden pedir aquí mismo y tienen foto: mandar a
   // alguien desde el home a una ficha sin imagen —o a una que termina en
   // "escríbele a Diana"— es gastar el mejor clic de la página.
-  const destacados = products
-    .filter((p) => p.codDisponible && p.images.length > 0)
-    .slice(0, 3);
+  const elegibles = products.filter(
+    (p) => p.codDisponible && p.images.length > 0,
+  );
+
+  // 3 o 6, nunca 4 ni 5: en la reja de tres columnas de escritorio cualquier
+  // otro número deja una tarjeta huérfana en la segunda fila, que es
+  // exactamente lo que se veía antes en móvil con tres productos a dos
+  // columnas. Lo que no entra sigue estando a un clic en "Ver todo".
+  const destacados = elegibles.slice(0, elegibles.length >= 6 ? 6 : 3);
 
   return (
     <>
-      {/* Hero */}
+      {/* ── Hero ──────────────────────────────────────────────────────────
+          En móvil la foto ya no ocupa 4/5 del ancho de pantalla (~490px de
+          alto a 390px): con ese formato el h1, el párrafo y el botón caían
+          bajo el pliegue y la primera pantalla era una foto sin CTA. Con
+          16/11 la foto sigue mandando y el botón entra en pantalla. */}
       <section className="bg-crema">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 py-20 md:grid-cols-[1.05fr_0.95fr] md:gap-14 md:py-28">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-11 sm:gap-10 sm:px-6 sm:py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-14 lg:py-24">
           <div className="animate-fade-in-up order-2 md:order-1">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-ceniza">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-carbon-suave sm:text-[11px]">
               Distribuidora independiente Nu Skin
             </p>
-            <h1 className="mt-5 font-display text-[44px] leading-[0.95] tracking-tight text-carbon md:text-[76px]">
-              Lo que el mundo
+            <h1 className="mt-4 font-display text-[42px] leading-[0.94] tracking-tight text-carbon sm:mt-5 sm:text-[56px] lg:text-[76px]">
+              Primero lo recibes,
               <br />
-              ya usa
+              después lo pagas
             </h1>
-            <div className="linea-dorada mt-7 w-16" />
-            <p className="mt-7 max-w-md text-[15px] leading-relaxed text-carbon-suave">
-              Los rituales de Nu Skin que ya siguen miles de mujeres en el
-              mundo. Aquí los pides pagando al recibir.
+            <div className="linea-dorada mt-5 w-14 sm:mt-7 sm:w-16" />
+            <p className="mt-5 max-w-md text-[14.5px] leading-relaxed text-carbon-suave sm:mt-7 sm:text-[15px]">
+              Catálogo Nu Skin original, con Milito respondiendo del otro lado.
+              En la mayor parte del país le pagas al mensajero, no antes.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-4">
-              <Link href="/productos">
-                <Button variant="primary">Descubrir la tienda →</Button>
+            <div className="mt-7 flex flex-col items-start gap-4 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center">
+              <Link href="/productos" className="w-full sm:w-auto">
+                <Button variant="primary" className="w-full sm:w-auto">
+                  Ver el catálogo →
+                </Button>
               </Link>
               <Link
                 href="/categorias"
                 className="text-[14px] text-carbon underline decoration-dorado decoration-1 underline-offset-4 transition-colors hover:text-dorado-oscuro"
               >
-                Explorar por categoría
+                Buscar por categoría
               </Link>
             </div>
           </div>
 
           <div
-            className="animate-fade-in-up relative order-1 aspect-[4/5] w-full overflow-hidden rounded-2xl md:order-2"
+            className="animate-fade-in-up relative order-1 aspect-[16/11] w-full overflow-hidden rounded-2xl sm:aspect-[3/2] md:order-2 md:aspect-[4/5]"
             style={{ animationDelay: "80ms" }}
           >
             <Image
@@ -112,53 +126,83 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Los tres argumentos */}
-      <section className="bg-blanco px-6 py-20 md:py-28">
+      {/* Las tres garantías, antes del primer scroll. */}
+      <TrustStrip cobertura={cobertura} />
+
+      {/* ── Destacados ────────────────────────────────────────────────────
+          Sube por delante de las categorías: quien llega de un anuncio con
+          intención de comprar tenía que pasar antes por tres argumentos y
+          una reja de categorías. Ahora lo primero que ve tras el hero es
+          producto con precio y "contraentrega". */}
+      {destacados.length > 0 && (
+        <section className="seccion-aire bg-blanco px-5 sm:px-6">
+          <div className="mx-auto max-w-6xl">
+            <SectionHeading
+              eyebrow="Lo esencial"
+              titulo="Si es tu primera vez, empieza por aquí"
+              descripcion="Se piden en la página y se pagan cuando llegan a tu puerta."
+              accion={{ href: "/productos", label: "Ver todo" }}
+            />
+
+            {/* Móvil: carrusel que encaja, tarjetas de 70vw — la foto se ve.
+                Antes eran dos columnas de ~170px con un botón falso dentro.
+                Desde `sm` vuelve a ser reja. */}
+            <div className="carrusel-snap -mx-5 mt-8 flex gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:mt-12 sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0">
+              {destacados.map((product, i) => (
+                <div
+                  key={product.id}
+                  className="animate-fade-in-up w-[70vw] max-w-[280px] sm:w-auto sm:max-w-none"
+                  style={{ animationDelay: `${i * 90}ms` }}
+                >
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Los tres argumentos ───────────────────────────────────────────
+          En móvil eran tres bloques apilados con `gap-12`: ~600px de texto
+          corrido sin jerarquía. Ahora el número hace de ancla a la
+          izquierda y cada argumento se lee como una fila. */}
+      <section className="seccion-aire bg-crema px-5 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <div className="grid gap-12 md:grid-cols-3 md:gap-10">
+          <div className="grid gap-7 sm:gap-10 md:grid-cols-3">
             {PILARES.map((pilar, i) => (
               <div
                 key={pilar.numero}
-                className="animate-fade-in-up border-t border-arena pt-6"
+                className="animate-fade-in-up flex gap-4 border-t border-arena pt-5 sm:gap-5 sm:pt-6 md:block"
                 style={{ animationDelay: `${i * 90}ms` }}
               >
-                <span className="font-display text-[15px] tracking-[0.2em] text-dorado-oscuro">
+                <span className="w-7 shrink-0 font-display text-[15px] tracking-[0.16em] text-dorado-oscuro sm:w-9 sm:text-[17px] md:w-auto">
                   {pilar.numero}
                 </span>
-                <h2 className="mt-4 font-display text-[26px] leading-tight text-carbon">
-                  {pilar.titulo}
-                </h2>
-                <p className="mt-3 text-[14px] leading-relaxed text-carbon-suave">
-                  {pilar.descripcion}
-                </p>
+                <div className="md:mt-4">
+                  <h2 className="font-display text-[21px] leading-tight text-carbon text-balance sm:text-[24px] lg:text-[26px]">
+                    {pilar.titulo}
+                  </h2>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-carbon-suave sm:mt-3 sm:text-[14px]">
+                    {pilar.descripcion}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Categorias */}
+      {/* ── Categorías ────────────────────────────────────────────────────*/}
       {collections.length > 0 && (
-        <section className="bg-crema px-6 py-20 md:py-28">
+        <section className="seccion-aire bg-blanco px-5 sm:px-6">
           <div className="mx-auto max-w-6xl">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
-                  El catálogo
-                </p>
-                <h2 className="mt-3 font-display text-[32px] leading-tight tracking-tight text-carbon md:text-[44px]">
-                  Explora por categoría
-                </h2>
-              </div>
-              <Link
-                href="/categorias"
-                className="text-[14px] text-carbon underline decoration-dorado decoration-1 underline-offset-4 transition-colors hover:text-dorado-oscuro"
-              >
-                Ver todas
-              </Link>
-            </div>
+            <SectionHeading
+              eyebrow="El catálogo"
+              titulo="Explora por categoría"
+              accion={{ href: "/categorias", label: "Ver todas" }}
+            />
 
-            <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-12 sm:grid-cols-3 sm:gap-5 lg:gap-6">
               {collections.map((collection, i) => (
                 <div
                   key={collection.id}
@@ -173,74 +217,60 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Destacados */}
-      {destacados.length > 0 && (
-        <section className="bg-blanco px-6 py-20 md:py-28">
-          <div className="mx-auto max-w-6xl">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
-              Para empezar
-            </p>
-            <h2 className="mt-3 max-w-xl font-display text-[32px] leading-tight tracking-tight text-carbon md:text-[44px]">
-              Rituales esenciales
-            </h2>
-            <p className="mt-4 max-w-md text-[14px] leading-relaxed text-carbon-suave">
-              Los pides aquí mismo y pagas cuando llegan a tu puerta.
-            </p>
+      <HistoriaMilito />
 
-            <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
-              {destacados.map((product, i) => (
-                <div
-                  key={product.id}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${i * 90}ms` }}
-                >
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <SocialProofSection cobertura={cobertura} />
 
-      <DianaStory />
-
-      {/* Entrena con Diana — sin foto: ver el comentario de DianaStory */}
+      {/* ── Entrena con Milito ────────────────────────────────────────────
+          Va después de la cobertura a propósito: el CTA aquí es WhatsApp, no
+          catálogo, así que no compite con el botón de la sección anterior. */}
       {WHATSAPP_ENTRENAMIENTO_HREF && (
-        <section className="seccion-joya px-6 py-20 text-carbon md:py-24">
-          <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-ceniza">
-              Más allá de la tienda
+        <section className="seccion-joya seccion-aire-corta px-5 text-carbon sm:px-6">
+          <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 text-center sm:gap-6">
+            <div className="relative h-24 w-24 overflow-hidden rounded-full sm:h-28 sm:w-28">
+              <Image
+                src="/images/diana-retrato.jpg"
+                alt="Milito"
+                fill
+                className="object-cover"
+                sizes="112px"
+              />
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-carbon-suave sm:text-[11px]">
+              Entrenamiento
             </p>
-            <h2 className="font-display text-[32px] leading-tight tracking-tight md:text-[44px]">
-              Entrena con Diana
+            <h2 className="font-display text-[28px] leading-tight tracking-tight text-balance sm:text-[34px] lg:text-[44px]">
+              Entrena con Milito
             </h2>
-            <div className="linea-dorada w-16" />
-            <p className="max-w-md text-[15px] leading-relaxed text-carbon-suave">
-              Acompañamiento de bienestar y salud personal, uno a uno, con la
-              misma entrenadora que está detrás de esta tienda.
+            <div className="linea-dorada w-14 sm:w-16" />
+            <p className="max-w-md text-[14.5px] leading-relaxed text-carbon-suave sm:text-[15px]">
+              Además de la tienda, Milito entrena uno a uno. Si quieres armar tu
+              rutina con ella, escríbele y lo hablan.
             </p>
             <a
               href={WHATSAPP_ENTRENAMIENTO_HREF}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2"
+              className="mt-1 w-full sm:w-auto"
             >
-              <Button variant="primary">Escribir por WhatsApp →</Button>
+              <Button variant="primary" className="w-full sm:w-auto">
+                Escríbele por WhatsApp →
+              </Button>
             </a>
           </div>
         </section>
       )}
 
-      <SocialProofSection cobertura={cobertura} />
-
-      {/* Cierre */}
-      <section className="bg-crema px-6 py-20 text-center md:py-24">
-        <h2 className="font-display text-[32px] leading-tight tracking-tight text-carbon md:text-[40px]">
-          Empieza tu ritual hoy
+      {/* ── Cierre ────────────────────────────────────────────────────────*/}
+      <section className="seccion-aire-corta bg-crema px-5 text-center sm:px-6">
+        <h2 className="font-display text-[28px] leading-tight tracking-tight text-carbon text-balance sm:text-[34px] lg:text-[40px]">
+          Pídelo hoy, págalo cuando llegue
         </h2>
-        <div className="mt-8">
+        <div className="mx-auto mt-7 max-w-xs sm:mt-8 sm:max-w-none">
           <Link href="/productos">
-            <Button variant="primary">Ver productos</Button>
+            <Button variant="primary" className="w-full sm:w-auto">
+              Ver productos
+            </Button>
           </Link>
         </div>
       </section>

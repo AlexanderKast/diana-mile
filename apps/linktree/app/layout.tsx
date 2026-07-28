@@ -18,7 +18,7 @@ const inter = Inter({
   weight: ["300", "400", "500"],
 });
 
-const TITULO = "Diana Mile | Milito Life";
+const TITULO = "Milito Life";
 const DESCRIPCION =
   "Entrenamientos personalizados 1:1, Milito Life Store y contenido UGC para marcas. Te cuidas porque lo mereces ✨";
 // TODO: reemplazar por foto real de Diana 1200x630
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Diana Mile — Milito Life",
+        alt: "Milito Life",
       },
     ],
   },

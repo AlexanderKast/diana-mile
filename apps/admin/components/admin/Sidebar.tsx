@@ -8,6 +8,10 @@ import { createClient } from "@diana-mile/shared/supabase/client";
 import type { RolUsuario } from "@diana-mile/shared/types";
 import { useSession } from "@/lib/session";
 import { NAV_GRUPOS } from "@/lib/nav";
+import { CampanaAlertas } from "@/components/admin/CampanaAlertas";
+
+/** Quien ve las alertas. Son operativas y financieras a la vez. */
+const ROLES_ALERTAS: RolUsuario[] = ["superadmin", "admin", "financiero"];
 
 const ROL_LABELS: Record<RolUsuario, string> = {
   superadmin: "Superadmin",
@@ -29,8 +33,18 @@ function NavLinks({
 }) {
   return (
     <nav className="flex flex-col gap-4 overflow-y-auto">
+      {ROLES_ALERTAS.includes(rol) && (
+        <div onClick={onNavigate}>
+          <CampanaAlertas />
+        </div>
+      )}
       {NAV_GRUPOS.map((grupo) => {
-        const items = grupo.items.filter((item) => item.roles.includes(rol));
+        // `oculto` no significa "sin permiso": esas paginas siguen existiendo
+        // y con su gate de rol, solo que se llegan por la pestaña de su
+        // seccion en vez de por la barra.
+        const items = grupo.items.filter(
+          (item) => !item.oculto && item.roles.includes(rol),
+        );
         if (items.length === 0) return null;
         return (
           <div key={grupo.titulo}>

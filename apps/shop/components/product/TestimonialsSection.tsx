@@ -97,7 +97,7 @@ export function TestimonialsSection({
             rel="noopener noreferrer"
             className="btn-shine mx-auto flex min-h-[48px] w-full max-w-sm items-center justify-center rounded-lg bg-morado px-6 text-blanco text-sm font-medium tracking-wide transition-all duration-200 hover:bg-morado-oscuro hover:scale-[1.02] active:scale-[0.97]"
           >
-            Hablar con Diana
+            Hablar con Milito
           </a>
         ) : (
           <button

@@ -26,7 +26,7 @@ export default async function ContenidoPage() {
         <p className="font-display text-xl text-carbon">Contenido premium</p>
         <p className="max-w-sm text-sm text-carbon-suave">
           Se desbloquea con tu primera compra: rutinas, guías y planes de
-          alimentación de Diana.
+          alimentación de Milito.
         </p>
         <Link href="/productos">
           <Button variant="primary">Ver productos →</Button>
@@ -49,7 +49,7 @@ export default async function ContenidoPage() {
 
       {!contenidos || contenidos.length === 0 ? (
         <p className="text-sm text-carbon-suave">
-          Pronto vas a encontrar aquí rutinas, guías y planes de Diana.
+          Pronto vas a encontrar aquí rutinas, guías y planes de Milito.
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
