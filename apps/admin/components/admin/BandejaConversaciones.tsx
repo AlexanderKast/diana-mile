@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cx } from "@diana-mile/shared/utils";
+import { Etiquetas } from "@/components/admin/Etiquetas";
 
 /**
  * Bandeja de conversaciones de WhatsApp dentro del panel.
@@ -201,6 +202,15 @@ export default function BandejaConversaciones() {
               {!c.ventanaAbierta && (
                 <span className="text-dorado-oscuro">ventana cerrada</span>
               )}
+            </div>
+            <div className="mt-1">
+              <Etiquetas
+                fase="nuevo"
+                canal="whatsapp"
+                escalado={Boolean(c.escalado_at)}
+                max={3}
+                compacto
+              />
             </div>
           </button>
         ))}

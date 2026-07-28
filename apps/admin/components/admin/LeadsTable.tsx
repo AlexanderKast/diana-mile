@@ -3,6 +3,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { cx } from "@diana-mile/shared/utils";
+import { Etiquetas } from "@/components/admin/Etiquetas";
 import type { Lead } from "@diana-mile/shared/types";
 
 type LeadsTableProps = {
@@ -210,18 +211,28 @@ export default function LeadsTable({ leads }: LeadsTableProps) {
                     </td>
                     <td className="py-3 px-4 text-carbon-suave">{fuenteLabel(lead.fuente)}</td>
                     <td className="py-3 px-4">
-                      {lead.fuente === "checkout_abandonado" ? (
-                        <span
-                          className={cx(
-                            "inline-block px-2.5 py-1 rounded-[2px] text-xs font-medium",
-                            lead.convertido ? "bg-dorado/20 text-dorado-oscuro" : "bg-morado/15 text-morado"
-                          )}
-                        >
-                          {lead.convertido ? "Convertido" : "Pendiente"}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {lead.fuente === "checkout_abandonado" && (
+                          <span
+                            className={cx(
+                              "inline-block w-fit px-2.5 py-1 rounded-[2px] text-xs font-medium",
+                              lead.convertido
+                                ? "bg-dorado/20 text-dorado-oscuro"
+                                : "bg-morado/15 text-morado"
+                            )}
+                          >
+                            {lead.convertido ? "Convertido" : "Pendiente"}
+                          </span>
+                        )}
+                        <Etiquetas
+                          fase={lead.convertido ? "nuevo_pedido" : "nuevo"}
+                          canal={lead.fuente}
+                          producto={lead.producto_interes}
+                          ciudad={lead.ciudad}
+                          max={3}
+                          compacto
+                        />
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       {!lead.convertido && (

@@ -336,3 +336,91 @@ export async function recuperarCarritosAbandonados(
 
   return { evaluados: leads.length, encolados };
 }
+
+/**
+ * Persigue a quien conversó, quedó calificado y NO compró.
+ *
+ * POR QUE HACIA FALTA
+ * `recuperarCarritosAbandonados` solo alcanza a quien llego al formulario de
+ * la web. Quien hablo por WhatsApp, mostro interes y se enfrio no lo tocaba
+ * nadie: se quedaba en la conversacion sin que ningun proceso volviera por el.
+ * Ahora que el pipeline sabe quien esta tibio o caliente, se puede.
+ *
+ * A QUIEN SI Y A QUIEN NO
+ * Solo a quien el agente ya califico (tibio o caliente). A un lead frio
+ * escribirle es spam: no mostro interes suficiente y el unico efecto seria
+ * que pida que no le escriban mas.
+ *
+ * UN SOLO TOQUE
+ * Igual que el carrito abandonado. Perseguir dos veces a alguien que no
+ * contesto no lo convence: lo pierde para siempre.
+ */
+export async function reactivarLeadsTibios(
+  supabase: SupabaseClient,
+  limite = 20,
+): Promise<{ evaluados: number; encolados: number }> {
+  const ahora = Date.now();
+  // Se espera 1 dia para no interrumpir una conversacion que sigue viva, y no
+  // se insiste pasados 7: mas alla, retomar sin excusa se siente invasivo.
+  const desde = new Date(ahora - 86_400_000).toISOString();
+  const hasta = new Date(ahora - 7 * 86_400_000).toISOString();
+
+  const { data: leads } = await supabase
+    .from("leads")
+    .select("id, nombre, telefono, producto_interes, etapa, temperatura")
+    .in("etapa", ["calificado", "negociacion"])
+    .in("temperatura", ["tibio", "caliente"])
+    .eq("convertido", false)
+    .lt("ultima_interaccion_at", desde)
+    .gt("ultima_interaccion_at", hasta)
+    .limit(limite);
+
+  if (!leads?.length) return { evaluados: 0, encolados: 0 };
+
+  let encolados = 0;
+
+  for (const lead of leads) {
+    if (!lead.telefono) continue;
+
+    const { count } = await supabase
+      .from("whatsapp_mensajes")
+      .select("id", { count: "exact", head: true })
+      .eq("lead_id", lead.id)
+      .eq("tipo", "remarketing");
+
+    if ((count ?? 0) > 0) continue;
+
+    const { data: conversacion } = await supabase
+      .from("whatsapp_conversaciones")
+      .select("promociones_activas, escalado_at")
+      .eq("telefono", lead.telefono)
+      .maybeSingle();
+
+    if (conversacion?.promociones_activas === false) continue;
+    // Si esta esperando a una persona, lo ultimo que necesita es una
+    // promocion automatica encima.
+    if (conversacion?.escalado_at) continue;
+
+    await encolarMensaje(supabase, {
+      telefonoE164: lead.telefono,
+      tipo: "remarketing",
+      plantilla: PLANTILLAS.carritoAbandonado,
+      leadId: lead.id,
+      variables: {
+        "1": (lead.nombre ?? "Hola").split(/\s+/)[0],
+        "2": lead.producto_interes ?? "lo que estabas viendo",
+      },
+    });
+
+    await supabase.from("lead_actividades").insert({
+      lead_id: lead.id,
+      tipo: "mensaje_saliente",
+      detalle: `Reactivacion automatica (${lead.temperatura})`,
+      creado_por: "cron",
+    });
+
+    encolados++;
+  }
+
+  return { evaluados: leads.length, encolados };
+}

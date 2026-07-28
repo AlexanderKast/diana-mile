@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCollections } from "@/lib/shopify";
 import { EnlaceWhatsApp } from "@/components/site/EnlaceWhatsApp";
+import { AjustesMovil } from "@/components/site/AjustesMovil";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -28,13 +29,18 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-arena/80 bg-blanco/95 backdrop-blur">
       <div className="mx-auto flex min-h-[60px] max-w-6xl items-center justify-between gap-4 px-5 md:px-6">
-        <Link
-          href="/"
-          className="font-display text-2xl text-carbon"
-          aria-label="Milito Life Shop inicio"
-        >
-          Milito Life Shop
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/"
+            className="font-display text-2xl text-carbon"
+            aria-label="Milito Life Shop inicio"
+          >
+            Milito Life Shop
+          </Link>
+          {/* Solo en movil, junto al logo: es la unica via para activar las
+              notificaciones despues, si se dijo que no al instalar. */}
+          <AjustesMovil />
+        </div>
 
         <nav className="flex items-center gap-1 text-sm text-carbon-suave">
           <Link

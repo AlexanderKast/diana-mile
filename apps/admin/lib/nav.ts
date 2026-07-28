@@ -186,7 +186,8 @@ const API_REGLAS: {
     // default y no podria responderle a nadie.
     test: (p) =>
       p.startsWith("/api/admin/conversaciones") ||
-      p.startsWith("/api/admin/whatsapp"),
+      p.startsWith("/api/admin/whatsapp") ||
+      p.startsWith("/api/admin/etiquetas"),
     roles: ["superadmin", "admin", "confirmador"],
   },
 ];

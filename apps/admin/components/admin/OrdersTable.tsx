@@ -2,6 +2,8 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { cx, formatCOP } from "@diana-mile/shared/utils";
+import { Etiquetas } from "@/components/admin/Etiquetas";
+import { faseDesdeEstadoPedido } from "@diana-mile/shared/crm/pipeline";
 import { Button } from "@diana-mile/shared/ui/Button";
 import type { EstadoPedido, Pedido, ResultadoConfirmacion } from "@diana-mile/shared/types";
 import { usarPedidosEnVivo } from "@/lib/usar-pedidos-en-vivo";
@@ -347,6 +349,20 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
                       <td className="py-3 px-4 cursor-pointer" onClick={() => abrirFila(pedido)}>
                         <p className="text-carbon">{pedido.nombre}</p>
                         <p className="text-xs text-ceniza">{pedido.telefono}</p>
+                        <div className="mt-1">
+                          <Etiquetas
+                            fase={faseDesdeEstadoPedido(
+                              pedido.estado,
+                              Boolean(pedido.fecha_entrega_real),
+                            )}
+                            canal={pedido.canal_adquisicion}
+                            producto={pedido.producto_nombre}
+                            ciudad={pedido.ciudad}
+                            manuales={pedido.tags}
+                            max={4}
+                            compacto
+                          />
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-carbon-suave cursor-pointer" onClick={() => abrirFila(pedido)}>
                         {pedido.ciudad}

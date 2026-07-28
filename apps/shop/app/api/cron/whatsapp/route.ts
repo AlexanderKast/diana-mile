@@ -5,6 +5,7 @@ import { enviarRecordatoriosPendientes } from "@diana-mile/shared/botcake/record
 import {
   enviarSeguimientosPendientes,
   recuperarCarritosAbandonados,
+  reactivarLeadsTibios,
 } from "@diana-mile/shared/botcake/seguimiento";
 import { vigilarEscalamientos } from "@diana-mile/shared/botcake/vigilante";
 
@@ -12,7 +13,7 @@ import { vigilarEscalamientos } from "@diana-mile/shared/botcake/vigilante";
  * Cron de los agentes de WhatsApp:
  * 1. Recordatorios de pedidos sin confirmar.
  * 2. Seguimiento post-compra (consejos, comunidad, recompra).
- * 3. Recuperacion de carritos abandonados.
+ * 3. Recuperacion de carritos abandonados y de leads tibios del chat.
  * 4. Reintento de todo lo que quedo en la cola.
  *
  * El outbox se procesa al final para que lo encolado en esta misma corrida
@@ -34,6 +35,9 @@ export async function GET(request: NextRequest) {
   const recordatorios = await enviarRecordatoriosPendientes(supabase);
   const seguimientos = await enviarSeguimientosPendientes(supabase);
   const carritos = await recuperarCarritosAbandonados(supabase);
+  // Los que hablaron por WhatsApp, quedaron tibios o calientes y no
+  // compraron. Antes no los recuperaba nadie.
+  const reactivados = await reactivarLeadsTibios(supabase);
   const outbox = await procesarPendientes(supabase);
 
   return NextResponse.json({
@@ -41,6 +45,7 @@ export async function GET(request: NextRequest) {
     recordatorios,
     seguimientos,
     carritos,
+    reactivados,
     outbox,
   });
 }

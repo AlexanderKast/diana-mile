@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { PushOptIn } from "@/components/site/PushOptIn";
 
 const DISMISS_KEY = "milito_install_banner_dismissed_hasta";
 const DISMISS_DIAS = 14;
@@ -47,12 +48,14 @@ export function InstallBanner({ activo = true }: { activo?: boolean }) {
     useState<BeforeInstallPromptEvent | null>(null);
   const [mostrarIOS, setMostrarIOS] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [reciénInstalada, setReciénInstalada] = useState(false);
 
   // La instalacion se anota cuando de verdad ocurre. El evento lo dispara
   // el navegador, asi que llega tambien si la persona instala desde el menu
   // sin pasar por el banner — que es como se instala la mitad de las veces.
   useEffect(() => {
     function alInstalar() {
+      setReciénInstalada(true);
       const cuerpo = JSON.stringify({
         tipo: "instalacion",
         ruta: window.location.pathname,
@@ -129,6 +132,28 @@ export function InstallBanner({ activo = true }: { activo?: boolean }) {
   const isProductoDetalle =
     pathname.startsWith("/productos/") && pathname !== "/productos";
   const isCheckout = pathname.startsWith("/pedido/");
+
+  /**
+   * Justo despues de instalar se le ofrece activar las notificaciones.
+   *
+   * Es el momento de mas intencion que va a haber: acaba de decidir tener
+   * la tienda en su pantalla de inicio. Pedirlo mas tarde, suelto en medio
+   * de una visita cualquiera, se rechaza casi siempre.
+   *
+   * Y tiene que ser un boton, no automatico: el navegador exige un gesto
+   * de la persona, y Chrome penaliza a los sitios que piden el permiso sin
+   * interaccion dejando de mostrar el dialogo a todo el mundo.
+   */
+  if (reciénInstalada) {
+    return (
+      <div className="mx-auto max-w-6xl px-5 py-3 md:px-6">
+        <PushOptIn
+          titulo="Listo, ya tienes la tienda a un toque"
+          descripcion="¿Te aviso cuando tu pedido cambie de estado? Sin promociones."
+        />
+      </div>
+    );
+  }
 
   if (!activo || !visible || isProductoDetalle || isCheckout) return null;
 
