@@ -319,7 +319,14 @@ export type Pedido = {
   variant_id: string | null;
   cantidad: number;
   precio_venta: number | null;
+  /** Costo UNITARIO de la mercancia, congelado al crear el pedido. */
   costo_producto: number | null;
+  /** Comision de pasarela. Congelada al crear el pedido. */
+  costo_plataforma: number | null;
+  /** Empaque y alistamiento. Congelado al crear el pedido. */
+  costo_fulfillment: number | null;
+  /** Comision de la transportadora por recaudar. Se registra al entregar. */
+  costo_recaudo: number | null;
   precio_total: number | null;
   estado: EstadoPedido;
   canal_adquisicion: string | null;
@@ -432,6 +439,15 @@ export type MetricasFinancieras = {
   ingresos_recaudados: number;
   costo_productos: number;
   costo_envios: number;
+  costo_plataforma: number;
+  costo_fulfillment: number;
+  /** Comision de la transportadora por recaudar el efectivo. */
+  costo_recaudo: number;
+  /**
+   * Pedidos a los que les falta algun costo. Mientras sea > 0, la
+   * utilidad es un TECHO: el costo real es ese o mas alto.
+   */
+  pedidos_sin_costear: number;
   gasto_publicidad: number;
   otros_gastos: number;
   utilidad_bruta: number;

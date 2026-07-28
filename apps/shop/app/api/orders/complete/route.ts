@@ -8,7 +8,11 @@ import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { encolarConfirmacionPedido } from "@diana-mile/shared/botcake/agentes";
 import { normalizeColombianMobile } from "@/lib/phone";
 import { getPricingConfig } from "@/lib/pricing-server";
-import { costoUnitarioDeVariante } from "@diana-mile/shared/finanzas/costo-pedido";
+import {
+  costoUnitarioDeVariante,
+  leerParametrosCostosVenta,
+} from "@diana-mile/shared/finanzas/costo-pedido";
+import { costosAlVender } from "@diana-mile/shared/finanzas/costos-venta";
 import { signTelefonoToken } from "@/lib/push-token";
 import { sendMetaCapiEvent } from "@/lib/tracking/meta-capi";
 import { sendTikTokEvent } from "@/lib/tracking/tiktok-events";
@@ -125,7 +129,14 @@ export async function POST(request: NextRequest) {
       // El costo que rige HOY, congelado en el pedido. Si se consultara
       // despues, la utilidad de un mes ya cerrado cambiaria sola cada vez
       // que Nu Skin actualiza su lista de precios.
-      const costoProducto = await costoUnitarioDeVariante(variantId);
+      const [costoProducto, parametrosCosto] = await Promise.all([
+        costoUnitarioDeVariante(variantId),
+        leerParametrosCostosVenta(),
+      ]);
+      // Plataforma y fulfillment se saben al vender, asi que se congelan
+      // aqui. El flete se conoce al despachar y el recaudo al entregar:
+      // estimarlos ahora los volveria indistinguibles de un dato medido.
+      const costosVenta = costosAlVender(parametrosCosto);
 
       const { data: pedidoInsertado, error: insertError } = await supabase
         .from("pedidos")
@@ -150,6 +161,8 @@ export async function POST(request: NextRequest) {
           cantidad: 1,
           precio_total: precioTotal,
           costo_producto: costoProducto,
+          costo_plataforma: costosVenta.costo_plataforma,
+          costo_fulfillment: costosVenta.costo_fulfillment,
           estado: "pendiente",
           // De donde salio la venta. Lo manda el agente cuando cierra por
           // chat; el formulario de la web no manda nada y cuenta como web.

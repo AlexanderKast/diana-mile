@@ -35,10 +35,13 @@ export function HistoriaMilito() {
       <div className="mx-auto max-w-5xl">
         <div className="grid gap-8 md:grid-cols-[0.85fr_1.15fr] md:gap-14">
           <div>
-            {/* Movil: foto y titulo en la misma fila. Desde `md` la foto
-                recupera el ancho de su columna y el titulo baja. */}
-            <div className="flex items-end gap-5 md:block">
-              <div className="relative aspect-[3/4] w-[42%] shrink-0 overflow-hidden rounded-2xl md:mb-8 md:aspect-[4/5] md:w-full">
+            {/* Movil: foto y titulo comparten fila. Desde `md` se apilan pero
+                invertidos —titulo arriba, foto debajo— con `flex-col-reverse`:
+                con la foto arriba, "Hola, soy Milito" caia al fondo de la
+                columna mientras el texto de la derecha arrancaba en el borde
+                superior, y el titulo quedaba huerfano a media altura. */}
+            <div className="flex items-end gap-5 md:flex-col-reverse md:items-stretch md:gap-0">
+              <div className="relative aspect-[3/4] w-[42%] shrink-0 overflow-hidden rounded-2xl md:mt-8 md:aspect-[4/5] md:w-full">
                 <Image
                   src="/images/diana-retrato.jpg"
                   alt="Milito, fundadora de Milito Life Shop"
@@ -72,8 +75,8 @@ export function HistoriaMilito() {
               a alguien mientras cambia sus hábitos.
             </p>
             <p className="max-w-md text-[14.5px] leading-relaxed text-carbon-suave sm:text-[15px]">
-              Esta tienda salió de ahí: el catálogo de Nu Skin que recomiendo,
-              con mi nombre puesto y respondiendo yo los mensajes.
+              Esta tienda salió de ahí: el catálogo que recomiendo, con mi
+              nombre puesto y respondiendo yo los mensajes.
             </p>
 
             <dl className="mt-1 grid grid-cols-3 gap-3 border-t border-arena pt-5 sm:gap-6">

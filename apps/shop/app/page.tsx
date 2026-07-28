@@ -13,9 +13,9 @@ import { TrustStrip } from "@/components/ui/TrustStrip";
 import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Nu Skin original con pago contraentrega",
+  title: "Milito Life Shop — Bienestar y piel con pago contraentrega",
   description:
-    "Catálogo Nu Skin original en Colombia con asesoría de Milito. En buena parte del país pagas cuando el mensajero te lo entrega, no antes.",
+    "Nu Skin y otras marcas seleccionadas por Milito, siempre producto original. En buena parte de Colombia pagas cuando el mensajero te lo entrega, no antes.",
 };
 
 const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
@@ -25,6 +25,13 @@ const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
 
 /**
  * Los tres argumentos de la tienda, sin foto.
+ *
+ * OJO CON EL COPY: la tienda es MULTIMARCA. Nu Skin es el foco y el unico
+ * canal donde Milito es distribuidora, pero no es lo unico que se vende, asi
+ * que nada de "catalogo Nu Skin" ni "distribuidora Nu Skin" como descripcion
+ * de la tienda entera. Nu Skin se nombra donde aplica: la garantia de
+ * autenticidad, el aviso legal y los bloques de ficha condicionados a
+ * `metafields.nuskinDirectUrl`.
  *
  * Antes cada uno venia con un `ImagePlaceholder` gris rotulado "Foto: Diana
  * probando un producto". Tres rectangulos vacios en fila es exactamente el
@@ -36,7 +43,7 @@ const PILARES = [
     numero: "01",
     titulo: "Te asesoran antes de comprar",
     descripcion:
-      "Nu Skin tiene cientos de productos y no todos son para ti. Escríbele a Milito con tu caso y ella te dice cuál te sirve y cuál no vale la pena.",
+      "El catálogo tiene cientos de productos y no todos son para ti. Escríbele a Milito con tu caso y ella te dice cuál te sirve y cuál no vale la pena.",
   },
   {
     numero: "02",
@@ -48,7 +55,7 @@ const PILARES = [
     numero: "03",
     titulo: "Producto original",
     descripcion:
-      "Milito Life Shop es distribuidora independiente de Nu Skin. El producto viene de la marca, no de un tercero que revende.",
+      "Milito Life Shop es distribuidora independiente de Nu Skin, y cada marca que entra al catálogo llega por canal autorizado. Nunca por reventa.",
   },
 ];
 
@@ -62,8 +69,15 @@ export default async function HomePage() {
   // Se destacan los que se pueden pedir aquí mismo y tienen foto: mandar a
   // alguien desde el home a una ficha sin imagen —o a una que termina en
   // "escríbele a Diana"— es gastar el mejor clic de la página.
+  // Los repuestos quedan fuera del home: comparten foto y nombre con el
+  // producto completo, asi que la fila abria con dos tarjetas practicamente
+  // identicas, y ademas un repuesto no le sirve a quien todavia no tiene el
+  // aparato. Siguen estando en el catalogo y en su categoria.
   const elegibles = products.filter(
-    (p) => p.codDisponible && p.images.length > 0,
+    (p) =>
+      p.codDisponible &&
+      p.images.length > 0 &&
+      !/^repuesto\b/i.test(p.title.trim()),
   );
 
   // 3 o 6, nunca 4 ni 5: en la reja de tres columnas de escritorio cualquier
@@ -83,7 +97,7 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-11 sm:gap-10 sm:px-6 sm:py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-14 lg:py-24">
           <div className="animate-fade-in-up order-2 md:order-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-carbon-suave sm:text-[11px]">
-              Distribuidora independiente Nu Skin
+              Bienestar, piel y cuidado personal
             </p>
             <h1 className="mt-4 font-display text-[42px] leading-[0.94] tracking-tight text-carbon sm:mt-5 sm:text-[56px] lg:text-[76px]">
               Primero lo recibes,
@@ -92,8 +106,9 @@ export default async function HomePage() {
             </h1>
             <div className="linea-dorada mt-5 w-14 sm:mt-7 sm:w-16" />
             <p className="mt-5 max-w-md text-[14.5px] leading-relaxed text-carbon-suave sm:mt-7 sm:text-[15px]">
-              Catálogo Nu Skin original, con Milito respondiendo del otro lado.
-              En la mayor parte del país le pagas al mensajero, no antes.
+              Nu Skin y otras marcas que Milito selecciona, siempre producto
+              original. En la mayor parte del país le pagas al mensajero, no
+              antes.
             </p>
             <div className="mt-7 flex flex-col items-start gap-4 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center">
               <Link href="/productos" className="w-full sm:w-auto">

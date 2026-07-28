@@ -7,7 +7,9 @@ import { encolarAvisoPedidoNuevo } from "@diana-mile/shared/botcake/agentes";
 import {
   costoUnitarioDeVariante,
   gidDeVariante,
+  leerParametrosCostosVenta,
 } from "@diana-mile/shared/finanzas/costo-pedido";
+import { costosAlVender } from "@diana-mile/shared/finanzas/costos-venta";
 
 const WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET;
 
@@ -92,9 +94,11 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
     // El webhook REST manda el id de variante como numero; el resto del
     // sistema usa el gid de GraphQL. Sin normalizar, la busqueda no
     // encuentra nada y todo pedido que entra por Shopify queda sin costo.
-    const costoProducto = await costoUnitarioDeVariante(
-      gidDeVariante(lineItem?.variant_id),
-    );
+    const [costoProducto, parametrosCosto] = await Promise.all([
+      costoUnitarioDeVariante(gidDeVariante(lineItem?.variant_id)),
+      leerParametrosCostosVenta(),
+    ]);
+    const costosVenta = costosAlVender(parametrosCosto);
 
     const { data: creado } = await supabase
       .from("pedidos")
@@ -115,6 +119,8 @@ async function procesarOrdenCreada(order: ShopifyOrder) {
         cantidad: lineItem?.quantity ?? 1,
         precio_total: total,
         costo_producto: costoProducto,
+        costo_plataforma: costosVenta.costo_plataforma,
+        costo_fulfillment: costosVenta.costo_fulfillment,
         utm_source: noteAttrs.get("utm_source") ?? null,
         utm_campaign: noteAttrs.get("utm_campaign") ?? null,
         estado: "pendiente",

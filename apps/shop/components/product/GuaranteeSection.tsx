@@ -33,7 +33,9 @@ const COPY = {
   vitrina: {
     titulo: "Comprar así también es seguro",
     cuerpo:
-      "Milito coordina contigo cada paso antes de que pagues: qué llega, cuándo y cómo. Producto original de Nu Skin, con la misma garantía de reposición si algo llega mal.",
+      // Sin marca: este bloque sale en toda ficha de vitrina y la tienda es
+      // multimarca, asi que afirmar "de Nu Skin" seria falso en las demas.
+      "Milito coordina contigo cada paso antes de que pagues: qué llega, cuándo y cómo. Producto original, con la misma garantía de reposición si algo llega mal.",
   },
 } as const;
 

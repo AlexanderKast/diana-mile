@@ -31,7 +31,9 @@ export function TrustStrip({
     },
     {
       cifra: "100%",
-      label: "producto original Nu Skin",
+      // Sin marca: la tienda es multimarca y esta banda aplica a todo el
+      // catalogo, no solo a lo de Nu Skin.
+      label: "producto original",
     },
   ];
 

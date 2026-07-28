@@ -33,6 +33,8 @@
     "./botcake/respuestas-boton": "./src/botcake/respuestas-boton.ts",
     "./finanzas/costeo": "./src/finanzas/costeo.ts",
     "./finanzas/costo-pedido": "./src/finanzas/costo-pedido.ts",
+    "./finanzas/costos-venta": "./src/finanzas/costos-venta.ts",
+    "./finanzas/trm": "./src/finanzas/trm.ts",
     "./finanzas/proyeccion": "./src/finanzas/proyeccion.ts",
     "./crm/scoring": "./src/crm/scoring.ts",
     "./crm/lead-agente": "./src/crm/lead-agente.ts",

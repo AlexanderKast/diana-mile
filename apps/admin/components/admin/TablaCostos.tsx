@@ -46,13 +46,16 @@ type EstadoFila = {
 export function TablaCostos({
   filas,
   filtroInicial,
+  marcas,
 }: {
   filas: FilaCosteo[];
   filtroInicial: SaludCosteo | null;
+  marcas: string[];
 }) {
   const [filtro, setFiltro] = useState<SaludCosteo | "todos">(
     filtroInicial ?? "todos",
   );
+  const [marca, setMarca] = useState<string>("todas");
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useState<Record<string, EstadoFila>>({});
   // Costos ya guardados en esta sesion, para repintar sin recargar.
@@ -65,14 +68,16 @@ export function TablaCostos({
       // activo sea ese; se mantiene visible para que se vea el resultado
       // en vez de desaparecer de golpe al terminar de escribir.
       const yaGuardada = fila.variantId in guardados;
+      if (marca !== "todas" && fila.marca !== marca) return false;
       if (filtro !== "todos" && fila.salud !== filtro && !yaGuardada) return false;
       if (!termino) return true;
       return (
         fila.productoTitulo.toLowerCase().includes(termino) ||
-        fila.varianteTitulo.toLowerCase().includes(termino)
+        fila.varianteTitulo.toLowerCase().includes(termino) ||
+        fila.marca.toLowerCase().includes(termino)
       );
     });
-  }, [filas, filtro, busqueda, guardados]);
+  }, [filas, filtro, marca, busqueda, guardados]);
 
   function estadoDe(variantId: string, fila: FilaCosteo): EstadoFila {
     return (
@@ -162,11 +167,28 @@ export function TablaCostos({
             {f.label}
           </button>
         ))}
+        {marcas.length > 1 && (
+          <select
+            value={marca}
+            onChange={(e) => setMarca(e.target.value)}
+            className="ml-auto px-3 py-1.5 text-xs bg-blanco border border-arena rounded-[4px] focus:outline-none focus:border-carbon-suave"
+          >
+            <option value="todas">Todas las marcas</option>
+            {marcas.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        )}
         <input
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar producto..."
-          className="ml-auto px-3 py-1.5 text-xs bg-blanco border border-arena rounded-[4px] w-48 focus:outline-none focus:border-carbon-suave"
+          className={cx(
+            "px-3 py-1.5 text-xs bg-blanco border border-arena rounded-[4px] w-48 focus:outline-none focus:border-carbon-suave",
+            marcas.length > 1 ? "" : "ml-auto",
+          )}
         />
       </div>
 
@@ -235,6 +257,7 @@ export function TablaCostos({
                   <td className="p-3">
                     <p className="text-carbon leading-snug">{fila.productoTitulo}</p>
                     <p className="text-xs text-ceniza mt-0.5">
+                      {marcas.length > 1 && `${fila.marca} · `}
                       {fila.varianteTitulo !== "Default Title"
                         ? fila.varianteTitulo
                         : "Presentación única"}

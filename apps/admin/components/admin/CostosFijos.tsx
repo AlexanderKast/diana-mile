@@ -19,33 +19,59 @@ const ETIQUETA: Record<string, string> = {
   administrativo: "Administrativo",
 };
 
+/** De dónde salió el valor en pesos de una fila. */
+const ORIGEN: Record<CostoFijo["origen_cop"], { label: string; clase: string }> = {
+  pesos: { label: "", clase: "" },
+  real: { label: "extracto", clase: "bg-morado/10 text-morado" },
+  trm: { label: "TRM", clase: "bg-dorado/15 text-dorado-oscuro" },
+  ultimo_conocido: { label: "sin TRM", clase: "bg-error/10 text-error" },
+};
+
 /** La tabla de reparto de la hoja original: cuánto pesa el fijo según el volumen. */
 const ESCALONES = [50, 100, 200, 300, 500, 800, 1200];
 
 export function CostosFijos({
   filasIniciales,
   vigentes,
+  trmHoy,
+  periodo,
 }: {
   filasIniciales: CostoFijo[];
   vigentes: CostoFijo[];
+  trmHoy: number | null;
+  periodo: string;
 }) {
   const router = useRouter();
   const [concepto, setConcepto] = useState("");
   const [categoria, setCategoria] =
     useState<(typeof CATEGORIAS)[number]["valor"]>("personal");
+  const [moneda, setMoneda] = useState<"COP" | "USD">("COP");
   const [monto, setMonto] = useState("");
+  const [diaCobro, setDiaCobro] = useState("1");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Se suma `cop_mes`, que ya trae la conversión con la TRM del día de
+  // cobro de este mes. Sumar `monto_cop` dejaría los costos en dólares
+  // con el valor de la última vez que se guardaron.
   const totalMes = useMemo(
-    () => vigentes.reduce((acc, f) => acc + f.monto_cop, 0),
+    () => vigentes.reduce((acc, f) => acc + f.cop_mes, 0),
+    [vigentes],
+  );
+
+  const enDolares = useMemo(
+    () => vigentes.filter((f) => f.moneda === "USD"),
+    [vigentes],
+  );
+  const sinTasa = useMemo(
+    () => vigentes.filter((f) => f.origen_cop === "ultimo_conocido"),
     [vigentes],
   );
 
   const porCategoria = useMemo(() => {
     const mapa = new Map<string, number>();
     for (const fila of vigentes) {
-      mapa.set(fila.categoria, (mapa.get(fila.categoria) ?? 0) + fila.monto_cop);
+      mapa.set(fila.categoria, (mapa.get(fila.categoria) ?? 0) + fila.cop_mes);
     }
     return Array.from(mapa.entries()).sort((a, b) => b[1] - a[1]);
   }, [vigentes]);
@@ -63,12 +89,24 @@ export function CostosFijos({
       return;
     }
 
+    const dia = Number(diaCobro);
+    if (moneda === "USD" && (!Number.isFinite(dia) || dia < 1 || dia > 28)) {
+      setError("El día de cobro va entre 1 y 28.");
+      return;
+    }
+
     setGuardando(true);
     try {
       const res = await fetch("/api/admin/costos-fijos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ concepto: concepto.trim(), categoria, montoCop: valor }),
+        body: JSON.stringify({
+          concepto: concepto.trim(),
+          categoria,
+          moneda,
+          montoOrigen: valor,
+          diaCobro: moneda === "USD" ? dia : null,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "No se pudo guardar.");
@@ -99,6 +137,26 @@ export function CostosFijos({
     }
   }
 
+  /** Lo que el banco cobró de verdad. Manda sobre la conversión por TRM. */
+  async function guardarReal(id: string, texto: string) {
+    const limpio = texto.trim();
+    const valor = limpio === "" ? null : Number(limpio.replace(/[^\d.-]/g, ""));
+    if (valor !== null && (!Number.isFinite(valor) || valor < 0)) {
+      setError("El monto del extracto tiene que ser un número.");
+      return;
+    }
+    try {
+      await fetch("/api/admin/costos-fijos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, montoCopReal: valor }),
+      });
+      router.refresh();
+    } catch {
+      setError("No se pudo guardar el monto real.");
+    }
+  }
+
   const hoy = new Date().toISOString().slice(0, 10);
 
   return (
@@ -115,10 +173,42 @@ export function CostosFijos({
           </p>
         </div>
         <div className="bg-blanco border border-arena rounded-[4px] p-5">
-          <p className="text-xs text-ceniza uppercase tracking-wide">Costos activos</p>
-          <p className="font-display text-3xl text-carbon mt-1">{vigentes.length}</p>
+          <p className="text-xs text-ceniza uppercase tracking-wide">Dólar de hoy</p>
+          <p className="font-display text-3xl text-carbon mt-1">
+            {trmHoy ? formatCOP(trmHoy) : "—"}
+          </p>
+          <p className="text-xs text-ceniza mt-1">
+            {trmHoy ? "TRM oficial" : "no se pudo consultar"}
+          </p>
         </div>
       </div>
+
+      {enDolares.length > 0 && (
+        <div className="rounded-[4px] border border-dorado/40 bg-dorado/5 px-5 py-4">
+          <p className="text-sm text-carbon">
+            {enDolares.length}{" "}
+            {enDolares.length === 1 ? "costo se paga" : "costos se pagan"} en
+            dólares. Se convierten con la TRM del día de cobro de cada mes, no con
+            la de hoy: así la utilidad de un mes ya cerrado no cambia cuando se
+            mueve el dólar.
+          </p>
+          <p className="text-xs text-carbon-suave mt-2">
+            La TRM no es lo que cobra la tarjeta — el banco suma su propio margen y
+            el 4x1000. Cuando te llegue el extracto, escribe el valor real en la
+            columna <strong>Extracto</strong> y ese manda.
+          </p>
+        </div>
+      )}
+
+      {sinTasa.length > 0 && (
+        <div className="rounded-[4px] border border-error/30 bg-error/5 px-5 py-4">
+          <p className="text-sm text-error">
+            No se pudo consultar la TRM para {sinTasa.length}{" "}
+            {sinTasa.length === 1 ? "costo" : "costos"}. Se está mostrando el último
+            valor convertido, que puede estar viejo.
+          </p>
+        </div>
+      )}
 
       {porCategoria.length > 0 && (
         <div className="bg-blanco border border-arena rounded-[4px] p-5">
@@ -179,7 +269,7 @@ export function CostosFijos({
           Agregar un costo fijo
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
+          <div className="flex flex-col gap-1 flex-1 min-w-[170px]">
             <label className="text-xs text-carbon-suave">Concepto</label>
             <input
               value={concepto}
@@ -205,24 +295,57 @@ export function CostosFijos({
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-carbon-suave">Monto al mes (COP)</label>
+            <label className="text-xs text-carbon-suave">Moneda</label>
+            <select
+              value={moneda}
+              onChange={(e) => setMoneda(e.target.value as "COP" | "USD")}
+              className="px-3 py-2 text-sm bg-blanco border border-arena rounded-[4px] focus:outline-none focus:border-carbon-suave"
+            >
+              <option value="COP">Pesos</option>
+              <option value="USD">Dólares</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-carbon-suave">
+              Monto al mes ({moneda === "USD" ? "USD" : "COP"})
+            </label>
             <input
               value={monto}
               onChange={(e) => setMonto(e.target.value)}
               inputMode="numeric"
-              placeholder="1200000"
-              className="px-3 py-2 text-sm bg-blanco border border-arena rounded-[4px] w-40 focus:outline-none focus:border-carbon-suave"
+              placeholder={moneda === "USD" ? "39" : "1200000"}
+              className="px-3 py-2 text-sm bg-blanco border border-arena rounded-[4px] w-36 focus:outline-none focus:border-carbon-suave"
             />
           </div>
+          {moneda === "USD" && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-carbon-suave">Día de cobro</label>
+              <input
+                value={diaCobro}
+                onChange={(e) => setDiaCobro(e.target.value)}
+                inputMode="numeric"
+                className="px-3 py-2 text-sm bg-blanco border border-arena rounded-[4px] w-20 focus:outline-none focus:border-carbon-suave"
+              />
+            </div>
+          )}
           <Button disabled={guardando} onClick={() => void agregar()}>
             {guardando ? "Guardando…" : "Agregar"}
           </Button>
         </div>
+
+        {moneda === "USD" && trmHoy && monto && (
+          <p className="text-xs text-carbon-suave mt-3">
+            A la TRM de hoy serían{" "}
+            {formatCOP(Number(monto.replace(/[^\d.-]/g, "")) * trmHoy)}. Cada mes se
+            recalcula con la TRM del día {diaCobro}.
+          </p>
+        )}
+
         {error && <p className="text-xs text-error mt-3">{error}</p>}
       </div>
 
       <div className="overflow-x-auto bg-blanco border border-arena rounded-[4px]">
-        <table className="w-full text-sm min-w-[620px]">
+        <table className="w-full text-sm min-w-[820px]">
           <thead>
             <tr className="border-b border-arena text-left">
               <th className="p-3 text-xs uppercase tracking-wide text-ceniza font-normal">
@@ -232,7 +355,13 @@ export function CostosFijos({
                 Categoría
               </th>
               <th className="p-3 text-xs uppercase tracking-wide text-ceniza font-normal text-right">
-                Al mes
+                Monto
+              </th>
+              <th className="p-3 text-xs uppercase tracking-wide text-ceniza font-normal text-right">
+                En pesos ({periodo})
+              </th>
+              <th className="p-3 text-xs uppercase tracking-wide text-ceniza font-normal text-right">
+                Extracto
               </th>
               <th className="p-3 text-xs uppercase tracking-wide text-ceniza font-normal">
                 Estado
@@ -245,6 +374,8 @@ export function CostosFijos({
               const activo =
                 fila.vigente_desde <= hoy &&
                 (fila.vigente_hasta === null || fila.vigente_hasta >= hoy);
+              const origen = ORIGEN[fila.origen_cop];
+
               return (
                 <tr
                   key={fila.id}
@@ -253,12 +384,56 @@ export function CostosFijos({
                     !activo && "opacity-50",
                   )}
                 >
-                  <td className="p-3 text-carbon">{fila.concepto}</td>
+                  <td className="p-3 text-carbon">
+                    {fila.concepto}
+                    {fila.moneda === "USD" && fila.dia_cobro && (
+                      <span className="block text-xs text-ceniza mt-0.5">
+                        cobra el {fila.dia_cobro} de cada mes
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3 text-carbon-suave">
                     {ETIQUETA[fila.categoria] ?? fila.categoria}
                   </td>
                   <td className="p-3 text-right text-carbon whitespace-nowrap">
-                    {formatCOP(fila.monto_cop)}
+                    {fila.moneda === "USD"
+                      ? `US$ ${fila.monto_origen.toLocaleString("es-CO")}`
+                      : formatCOP(fila.monto_origen)}
+                  </td>
+                  <td className="p-3 text-right whitespace-nowrap">
+                    <span className="text-carbon">{formatCOP(fila.cop_mes)}</span>
+                    {origen.label && (
+                      <span
+                        title={fila.nota_cop}
+                        className={cx(
+                          "ml-2 text-[10px] px-1.5 py-0.5 rounded-[3px] cursor-help",
+                          origen.clase,
+                        )}
+                      >
+                        {origen.label}
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-3 text-right">
+                    {fila.moneda === "USD" ? (
+                      <input
+                        defaultValue={
+                          fila.monto_cop_real !== null
+                            ? String(Math.round(fila.monto_cop_real))
+                            : ""
+                        }
+                        onBlur={(e) => void guardarReal(fila.id, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                        }}
+                        inputMode="numeric"
+                        placeholder="—"
+                        title="Lo que cobró la tarjeta. Manda sobre la TRM."
+                        className="w-28 px-2 py-1 text-right text-sm bg-blanco border border-arena rounded-[4px] focus:outline-none focus:border-carbon-suave"
+                      />
+                    ) : (
+                      <span className="text-ceniza">—</span>
+                    )}
                   </td>
                   <td className="p-3">
                     <span

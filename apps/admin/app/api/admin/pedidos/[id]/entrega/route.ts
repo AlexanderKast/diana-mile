@@ -10,6 +10,8 @@ import {
   programarSeguimiento,
 } from "@diana-mile/shared/botcake/seguimiento";
 import { invitarComunidadVip } from "@diana-mile/shared/botcake/respuestas-boton";
+import { leerParametrosCostosVenta } from "@diana-mile/shared/finanzas/costo-pedido";
+import { comisionRecaudo } from "@diana-mile/shared/finanzas/costos-venta";
 
 export async function POST(
   request: NextRequest,
@@ -58,12 +60,20 @@ export async function POST(
     );
   }
 
+  // La comision de recaudo solo se puede calcular AQUI: es un porcentaje
+  // de lo que de verdad se cobro, y eso no se sabe hasta la entrega. Se
+  // congela en el pedido para que la utilidad de un mes cerrado no cambie
+  // el dia que se ajuste el porcentaje.
+  const cobrado = valor_recaudado ?? pedido.precio_total;
+  const parametros = await leerParametrosCostosVenta();
+
   const update =
     accion === "entregado"
       ? {
           estado: "entregado" as const,
           fecha_entrega_real: new Date().toISOString().slice(0, 10),
-          valor_recaudado: valor_recaudado ?? pedido.precio_total,
+          valor_recaudado: cobrado,
+          costo_recaudo: comisionRecaudo(cobrado, parametros.pctRecaudo),
           updated_at: new Date().toISOString(),
         }
       : {

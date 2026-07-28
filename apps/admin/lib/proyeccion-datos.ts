@@ -1,6 +1,17 @@
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { calcularCosteoCatalogo } from "@/lib/costeo";
 import type { SupuestosProyeccion } from "@diana-mile/shared/finanzas/proyeccion";
+import { leerParametrosCostosVenta } from "@diana-mile/shared/finanzas/costo-pedido";
+import {
+  desglosarCostos,
+  type ParametrosCostosVenta,
+} from "@diana-mile/shared/finanzas/costos-venta";
+import {
+  montoEnCop,
+  hoyISO,
+  type CostoFijoConvertible,
+} from "@diana-mile/shared/finanzas/trm";
+import { periodoActual } from "@/lib/financiero";
 
 /**
  * Supuestos de la proyeccion sacados de lo que YA paso.
@@ -29,11 +40,27 @@ export type Supuesto<T = number> = {
   nota: string;
 };
 
+export type PedidoCosteado = {
+  estado: string;
+  precio_total: number | null;
+  valor_recaudado: number | null;
+  costo_producto: number | null;
+  cantidad: number | null;
+  costo_envio: number | null;
+  costo_plataforma: number | null;
+  costo_fulfillment: number | null;
+  costo_recaudo: number | null;
+};
+
 export type SupuestosSugeridos = {
   ticketPromedio: Supuesto;
   tasaDespacho: Supuesto;
   tasaEntrega: Supuesto;
   margenBruto: Supuesto;
+  /** Costo de mercancia por pedido. El margen se deriva de el y de los accesorios. */
+  costoMercancia: Supuesto;
+  /** Envio, plataforma, fulfillment y % de recaudo, como estan configurados. */
+  parametrosCosto: ParametrosCostosVenta;
   costosFijosMes: Supuesto;
   inversionPublicidadSugerida: number;
 };
@@ -54,32 +81,32 @@ export async function leerSupuestos(): Promise<SupuestosSugeridos> {
   const [pedidosRes, fijosRes, gastosRes] = await Promise.all([
     supabase
       .from("pedidos")
-      .select("estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio")
+      .select(
+        "estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio, costo_plataforma, costo_fulfillment, costo_recaudo",
+      )
       .gte("created_at", desde),
     supabase
       .from("costos_fijos")
-      .select("monto_cop, vigente_desde, vigente_hasta"),
+      .select(
+        "monto_cop, monto_cop_real, monto_origen, moneda, dia_cobro, vigente_desde, vigente_hasta",
+      ),
     supabase
       .from("gastos")
       .select("tipo, monto_cop")
       .gte("fecha", desde.slice(0, 10)),
   ]);
 
-  const pedidos = (pedidosRes.data ?? []) as {
-    estado: string;
-    precio_total: number | null;
-    valor_recaudado: number | null;
-    costo_producto: number | null;
-    cantidad: number | null;
-    costo_envio: number | null;
-  }[];
+  const pedidos = (pedidosRes.data ?? []) as PedidoCosteado[];
+  const parametrosCosto = await leerParametrosCostosVenta();
 
   return {
     ticketPromedio: medirTicket(pedidos),
     tasaDespacho: medirDespacho(pedidos),
     tasaEntrega: medirEntrega(pedidos),
-    margenBruto: await medirMargen(pedidos),
-    costosFijosMes: sumarFijos(fijosRes.data ?? []),
+    margenBruto: await medirMargen(pedidos, parametrosCosto),
+    costoMercancia: medirCostoMercancia(pedidos, parametrosCosto),
+    parametrosCosto,
+    costosFijosMes: await sumarFijos(fijosRes.data ?? []),
     inversionPublicidadSugerida: sugerirInversion(gastosRes.data ?? []),
   };
 }
@@ -172,13 +199,8 @@ function medirEntrega(pedidos: { estado: string }[]): Supuesto {
  * conservador.
  */
 async function medirMargen(
-  pedidos: {
-    estado: string;
-    valor_recaudado: number | null;
-    costo_producto: number | null;
-    cantidad: number | null;
-    costo_envio: number | null;
-  }[],
+  pedidos: PedidoCosteado[],
+  parametros: ParametrosCostosVenta,
 ): Promise<Supuesto> {
   const conCosto = pedidos.filter(
     (p) =>
@@ -189,18 +211,15 @@ async function medirMargen(
 
   if (conCosto.length >= MINIMO_PARA_MEDIR) {
     const recaudo = conCosto.reduce((a, p) => a + Number(p.valor_recaudado), 0);
-    const costos = conCosto.reduce(
-      (a, p) =>
-        a +
-        Number(p.costo_producto) * (Number(p.cantidad) || 1) +
-        (Number(p.costo_envio) || 0),
-      0,
-    );
+    // Mismo desglose que usa el panel para lo real: mercancia, envio,
+    // plataforma, fulfillment y comision de recaudo. Medir el margen solo
+    // con mercancia y flete —como se hacia— lo deja alto por todo lo demas.
+    const costos = conCosto.reduce((a, p) => a + desglose(p).total, 0);
     return {
       valor: recaudo > 0 ? (recaudo - costos) / recaudo : CONSERVADOR.margenBruto,
       origen: "medido",
       muestra: conCosto.length,
-      nota: `Margen real de ${conCosto.length} pedidos entregados con costo cargado.`,
+      nota: `Margen real de ${conCosto.length} pedidos entregados, con todos los costos de venta.`,
     };
   }
 
@@ -230,14 +249,84 @@ async function medirMargen(
   };
 }
 
-function sumarFijos(
-  filas: { monto_cop: number | string; vigente_desde: string; vigente_hasta: string | null }[],
+function desglose(p: PedidoCosteado) {
+  return desglosarCostos({
+    costoProductoUnitario: p.costo_producto,
+    cantidad: p.cantidad ?? 1,
+    costoEnvio: p.costo_envio,
+    costoPlataforma: p.costo_plataforma,
+    costoFulfillment: p.costo_fulfillment,
+    costoRecaudo: p.costo_recaudo,
+  });
+}
+
+/**
+ * Cuanto cuesta la mercancia de un pedido promedio.
+ *
+ * Se mide solo sobre pedidos que SI tienen costo. Meter los que no lo
+ * tienen como si costaran cero bajaria el promedio y haria parecer el
+ * negocio mas rentable justo por la falta de datos.
+ */
+function medirCostoMercancia(
+  pedidos: PedidoCosteado[],
+  parametros: ParametrosCostosVenta,
 ): Supuesto {
-  const hoy = new Date().toISOString().slice(0, 10);
+  const conCosto = pedidos.filter((p) => p.costo_producto !== null);
+
+  if (conCosto.length >= MINIMO_PARA_MEDIR) {
+    const total = conCosto.reduce((a, p) => a + desglose(p).mercancia, 0);
+    return {
+      valor: total / conCosto.length,
+      origen: "medido",
+      muestra: conCosto.length,
+      nota: `Promedio de ${conCosto.length} pedidos con costo de mercancía cargado.`,
+    };
+  }
+
+  // Sin historia, se estima como el complemento: lo que queda del ticket
+  // conservador despues de los costos accesorios y un margen del 40%.
+  const ticket = CONSERVADOR.ticketPromedio;
+  const accesorios =
+    parametros.costoLogistico +
+    parametros.costoPlataforma +
+    parametros.costoFulfillment +
+    ticket * parametros.pctRecaudo;
+  const estimado = Math.max(0, ticket * (1 - CONSERVADOR.margenBruto) - accesorios);
+
+  return {
+    valor: estimado,
+    origen: "estimado",
+    muestra: conCosto.length,
+    nota:
+      `Solo ${conCosto.length} pedidos tienen costo de mercancía cargado. ` +
+      `Se estima a partir de un margen del ${CONSERVADOR.margenBruto * 100}%.`,
+  };
+}
+
+type FilaFija = CostoFijoConvertible & {
+  vigente_desde: string;
+  vigente_hasta: string | null;
+};
+
+/**
+ * Suma los costos fijos vigentes, convirtiendo los que estan en dolares.
+ *
+ * Se convierte con la TRM del dia de cobro de ESTE mes, no con el valor
+ * en pesos guardado: ese quedo fijado el dia que se registro el costo, y
+ * con el dolar moviendose la proyeccion arrancaria con un numero viejo.
+ */
+async function sumarFijos(filas: FilaFija[]): Promise<Supuesto> {
+  const hoy = hoyISO();
+  const periodo = periodoActual();
   const vigentes = filas.filter(
     (f) => f.vigente_desde <= hoy && (f.vigente_hasta === null || f.vigente_hasta >= hoy),
   );
-  const total = vigentes.reduce((a, f) => a + Number(f.monto_cop), 0);
+
+  const montos = await Promise.all(
+    vigentes.map((f) => montoEnCop(f, periodo)),
+  );
+  const total = montos.reduce((a, m) => a + m.cop, 0);
+  const enDolares = vigentes.filter((f) => f.moneda === "USD").length;
 
   return {
     valor: total,
@@ -245,7 +334,10 @@ function sumarFijos(
     muestra: vigentes.length,
     nota:
       vigentes.length > 0
-        ? `Suma de ${vigentes.length} costos fijos activos.`
+        ? `Suma de ${vigentes.length} costos fijos activos` +
+          (enDolares > 0
+            ? `, ${enDolares} convertidos de dólares con la TRM del mes.`
+            : ".")
         : "No hay costos fijos registrados. La proyección asume que operar no cuesta nada.",
   };
 }

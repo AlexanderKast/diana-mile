@@ -569,6 +569,8 @@ export type VarianteCosteo = {
   id: string;
   productoId: string;
   productoTitulo: string;
+  /** La marca. La tienda es multimarca aunque el foco sea Nu Skin. */
+  marca: string;
   varianteTitulo: string;
   handle: string;
   estado: string;
@@ -582,7 +584,7 @@ export type VarianteCosteo = {
 
 const VARIANTES_COSTEO_QUERY = `
   query VariantesCosteo($cursor: String) {
-    productVariants(first: 100, after: $cursor, query: "vendor:'Nu Skin'") {
+    productVariants(first: 100, after: $cursor) {
       pageInfo { hasNextPage endCursor }
       edges {
         node {
@@ -595,6 +597,7 @@ const VARIANTES_COSTEO_QUERY = `
             title
             handle
             status
+            vendor
             codDisponible: metafield(namespace: "diana_mile", key: "cod_disponible") { value }
           }
         }
@@ -616,12 +619,19 @@ type RawVarianteCosteo = {
     title: string;
     handle: string;
     status: string;
+    vendor: string | null;
     codDisponible: RawMetafield;
   };
 };
 
 /**
- * Todas las variantes Nu Skin con lo que hace falta para costearlas.
+ * Todas las variantes del catalogo con lo que hace falta para costearlas.
+ *
+ * NO se filtra por marca. La tienda es multimarca aunque el foco sea Nu
+ * Skin, y una consulta con `vendor:'Nu Skin'` dejaria los productos de
+ * las demas marcas fuera de la lista de "sin costo" sin que nadie se
+ * entere — que es exactamente el fallo silencioso que este modulo existe
+ * para evitar. El costeo tiene que cubrir todo lo que se vende.
  *
  * Se consulta a nivel de VARIANTE y no de producto porque el costo vive
  * ahi: un pack de 3 cuesta el triple que la unidad, y costear por
@@ -654,6 +664,7 @@ export async function listarVariantesParaCosteo(): Promise<VarianteCosteo[]> {
         id: node.id,
         productoId: node.product.id,
         productoTitulo: node.product.title,
+        marca: node.product.vendor?.trim() || "Sin marca",
         varianteTitulo: node.title,
         handle: node.product.handle,
         estado: node.product.status,

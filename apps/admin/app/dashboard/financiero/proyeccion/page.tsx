@@ -1,3 +1,4 @@
+import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { leerSupuestos } from "@/lib/proyeccion-datos";
 import { SimuladorProyeccion } from "@/components/admin/SimuladorProyeccion";
 
@@ -7,8 +8,65 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
+export type EscenarioGuardado = {
+  id: string;
+  nombre: string;
+  periodo: string;
+  inversion_publicidad: number;
+  part_publicidad: number;
+  ticket_promedio: number;
+  margen_bruto: number;
+  tasa_despacho: number;
+  tasa_entrega: number;
+  costos_fijos_mes: number;
+  costo_mercancia: number;
+  costo_logistico: number;
+  costo_plataforma: number;
+  costo_fulfillment: number;
+  pct_recaudo: number;
+};
+
+/** Postgres devuelve DECIMAL como string; sin esto los inputs quedarían con texto. */
+function aNumero<T extends Record<string, unknown>>(fila: T, campos: string[]): T {
+  const copia = { ...fila } as Record<string, unknown>;
+  for (const campo of campos) {
+    copia[campo] = Number(copia[campo]) || 0;
+  }
+  return copia as T;
+}
+
+const NUMERICOS = [
+  "inversion_publicidad",
+  "part_publicidad",
+  "ticket_promedio",
+  "margen_bruto",
+  "tasa_despacho",
+  "tasa_entrega",
+  "costos_fijos_mes",
+  "costo_mercancia",
+  "costo_logistico",
+  "costo_plataforma",
+  "costo_fulfillment",
+  "pct_recaudo",
+];
+
 export default async function ProyeccionPage() {
-  const supuestos = await leerSupuestos();
+  const supabase = createAdminSupabaseClient();
+
+  const [supuestos, guardadosRes] = await Promise.all([
+    leerSupuestos(),
+    supabase
+      .from("proyecciones")
+      .select(
+        "id, nombre, periodo, inversion_publicidad, part_publicidad, ticket_promedio, margen_bruto, tasa_despacho, tasa_entrega, costos_fijos_mes, costo_mercancia, costo_logistico, costo_plataforma, costo_fulfillment, pct_recaudo",
+      )
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  const guardados = (guardadosRes.data ?? []).map((f) =>
+    aNumero(f as unknown as EscenarioGuardado, NUMERICOS),
+  );
 
   return (
     <div>
@@ -22,7 +80,7 @@ export default async function ProyeccionPage() {
         </p>
       </div>
 
-      <SimuladorProyeccion sugeridos={supuestos} />
+      <SimuladorProyeccion sugeridos={supuestos} guardados={guardados} />
     </div>
   );
 }

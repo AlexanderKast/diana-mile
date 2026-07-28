@@ -1,5 +1,6 @@
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import type { MetricasFinancieras } from "@diana-mile/shared/types";
+import { desglosarCostos } from "@diana-mile/shared/finanzas/costos-venta";
 
 /**
  * Devuelve el periodo actual en formato 'YYYY-MM'.
@@ -39,7 +40,7 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
     supabase
       .from("pedidos")
       .select(
-        "estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio"
+        "estado, precio_total, valor_recaudado, costo_producto, cantidad, costo_envio, costo_plataforma, costo_fulfillment, costo_recaudo"
       )
       .gte("created_at", desde)
       .lt("created_at", hasta),
@@ -70,11 +71,35 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
   const ingresos_recaudados = pedidos
     .filter((p) => p.estado === "entregado")
     .reduce((acc, p) => acc + (p.valor_recaudado ?? 0), 0);
-  const costo_productos = pedidos.reduce(
-    (acc, p) => acc + (p.costo_producto ?? 0) * (p.cantidad ?? 0),
-    0
+  // Los costos de venta se desglosan con la misma funcion que usa la
+  // proyeccion. Sumarlos aparte en cada sitio termina en que el panel y
+  // la proyeccion dicen cosas distintas del mismo mes y no hay forma de
+  // saber cual esta mal.
+  const desgloses = pedidos.map((p) =>
+    desglosarCostos({
+      costoProductoUnitario: p.costo_producto,
+      cantidad: p.cantidad ?? 1,
+      costoEnvio: p.costo_envio,
+      costoPlataforma: p.costo_plataforma,
+      costoFulfillment: p.costo_fulfillment,
+      costoRecaudo: p.costo_recaudo,
+    })
   );
-  const costo_envios = pedidos.reduce((acc, p) => acc + (p.costo_envio ?? 0), 0);
+
+  const sumar = (campo: "mercancia" | "envio" | "plataforma" | "fulfillment" | "recaudo") =>
+    desgloses.reduce((acc, d) => acc + d[campo], 0);
+
+  const costo_productos = sumar("mercancia");
+  const costo_envios = sumar("envio");
+  const costo_plataforma = sumar("plataforma");
+  const costo_fulfillment = sumar("fulfillment");
+  const costo_recaudo = sumar("recaudo");
+
+  // Cuantos pedidos tienen algun costo sin registrar. Mientras haya
+  // aunque sea uno, la utilidad de abajo es un TECHO: el costo real es
+  // ese o mas alto. El panel la mostraba sin esta advertencia, y por eso
+  // ensenaba margenes que no existian.
+  const pedidos_sin_costear = desgloses.filter((d) => d.incompleto).length;
 
   const gasto_publicidad = gastos
     .filter((g) => g.tipo?.startsWith("publicidad_"))
@@ -83,7 +108,13 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
     .filter((g) => !g.tipo?.startsWith("publicidad_"))
     .reduce((acc, g) => acc + (g.monto_cop ?? 0), 0);
 
-  const utilidad_bruta = ingresos_recaudados - costo_productos - costo_envios;
+  const utilidad_bruta =
+    ingresos_recaudados -
+    costo_productos -
+    costo_envios -
+    costo_plataforma -
+    costo_fulfillment -
+    costo_recaudo;
   const utilidad_neta = utilidad_bruta - gasto_publicidad - otros_gastos;
   const margen_neto = porcentaje(utilidad_neta, ingresos_recaudados);
 
@@ -106,6 +137,10 @@ export async function calcularMetricas(periodo?: string): Promise<MetricasFinanc
     ingresos_recaudados,
     costo_productos,
     costo_envios,
+    costo_plataforma,
+    costo_fulfillment,
+    costo_recaudo,
+    pedidos_sin_costear,
     gasto_publicidad,
     otros_gastos,
     utilidad_bruta,

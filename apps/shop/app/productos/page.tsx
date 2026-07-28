@@ -6,7 +6,7 @@ import { CatalogoFiltrado } from "@/components/product/CatalogoFiltrado";
 export const metadata: Metadata = {
   title: "Productos — Milito Life Shop",
   description:
-    "Catálogo Nu Skin de Milito Life Shop: cuidado facial, cuerpo, bienestar y tecnología en casa, con pago contraentrega en buena parte de Colombia.",
+    "Catálogo de Milito Life Shop: cuidado facial, cuerpo, bienestar y tecnología en casa. Nu Skin y otras marcas seleccionadas, con pago contraentrega en buena parte de Colombia.",
 };
 
 export default async function ProductosPage() {

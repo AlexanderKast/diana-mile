@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { desglosarCostos } from "@diana-mile/shared/finanzas/costos-venta";
 import { createAdminSupabaseClient, requireAdminSession } from "@diana-mile/shared/supabase/server";
 import type { Gasto, MetricasFinancieras, Pedido, RendimientoTransportadora } from "@diana-mile/shared/types";
 
@@ -79,15 +80,30 @@ function calcularMetricasBasico(pedidos: Pedido[], gastos: Gasto[], periodo: str
 
   const ingresosBrutos = pedidos.reduce((acc, p) => acc + (p.precio_total ?? 0), 0);
   const ingresosRecaudados = pedidos.reduce((acc, p) => acc + (p.valor_recaudado ?? 0), 0);
-  // `costo_producto` es el costo UNITARIO: hay que multiplicarlo por la
-  // cantidad, como ya hace lib/financiero.ts. Sin eso, un pedido de 3
-  // unidades cuenta el costo de una sola y el reporte da una utilidad
-  // mas alta que la del panel para el mismo mes.
-  const costoProductos = pedidos.reduce(
-    (acc, p) => acc + (p.costo_producto ?? 0) * (p.cantidad ?? 1),
-    0,
+  // Mismo desglose que usa lib/financiero.ts. Antes este archivo sumaba
+  // los costos por su cuenta y ademas olvidaba multiplicar por la
+  // cantidad, asi que el reporte y el panel daban utilidades distintas
+  // para el mismo mes.
+  const desgloses = pedidos.map((p) =>
+    desglosarCostos({
+      costoProductoUnitario: p.costo_producto,
+      cantidad: p.cantidad ?? 1,
+      costoEnvio: p.costo_envio,
+      costoPlataforma: p.costo_plataforma ?? null,
+      costoFulfillment: p.costo_fulfillment ?? null,
+      costoRecaudo: p.costo_recaudo ?? null,
+    }),
   );
-  const costoEnvios = pedidos.reduce((acc, p) => acc + (p.costo_envio ?? 0), 0);
+  const sumar = (campo: "mercancia" | "envio" | "plataforma" | "fulfillment" | "recaudo") =>
+    desgloses.reduce((acc, d) => acc + d[campo], 0);
+
+  const costoProductos = sumar("mercancia");
+  const costoEnvios = sumar("envio");
+  const costoPlataforma = sumar("plataforma");
+  const costoFulfillment = sumar("fulfillment");
+  const costoRecaudo = sumar("recaudo");
+  const costosDeVenta = desgloses.reduce((acc, d) => acc + d.total, 0);
+  const pedidosSinCostear = desgloses.filter((d) => d.incompleto).length;
 
   const gastoPublicidad = gastos
     .filter((g) => g.tipo.startsWith("publicidad_"))
@@ -96,7 +112,7 @@ function calcularMetricasBasico(pedidos: Pedido[], gastos: Gasto[], periodo: str
     .filter((g) => !g.tipo.startsWith("publicidad_"))
     .reduce((acc, g) => acc + (g.monto_cop ?? g.monto ?? 0), 0);
 
-  const utilidadBruta = ingresosRecaudados - costoProductos - costoEnvios;
+  const utilidadBruta = ingresosRecaudados - costosDeVenta;
   const utilidadNeta = utilidadBruta - gastoPublicidad - otrosGastos;
 
   // Porcentajes en escala 0-100 (mismo criterio que apps/admin/lib/financiero.ts,
@@ -118,6 +134,10 @@ function calcularMetricasBasico(pedidos: Pedido[], gastos: Gasto[], periodo: str
     ingresos_recaudados: Math.round(ingresosRecaudados),
     costo_productos: Math.round(costoProductos),
     costo_envios: Math.round(costoEnvios),
+    costo_plataforma: Math.round(costoPlataforma),
+    costo_fulfillment: Math.round(costoFulfillment),
+    costo_recaudo: Math.round(costoRecaudo),
+    pedidos_sin_costear: pedidosSinCostear,
     gasto_publicidad: Math.round(gastoPublicidad),
     otros_gastos: Math.round(otrosGastos),
     utilidad_bruta: Math.round(utilidadBruta),
@@ -125,7 +145,7 @@ function calcularMetricasBasico(pedidos: Pedido[], gastos: Gasto[], periodo: str
     margen_neto:
       ingresosRecaudados > 0 ? Number(((utilidadNeta / ingresosRecaudados) * 100).toFixed(2)) : 0,
     ticket_promedio: totalPedidos > 0 ? Math.round(ingresosBrutos / totalPedidos) : 0,
-    costo_por_pedido: totalPedidos > 0 ? Math.round((costoProductos + costoEnvios) / totalPedidos) : 0,
+    costo_por_pedido: totalPedidos > 0 ? Math.round(costosDeVenta / totalPedidos) : 0,
     roas: gastoPublicidad > 0 ? Number((ingresosRecaudados / gastoPublicidad).toFixed(2)) : null,
   };
 }

@@ -435,17 +435,19 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
         </span>
         <div className="flex flex-col gap-1">
           <h3 className="font-display text-2xl text-carbon">
-            ¡Tu ritual está en camino!
+            ¡Pedido confirmado!
           </h3>
-          <p className="text-sm text-ceniza">
+          <p className="text-sm text-carbon-suave">
             Numero de pedido: {success.orderNumber}
           </p>
         </div>
 
+        {/* Antes aqui decia "estas estrenando un ritual que Nu Skin vende en
+            medio mundo": una marca que no aplica a todo el catalogo —la tienda
+            es multimarca— y un alcance que nadie puede comprobar. */}
         <p className="text-sm text-carbon-suave">
-          Tomaste una gran decisión. Estás estrenando un ritual que Nu Skin
-          vende en medio mundo — y aquí lo pagas solo cuando lo tengas en las
-          manos.
+          Ya quedó registrado. No pagas nada por adelantado: le pagas al
+          mensajero cuando lo tengas en las manos.
         </p>
 
         <div className="flex flex-col gap-2.5 w-full">

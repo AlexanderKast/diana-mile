@@ -96,7 +96,11 @@ export default async function CostosPage({
         {(resumen.parametros.margenObjetivo * 100).toFixed(0)}%.
       </p>
 
-      <TablaCostos filas={resumen.filas} filtroInicial={filtro} />
+      <TablaCostos
+        filas={resumen.filas}
+        filtroInicial={filtro}
+        marcas={resumen.marcas}
+      />
     </div>
   );
 }

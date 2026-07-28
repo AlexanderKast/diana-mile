@@ -5,7 +5,7 @@ import { CategoryCard } from "@/components/category/CategoryCard";
 export const metadata: Metadata = {
   title: "Categorías — Milito Life Shop",
   description:
-    "Ritual de rostro, tecnología en casa, cuerpo y ducha, bienestar por dentro, color y detalle, y kits de inicio. El catálogo Nu Skin de Milito Life Shop.",
+    "Ritual de rostro, tecnología en casa, cuerpo y ducha, bienestar por dentro, color y detalle, y kits de inicio. El catálogo de Milito Life Shop.",
 };
 
 export default async function CategoriasPage() {
@@ -23,8 +23,7 @@ export default async function CategoriasPage() {
           </h1>
           <div className="linea-dorada mt-5 w-14 sm:mt-6 sm:w-16" />
           <p className="mt-5 max-w-md text-[14.5px] leading-relaxed text-carbon-suave sm:mt-6 sm:text-[15px]">
-            Están agrupadas por lo que quieres lograr, no por el orden del
-            catálogo de Nu Skin.
+            Están agrupadas por lo que quieres lograr, no por marca.
           </p>
         </div>
       </section>

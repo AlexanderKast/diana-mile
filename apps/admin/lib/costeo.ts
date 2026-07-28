@@ -77,6 +77,7 @@ export type FilaCosteo = {
   variantId: string;
   productoId: string;
   productoTitulo: string;
+  marca: string;
   varianteTitulo: string;
   handle: string;
   estado: string;
@@ -108,6 +109,8 @@ export type ResumenCosteo = {
   bajoObjetivo: number;
   /** Solo cuenta variantes con costo: sobre las demas no se sabe nada. */
   margenBrutoPromedio: number | null;
+  /** Marcas presentes en el catalogo, para filtrar. */
+  marcas: string[];
   shopifyConfigurado: boolean;
 };
 
@@ -139,6 +142,7 @@ export async function calcularCosteoCatalogo(): Promise<ResumenCosteo> {
       enPerdida: 0,
       bajoObjetivo: 0,
       margenBrutoPromedio: null,
+      marcas: [],
       shopifyConfigurado: false,
     };
   }
@@ -183,6 +187,7 @@ export async function calcularCosteoCatalogo(): Promise<ResumenCosteo> {
     enPerdida: filas.filter((f) => f.salud === "perdida").length,
     bajoObjetivo: filas.filter((f) => f.salud === "bajo_objetivo").length,
     margenBrutoPromedio,
+    marcas: Array.from(new Set(filas.map((f) => f.marca))).sort(),
     shopifyConfigurado: true,
   };
 }
@@ -213,6 +218,7 @@ function construirFila(
     variantId: variante.id,
     productoId: variante.productoId,
     productoTitulo: variante.productoTitulo,
+    marca: variante.marca,
     varianteTitulo: variante.varianteTitulo,
     handle: variante.handle,
     estado: variante.estado,

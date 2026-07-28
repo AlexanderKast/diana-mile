@@ -1,4 +1,52 @@
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
+import {
+  COSTOS_VENTA_POR_DEFECTO,
+  type ParametrosCostosVenta,
+} from "@diana-mile/shared/finanzas/costos-venta";
+
+const CLAVES_COSTOS_VENTA = {
+  fin_costo_plataforma_default: "costoPlataforma",
+  fin_costo_fulfillment_default: "costoFulfillment",
+  fin_costo_logistico_default: "costoLogistico",
+  fin_pct_recaudo: "pctRecaudo",
+} as const;
+
+/**
+ * Lee de `config` los parametros de costo de venta.
+ *
+ * Un valor corrupto (vacio, texto, negativo) cae al default en vez de
+ * propagarse: un `pctRecaudo` en NaN convertiria en NaN la utilidad de
+ * todos los pedidos entregados, y una pantalla de guiones es mas dificil
+ * de diagnosticar que un numero conservador.
+ */
+export async function leerParametrosCostosVenta(): Promise<ParametrosCostosVenta> {
+  const parametros = { ...COSTOS_VENTA_POR_DEFECTO };
+
+  try {
+    const supabase = createAdminSupabaseClient();
+    const { data } = await supabase
+      .from("config")
+      .select("clave, valor")
+      .in("clave", Object.keys(CLAVES_COSTOS_VENTA));
+
+    for (const fila of data ?? []) {
+      const campo =
+        CLAVES_COSTOS_VENTA[fila.clave as keyof typeof CLAVES_COSTOS_VENTA];
+      if (!campo) continue;
+      const n = Number(fila.valor);
+      if (Number.isFinite(n) && n >= 0) {
+        parametros[campo] = n;
+      }
+    }
+  } catch (error) {
+    // Esto corre dentro de la creacion de un pedido y de la entrega. Que
+    // no se pueda leer la configuracion nunca puede impedir que la venta
+    // se registre.
+    console.error("No se pudieron leer los parametros de costo:", error);
+  }
+
+  return parametros;
+}
 
 /**
  * El costo unitario que se congela en el pedido al crearlo.
