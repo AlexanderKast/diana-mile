@@ -147,10 +147,14 @@ export default async function MetricasPage({
   const desde = new Date(hasta.getTime() - periodo.dias * 24 * 60 * 60 * 1000);
 
   const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase.rpc("metricas_ecosistema", {
-    desde: desde.toISOString(),
-    hasta: hasta.toISOString(),
-  });
+  const rango = { desde: desde.toISOString(), hasta: hasta.toISOString() };
+
+  // La app va en su propia funcion: se le anadieron medidas despues y
+  // reescribir la funcion grande entera por eso es pedir un error.
+  const [{ data, error }, { data: datosApp }] = await Promise.all([
+    supabase.rpc("metricas_ecosistema", rango),
+    supabase.rpc("metricas_app", rango),
+  ]);
 
   if (error || !data) {
     return (
@@ -164,7 +168,8 @@ export default async function MetricasPage({
   }
 
   const m = data as Metricas;
-  const { embudo, dinero, agente, atribucion, logistica, app } = m;
+  const { embudo, dinero, agente, atribucion, logistica } = m;
+  const app = (datosApp as Record<string, number>) ?? m.app;
 
   return (
     <div>
@@ -237,9 +242,11 @@ export default async function MetricasPage({
 
         <Bloque
           titulo="La app"
-          descripcion="Instalar la app no da permiso de notificaciones: son dos cosas distintas."
+          descripcion="Las instalaciones solo cuentan desde que se midio; las aperturas ven tambien a quien ya la tenia. Instalar no da permiso de notificaciones: son dos cosas distintas."
         >
-          <Paso label="Instalaciones" valor={app.instalaciones} />
+          <Paso label="Instalaciones nuevas" valor={app.instalaciones} />
+          <Paso label="Aperturas desde la app" valor={app.aperturas_app} />
+          <Paso label="Dias con uso de la app" valor={app.dias_con_uso} />
           <Paso label="Suscripciones a notificaciones" valor={app.suscripciones_push} />
         </Bloque>
 

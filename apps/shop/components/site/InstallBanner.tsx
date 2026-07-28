@@ -71,6 +71,41 @@ export function InstallBanner({ activo = true }: { activo?: boolean }) {
     return () => window.removeEventListener("appinstalled", alInstalar);
   }, []);
 
+  /**
+   * Anota que alguien esta entrando desde la app ya instalada.
+   *
+   * Hace falta porque el evento de instalacion solo existe en el momento
+   * exacto de instalar: quien ya la tenia instalada antes no aparece por
+   * ningun lado. Esto si los ve, y ademas dice algo mas util —cuantos la
+   * usan— que cuantos la instalaron alguna vez y no volvieron.
+   *
+   * Una vez por sesion del navegador: si se mandara en cada navegacion, el
+   * numero mediria paginas vistas y no personas.
+   */
+  useEffect(() => {
+    if (!esStandalone()) return;
+    try {
+      if (window.sessionStorage.getItem("apertura-app-anotada")) return;
+      window.sessionStorage.setItem("apertura-app-anotada", "1");
+    } catch {
+      // Sin sessionStorage se anota de mas; es preferible a no anotar.
+    }
+
+    const cuerpo = JSON.stringify({
+      tipo: "apertura_app",
+      ruta: window.location.pathname,
+      plataforma: esIOS() ? "ios" : "android-escritorio",
+    });
+    try {
+      navigator.sendBeacon?.(
+        "/api/eventos",
+        new Blob([cuerpo], { type: "application/json" }),
+      );
+    } catch {
+      // Medir no puede estropearle la visita a nadie.
+    }
+  }, []);
+
   useEffect(() => {
     if (!activo || esStandalone() || estaDismisseado()) return;
 
