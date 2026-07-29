@@ -16,6 +16,12 @@
   --dorado-oscuro: #A8885E;
   --error: #B3413A;
 
+  /* Tokens de estado (mismos hex que apps/shop) — los usan los bloques de
+     landing compartidos en packages/shared/src/landing/blocks. */
+  --rojo-alerta: #dc2626;
+  --verde-ok: #22c55e;
+  --azul-verified: #1da1f2;
+
   /* Lila — identidad personal de Mile, acento secundario. El dorado sigue siendo el acento de lujo principal. */
   --lila-suave: #EDE8F5;
   --lila: #9B8EA8;
@@ -33,6 +39,9 @@
   --color-dorado: var(--dorado);
   --color-dorado-oscuro: var(--dorado-oscuro);
   --color-error: var(--error);
+  --color-rojo-alerta: var(--rojo-alerta);
+  --color-verde-ok: var(--verde-ok);
+  --color-azul-verified: var(--azul-verified);
   --color-lila-suave: var(--lila-suave);
   --color-lila: var(--lila);
   --color-morado: var(--morado);

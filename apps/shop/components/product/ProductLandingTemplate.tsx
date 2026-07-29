@@ -11,7 +11,7 @@ import {
   hrefVitrina,
 } from "@/components/product/BloqueVitrina";
 import { ProductGallery } from "@/components/product/ProductGallery";
-import { ProductBenefits } from "@/components/product/ProductBenefits";
+import { ProductBenefits } from "@diana-mile/shared/landing/blocks/ProductBenefits";
 import { ProductPurchaseFlow } from "@/components/product/ProductPurchaseFlow";
 import { AuthenticitySeals } from "@/components/product/AuthenticitySeals";
 import { ProductHeroCTA } from "@/components/product/ProductHeroCTA";
@@ -19,7 +19,7 @@ import { OrderSheetProvider } from "@/components/product/OrderSheetContext";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
 import TrustBadges from "@/components/product/TrustBadges";
 import { DesktopTrustRow } from "@/components/product/DesktopTrustRow";
-import { UGCSection } from "@/components/product/UGCSection";
+import { UGCSection } from "@diana-mile/shared/landing/blocks/UGCSection";
 import { GuaranteeSection } from "@/components/product/GuaranteeSection";
 import { CommunitySection } from "@/components/product/CommunitySection";
 import { NuskinSection } from "@/components/product/NuskinSection";
@@ -28,12 +28,12 @@ import { SocialCTABand } from "@/components/ui/SocialCTABand";
 import { ExitIntentPopup } from "@/components/product/ExitIntentPopup";
 import { BackToTopButton } from "@/components/product/BackToTopButton";
 import { ProductViewTracking } from "@/components/product/ProductViewTracking";
-import { ComparisonSection } from "@/components/product/ComparisonSection";
-import { ResultsTimeline } from "@/components/product/ResultsTimeline";
+import { ComparisonSection } from "@diana-mile/shared/landing/blocks/ComparisonSection";
+import { ResultsTimeline } from "@diana-mile/shared/landing/blocks/ResultsTimeline";
 import { PersonalizedHeadingSuffix } from "@/components/product/PersonalizedHeadingSuffix";
 import { PersonalizedBenefitCard } from "@/components/product/PersonalizedBenefitCard";
 import { ResultadosRealesGallery } from "@/components/product/ResultadosRealesGallery";
-import { WithoutRitualSection } from "@/components/product/WithoutRitualSection";
+import { WithoutRitualSection } from "@diana-mile/shared/landing/blocks/WithoutRitualSection";
 import { SectionDivider } from "@/components/ui/SectionDivider";
 import { TituloWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 
@@ -41,7 +41,7 @@ import { TituloWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 // producto) — se cargan en un chunk separado para no engordar el bundle
 // inicial de la PDP con codigo que a veces ni se usa.
 const IngredientsAccordion = dynamic(() =>
-  import("@/components/product/IngredientsAccordion").then(
+  import("@diana-mile/shared/landing/blocks/IngredientsAccordion").then(
     (m) => m.IngredientsAccordion,
   ),
 );
@@ -51,7 +51,7 @@ const TestimonialsSection = dynamic(() =>
   ),
 );
 const FAQAccordion = dynamic(() =>
-  import("@/components/product/FAQAccordion").then((m) => m.FAQAccordion),
+  import("@diana-mile/shared/landing/blocks/FAQAccordion").then((m) => m.FAQAccordion),
 );
 const SkinTypeSelector = dynamic(() =>
   import("@/components/product/SkinTypeSelector").then(
@@ -59,7 +59,7 @@ const SkinTypeSelector = dynamic(() =>
   ),
 );
 const FreeGuide = dynamic(() =>
-  import("@/components/product/FreeGuide").then((m) => m.FreeGuide),
+  import("@diana-mile/shared/landing/blocks/FreeGuide").then((m) => m.FreeGuide),
 );
 
 // Shopify devuelve "<p></p>" para una descripcion vacia — sin este chequeo
