@@ -401,11 +401,13 @@ function epochLanding(product: Product): ResolvedLanding {
 }
 
 /**
- * Aplica sobre `base` solo los campos DEFINIDOS del metafield. Cada bloque
- * es reemplazo completo (no merge profundo): si el metafield trae `benefits`,
+ * Aplica sobre `base` solo los campos DEFINIDOS del contenido. Cada bloque
+ * es reemplazo completo (no merge profundo): si el contenido trae `benefits`,
  * reemplaza toda la lista. Los campos ausentes conservan el fallback.
+ * La usan resolveLanding (metafield sobre base) y las variantes del rotador
+ * (/l/[slug]: contenido de la variante sobre la landing publica).
  */
-function applyOverrides(
+export function applyOverrides(
   base: ResolvedLanding,
   content: ProductLandingContent,
 ): ResolvedLanding {
