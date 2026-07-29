@@ -16,6 +16,7 @@ Excepciones autorizadas, con su motivo:
 | Paquete | Dónde | Por qué |
 |---|---|---|
 | `@dnd-kit/core` + `@dnd-kit/sortable` | `apps/admin` | Arrastrar tarjetas en el pipeline. Autorizado explícitamente por Alexander. Se eligió por accesibilidad de teclado y soporte táctil; escribirlo a mano habría dejado el tablero inutilizable con lector de pantalla. El tablero conserva además un menú "mover a" como camino alternativo. |
+| `@measured/puck` (versión exacta, sin `^`) | `apps/admin` (editor) y `apps/shop` (solo `Render`) | Constructor visual drag-and-drop de landings. Autorizado explícitamente por Alexander. Editor con motor grid/flex y render RSC oficial sobre nuestros propios componentes; reimplementar zones/slots a mano quedaría desincronizado del `Data` que produce el editor en cada versión. Ambas apps deben llevar la MISMA versión exacta para que el JSON se renderice idéntico. |
 
 Antes de agregar otra, hay que pedirlo. Si aparece una dependencia en un
 `package.json` sin fila en esta tabla, es un error.
