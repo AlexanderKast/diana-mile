@@ -1,36 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminUser } from "@diana-mile/shared/supabase/server";
-import type {
-  LandingBenefitIcon,
-  ProductLandingContent,
-} from "@diana-mile/shared/types";
 import {
   guardarLandingProducto,
   obtenerProducto,
 } from "@/lib/shopify-catalogo";
+import { validarLandingContent } from "@/lib/validar-landing";
 
 type RouteParams = { params: Promise<{ handle: string }> };
-
-const ICONOS_VALIDOS: LandingBenefitIcon[] = [
-  "gota",
-  "mineral",
-  "hoja",
-  "sol",
-  "escudo",
-  "planeta",
-];
-
-function validarLandingContent(body: unknown): body is ProductLandingContent {
-  if (!body || typeof body !== "object" || Array.isArray(body)) return false;
-  const content = body as ProductLandingContent;
-  if (content.benefits) {
-    if (!Array.isArray(content.benefits)) return false;
-    for (const b of content.benefits) {
-      if (!ICONOS_VALIDOS.includes(b.icon)) return false;
-    }
-  }
-  return true;
-}
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
