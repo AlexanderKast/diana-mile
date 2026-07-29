@@ -370,10 +370,13 @@ export const configShop: Config = {
     ),
 
     // ─── Primitivos ──────────────────────────────────────────────────────
-    Encabezado: bloque("Encabezado", (props: { texto: string; nivel: "grande" | "mediano"; alineacion: "izquierda" | "centro" }) => (
-      <EncabezadoBloque {...props} />
-    )),
-    Texto: bloque("Texto", (props: { texto: string; alineacion: "izquierda" | "centro" }) => (
+    Encabezado: bloque(
+      "Encabezado",
+      (props: React.ComponentProps<typeof EncabezadoBloque>) => (
+        <EncabezadoBloque {...props} />
+      ),
+    ),
+    Texto: bloque("Texto", (props: React.ComponentProps<typeof TextoBloque>) => (
       <TextoBloque {...props} />
     )),
     Imagen: bloque("Imagen", (props: { url: string; alt: string; ancho: "completo" | "medio" }) => (

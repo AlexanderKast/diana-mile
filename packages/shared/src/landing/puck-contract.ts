@@ -41,6 +41,39 @@ const lista = (
 export const FONDOS = ["blanco", "crema", "lila-suave", "joya"] as const;
 export type FondoBloque = (typeof FONDOS)[number];
 
+/** Paleta de texto de la marca (props → clases estaticas en el componente). */
+export const COLORES_TEXTO = [
+  "carbon",
+  "carbon-suave",
+  "ceniza",
+  "dorado-oscuro",
+  "morado",
+  "blanco",
+] as const;
+export type ColorTexto = (typeof COLORES_TEXTO)[number];
+
+const campoColorTexto: CampoPuck = {
+  type: "select",
+  label: "Color del texto",
+  options: [
+    { label: "Carbon (principal)", value: "carbon" },
+    { label: "Carbon suave", value: "carbon-suave" },
+    { label: "Ceniza", value: "ceniza" },
+    { label: "Dorado oscuro", value: "dorado-oscuro" },
+    { label: "Morado", value: "morado" },
+    { label: "Blanco (sobre fondos oscuros)", value: "blanco" },
+  ],
+};
+
+const campoFuente: CampoPuck = {
+  type: "radio",
+  label: "Tipografia",
+  options: [
+    { label: "Elegante (Cormorant)", value: "display" },
+    { label: "Moderna (Inter)", value: "sans" },
+  ],
+};
+
 export const ICONOS_BENEFICIO = [
   "gota",
   "mineral",
@@ -282,14 +315,18 @@ export const BLOQUES: Record<string, BloquePuck> = {
     label: "Encabezado",
     fields: {
       texto: texto("Texto"),
-      nivel: {
-        type: "radio",
+      tamano: {
+        type: "select",
         label: "Tamano",
         options: [
+          { label: "Gigante", value: "gigante" },
           { label: "Grande", value: "grande" },
           { label: "Mediano", value: "mediano" },
+          { label: "Pequeno", value: "pequeno" },
         ],
       },
+      fuente: campoFuente,
+      color: campoColorTexto,
       alineacion: {
         type: "radio",
         label: "Alineacion",
@@ -299,12 +336,29 @@ export const BLOQUES: Record<string, BloquePuck> = {
         ],
       },
     },
-    defaultProps: { texto: "Encabezado", nivel: "grande", alineacion: "centro" },
+    defaultProps: {
+      texto: "Encabezado",
+      tamano: "grande",
+      fuente: "display",
+      color: "carbon",
+      alineacion: "centro",
+    },
   },
   Texto: {
     label: "Texto",
     fields: {
       texto: parrafo("Contenido"),
+      tamano: {
+        type: "select",
+        label: "Tamano",
+        options: [
+          { label: "Grande", value: "grande" },
+          { label: "Normal", value: "normal" },
+          { label: "Pequeno", value: "pequeno" },
+        ],
+      },
+      fuente: campoFuente,
+      color: campoColorTexto,
       alineacion: {
         type: "radio",
         label: "Alineacion",
@@ -314,7 +368,13 @@ export const BLOQUES: Record<string, BloquePuck> = {
         ],
       },
     },
-    defaultProps: { texto: "", alineacion: "izquierda" },
+    defaultProps: {
+      texto: "",
+      tamano: "normal",
+      fuente: "sans",
+      color: "carbon-suave",
+      alineacion: "izquierda",
+    },
   },
   Imagen: {
     label: "Imagen",
@@ -443,6 +503,7 @@ export const BLOQUES: Record<string, BloquePuck> = {
           { label: "Completo", value: "completo" },
         ],
       },
+      fuente: campoFuente,
     },
     defaultProps: {
       etiqueta: "Pedir ahora · Contraentrega",
@@ -451,6 +512,7 @@ export const BLOQUES: Record<string, BloquePuck> = {
       efecto: "brillo-pulso",
       tamano: "normal",
       anchoBoton: "auto",
+      fuente: "sans",
     },
   },
 };
@@ -462,6 +524,7 @@ export type EstiloBotonCta = {
   efecto: "brillo" | "pulso" | "brillo-pulso" | "ninguno";
   tamano: "normal" | "grande";
   anchoBoton: "auto" | "completo";
+  fuente?: "display" | "sans";
 };
 
 /**

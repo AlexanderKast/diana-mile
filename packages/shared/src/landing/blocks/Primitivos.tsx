@@ -11,7 +11,28 @@
 
 import Image from "next/image";
 import { SectionDivider } from "./SectionDivider";
-import type { EstiloBotonCta, FondoBloque } from "../puck-contract";
+import type { ColorTexto, EstiloBotonCta, FondoBloque } from "../puck-contract";
+
+/** Paleta de texto → clases estaticas (el scanner de Tailwind las ve aqui). */
+const COLOR_TEXTO_CLASES: Record<ColorTexto, string> = {
+  carbon: "text-carbon",
+  "carbon-suave": "text-carbon-suave",
+  ceniza: "text-ceniza",
+  "dorado-oscuro": "text-dorado-oscuro",
+  morado: "text-morado",
+  blanco: "text-blanco",
+};
+
+const FUENTE_CLASES = {
+  display: "font-display",
+  sans: "font-sans",
+} as const;
+
+const colorTexto = (color?: string) =>
+  COLOR_TEXTO_CLASES[(color as ColorTexto) ?? "carbon"] ?? "text-carbon";
+
+const fuenteTexto = (fuente?: string) =>
+  FUENTE_CLASES[(fuente as "display" | "sans") ?? "display"] ?? "font-display";
 
 /**
  * Clases del BotonCTA segun su personalizacion. TODO estatico: cada
@@ -24,9 +45,12 @@ export function clasesBotonCta({
   efecto,
   tamano,
   anchoBoton,
+  fuente,
 }: EstiloBotonCta): string {
   const base =
     "inline-flex items-center justify-center gap-2 rounded-lg font-semibold tracking-wide transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]";
+
+  const tipografia = fuente === "display" ? "font-display" : "font-sans";
 
   const dimension =
     tamano === "grande"
@@ -57,7 +81,7 @@ export function clasesBotonCta({
         : "cta-pulse"
       : "";
 
-  return [base, dimension, anchura, colores, brillo, pulso]
+  return [base, tipografia, dimension, anchura, colores, brillo, pulso]
     .filter(Boolean)
     .join(" ");
 }
@@ -65,38 +89,70 @@ export function clasesBotonCta({
 type ZonaProps = { style?: React.CSSProperties; className?: string };
 type Zona = React.ComponentType<ZonaProps>;
 
+const TAMANO_ENCABEZADO = {
+  gigante: "text-[36px] md:text-[46px] leading-tight",
+  grande: "text-[28px] md:text-[32px]",
+  mediano: "text-2xl",
+  pequeno: "text-xl",
+} as const;
+
 export function EncabezadoBloque({
   texto,
-  nivel,
+  tamano,
+  fuente,
+  color,
   alineacion,
+  nivel,
 }: {
   texto: string;
-  nivel: "grande" | "mediano";
+  tamano?: "gigante" | "grande" | "mediano" | "pequeno";
+  fuente?: "display" | "sans";
+  color?: ColorTexto;
   alineacion: "izquierda" | "centro";
+  /** Prop vieja (disenos guardados antes de `tamano`); se respeta como fallback. */
+  nivel?: "grande" | "mediano";
 }) {
+  const tamanoFinal = tamano ?? nivel ?? "grande";
   const clase = [
-    "font-display text-carbon px-6",
-    nivel === "grande" ? "text-[28px] md:text-[32px]" : "text-2xl",
+    "px-6",
+    fuenteTexto(fuente),
+    colorTexto(color),
+    TAMANO_ENCABEZADO[tamanoFinal] ?? TAMANO_ENCABEZADO.grande,
     alineacion === "centro" ? "text-center" : "text-left",
   ].join(" ");
-  return nivel === "grande" ? (
-    <h2 className={clase}>{texto}</h2>
-  ) : (
+  return tamanoFinal === "pequeno" || tamanoFinal === "mediano" ? (
     <h3 className={clase}>{texto}</h3>
+  ) : (
+    <h2 className={clase}>{texto}</h2>
   );
 }
 
+const TAMANO_TEXTO = {
+  grande: "text-lg",
+  normal: "text-sm md:text-base",
+  pequeno: "text-xs",
+} as const;
+
 export function TextoBloque({
   texto,
+  tamano,
+  fuente,
+  color,
   alineacion,
 }: {
   texto: string;
+  tamano?: "grande" | "normal" | "pequeno";
+  fuente?: "display" | "sans";
+  color?: ColorTexto;
   alineacion: "izquierda" | "centro";
 }) {
   return (
     <p
       className={[
-        "text-sm text-carbon-suave leading-relaxed max-w-md mx-auto px-6 whitespace-pre-line",
+        "leading-relaxed max-w-md mx-auto px-6 whitespace-pre-line",
+        TAMANO_TEXTO[tamano ?? "normal"] ?? TAMANO_TEXTO.normal,
+        fuente === "display" ? "font-display" : "font-sans",
+        colorTexto(color ?? "carbon-suave"),
         alineacion === "centro" ? "text-center" : "text-left",
       ].join(" ")}
     >
