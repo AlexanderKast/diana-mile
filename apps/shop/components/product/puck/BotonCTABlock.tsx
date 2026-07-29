@@ -1,26 +1,30 @@
 "use client";
 
+import type { EstiloBotonCta } from "@diana-mile/shared/landing/puck-contract";
+import { clasesBotonCta } from "@diana-mile/shared/landing/blocks/Primitivos";
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 
 /**
- * Boton de pedido suelto del constructor visual. En productos contraentrega
- * abre el OrderBottomSheet; en vitrina el bloque recibe el enlace de
- * WhatsApp resuelto en el servidor y navega alla.
+ * Boton de pedido suelto del constructor visual, personalizable (color,
+ * estilo, efecto, tamano). En productos contraentrega abre el
+ * OrderBottomSheet; en vitrina navega al enlace de WhatsApp resuelto en el
+ * servidor.
  */
 export function BotonCTABlock({
   etiqueta,
   enlaceVitrina,
-}: {
+  ...estilos
+}: EstiloBotonCta & {
   etiqueta: string;
   enlaceVitrina: string | null;
 }) {
   const { openOrderSheet } = useOrderSheet();
-
-  const clase =
-    "btn-shine cta-pulse inline-flex items-center justify-center gap-2 min-h-[44px] px-8 rounded-lg bg-dorado-oscuro text-blanco text-base font-semibold tracking-wide shadow-[0_4px_14px_rgba(168,136,94,0.35)] transition-all duration-200 hover:bg-dorado hover:scale-[1.03] active:scale-[0.97]";
+  const clase = clasesBotonCta(estilos);
 
   return (
-    <div className="flex justify-center px-6 py-4">
+    <div
+      className={`flex px-6 py-4 ${estilos.anchoBoton === "completo" ? "" : "justify-center"}`}
+    >
       {enlaceVitrina ? (
         <a href={enlaceVitrina} className={clase}>
           {etiqueta}

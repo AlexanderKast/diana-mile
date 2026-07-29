@@ -11,7 +11,13 @@ import type {
   LandingUGCPost,
   Product,
 } from "@diana-mile/shared/types";
-import { BLOQUES, CATEGORIAS } from "@diana-mile/shared/landing/puck-contract";
+import {
+  BLOQUES,
+  CAMPOS_ROOT,
+  CATEGORIAS,
+  DEFAULTS_ROOT,
+  type EstiloBotonCta,
+} from "@diana-mile/shared/landing/puck-contract";
 import { ProductBenefits } from "@diana-mile/shared/landing/blocks/ProductBenefits";
 import { UGCSection } from "@diana-mile/shared/landing/blocks/UGCSection";
 import { ComparisonSection } from "@diana-mile/shared/landing/blocks/ComparisonSection";
@@ -99,6 +105,10 @@ function bloque(nombre: string, render: (props: never) => React.ReactNode) {
  */
 export const configShop: Config = {
   categories: CATEGORIAS as never,
+  root: {
+    fields: CAMPOS_ROOT as never,
+    defaultProps: DEFAULTS_ROOT as never,
+  },
   components: {
     // ─── Producto / transaccionales ──────────────────────────────────────
     HeroCompra: bloque(
@@ -115,7 +125,7 @@ export const configShop: Config = {
         tagline: string;
         mostrarGaleria: "si" | "no";
         mostrarSellos: "si" | "no";
-        mostrarFormulario: "si" | "no";
+        mostrarFormulario: "si" | "popup" | "no";
         puck: Meta;
       }) => {
         const { product, esCod, numeroWhatsapp, modoCompra, authenticity } =
@@ -155,10 +165,10 @@ export const configShop: Config = {
               {esCod ? (
                 <>
                   <ProductHeroCTA showAuthenticity={authenticity} skinType={null} />
-                  {/* En desktop el sheet renderiza inline bajo el CTA, igual
-                      que en el arbol legacy: sin esto el boton "salta" a una
-                      zona vacia al final de la pagina. */}
-                  {mostrarFormulario !== "no" && <OrderBottomSheet />}
+                  {/* "si" = incrustado (inline en desktop, bandeja en movil);
+                      "popup" = solo bandeja, tambien en desktop. */}
+                  {mostrarFormulario === "si" && <OrderBottomSheet />}
+                  {mostrarFormulario === "popup" && <OrderBottomSheet modo="popup" />}
                 </>
               ) : (
                 <BloqueVitrina product={product} numeroWhatsapp={numeroWhatsapp} />
@@ -168,17 +178,21 @@ export const configShop: Config = {
         );
       },
     ),
-    ResumenPedido: bloque("ResumenPedido", ({ puck }: { puck: Meta }) =>
-      puck.metadata.esCod ? (
-        <div className="px-6 md:px-10 max-w-xl mx-auto w-full">
-          <OrderBottomSheet />
-        </div>
-      ) : (
-        <BloqueVitrina
-          product={puck.metadata.product}
-          numeroWhatsapp={puck.metadata.numeroWhatsapp}
-        />
-      ),
+    ResumenPedido: bloque(
+      "ResumenPedido",
+      ({ presentacion, puck }: { presentacion: "incrustado" | "popup"; puck: Meta }) =>
+        puck.metadata.esCod ? (
+          <div className="px-6 md:px-10 max-w-xl mx-auto w-full">
+            <OrderBottomSheet
+              modo={presentacion === "popup" ? "popup" : "incrustado"}
+            />
+          </div>
+        ) : (
+          <BloqueVitrina
+            product={puck.metadata.product}
+            numeroWhatsapp={puck.metadata.numeroWhatsapp}
+          />
+        ),
     ),
     DescripcionShopify: bloque("DescripcionShopify", ({ puck }: { puck: Meta }) => {
       const html = puck.metadata.descriptionHtml;
@@ -253,9 +267,16 @@ export const configShop: Config = {
         </section>
       );
     }),
-    BotonCTA: bloque("BotonCTA", ({ etiqueta, puck }: { etiqueta: string; puck: Meta }) => (
-      <BotonCTABlock etiqueta={etiqueta} enlaceVitrina={puck.metadata.enlaceVitrina} />
-    )),
+    BotonCTA: bloque(
+      "BotonCTA",
+      ({ etiqueta, puck, ...estilos }: EstiloBotonCta & { etiqueta: string; puck: Meta }) => (
+        <BotonCTABlock
+          etiqueta={etiqueta}
+          enlaceVitrina={puck.metadata.enlaceVitrina}
+          {...estilos}
+        />
+      ),
+    ),
 
     // ─── Secciones de marca ──────────────────────────────────────────────
     Beneficios: bloque(

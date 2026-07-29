@@ -72,6 +72,17 @@ a {
   touch-action: manipulation;
 }
 
+/* Por-landing (constructor visual): la page emite marcadores ocultos y aqui
+   se apaga la navegacion del sitio. Ocultar header apaga tambien la tab bar
+   movil — ambas son navegacion; el boton de WhatsApp no se toca. */
+body:has([data-ocultar-header]) #sitio-header,
+body:has([data-ocultar-header]) #sitio-tabbar {
+  display: none;
+}
+body:has([data-ocultar-footer]) #sitio-footer {
+  display: none;
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;

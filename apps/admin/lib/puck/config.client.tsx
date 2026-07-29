@@ -11,7 +11,14 @@ import type {
   LandingTimelineStage,
   LandingUGCPost,
 } from "@diana-mile/shared/types";
-import { BLOQUES, CATEGORIAS } from "@diana-mile/shared/landing/puck-contract";
+import {
+  BLOQUES,
+  CAMPOS_ROOT,
+  CATEGORIAS,
+  DEFAULTS_ROOT,
+  type EstiloBotonCta,
+} from "@diana-mile/shared/landing/puck-contract";
+import { clasesBotonCta } from "@diana-mile/shared/landing/blocks/Primitivos";
 import { ProductBenefits } from "@diana-mile/shared/landing/blocks/ProductBenefits";
 import { UGCSection } from "@diana-mile/shared/landing/blocks/UGCSection";
 import { ComparisonSection } from "@diana-mile/shared/landing/blocks/ComparisonSection";
@@ -97,6 +104,11 @@ function BotonFalso({ etiqueta }: { etiqueta: string }) {
  */
 export const configEditor: Config = {
   categories: CATEGORIAS as never,
+  // Opciones de pagina (panel "Page"): marco del sitio alrededor de la landing.
+  root: {
+    fields: CAMPOS_ROOT as never,
+    defaultProps: DEFAULTS_ROOT as never,
+  },
   components: {
     // ─── Previews de bloques acoplados al shop ───────────────────────────
     HeroCompra: bloque(
@@ -113,7 +125,7 @@ export const configEditor: Config = {
         tagline: string;
         mostrarGaleria: "si" | "no";
         mostrarSellos: "si" | "no";
-        mostrarFormulario: "si" | "no";
+        mostrarFormulario: "si" | "popup" | "no";
         puck: Meta;
       }) => (
         <div
@@ -149,7 +161,9 @@ export const configEditor: Config = {
             {mostrarFormulario !== "no" && (
               <div className="border border-dashed border-arena rounded-2xl p-3">
                 <p className="text-xs text-ceniza">
-                  Formulario de pedido (resumen, packs y datos) — real en la tienda.
+                  {mostrarFormulario === "popup"
+                    ? "Formulario en popup: se abre al tocar el boton."
+                    : "Formulario de pedido incrustado (resumen, packs y datos) — real en la tienda."}
                 </p>
               </div>
             )}
@@ -157,14 +171,22 @@ export const configEditor: Config = {
         </div>
       ),
     ),
-    ResumenPedido: bloque("ResumenPedido", () => (
-      <Sistema titulo="Formulario de pedido">
-        <p className="text-sm text-carbon-suave">
-          Resumen del pedido, packs y formulario contraentrega. Colocalo UNA
-          sola vez; si ningun bloque lo incluye, la tienda lo agrega al final.
-        </p>
-      </Sistema>
-    )),
+    ResumenPedido: bloque(
+      "ResumenPedido",
+      ({ presentacion }: { presentacion: "incrustado" | "popup" }) => (
+        <Sistema titulo="Formulario de pedido">
+          <p className="text-sm text-carbon-suave">
+            {presentacion === "popup"
+              ? "Popup: se abre al tocar cualquier boton de pedido (tambien en escritorio)."
+              : "Incrustado: resumen, packs y formulario visibles aqui en la pagina."}
+          </p>
+          <p className="text-xs text-ceniza mt-1">
+            Colocalo UNA sola vez; si ningun bloque lo incluye, la tienda lo
+            agrega al final.
+          </p>
+        </Sistema>
+      ),
+    ),
     DescripcionShopify: bloque("DescripcionShopify", () => (
       <Sistema titulo="Descripcion del producto (Shopify)">
         <p className="text-sm text-carbon-suave">
@@ -225,11 +247,18 @@ export const configEditor: Config = {
         <BotonFalso etiqueta="Empezar mi ritual" />
       </section>
     )),
-    BotonCTA: bloque("BotonCTA", ({ etiqueta }: { etiqueta: string }) => (
-      <div className="flex justify-center px-6 py-4">
-        <BotonFalso etiqueta={etiqueta} />
-      </div>
-    )),
+    BotonCTA: bloque(
+      "BotonCTA",
+      ({ etiqueta, ...estilos }: EstiloBotonCta & { etiqueta: string }) => (
+        <div
+          className={`flex px-6 py-4 ${estilos.anchoBoton === "completo" ? "" : "justify-center"}`}
+        >
+          {/* Mismas clases que en la tienda: el preview muestra color,
+              tamano y efectos reales. */}
+          <span className={clasesBotonCta(estilos)}>{etiqueta}</span>
+        </div>
+      ),
+    ),
     Testimonios: bloque(
       "Testimonios",
       ({ heading, testimonials }: { heading: string; testimonials: LandingTestimonial[] }) => (

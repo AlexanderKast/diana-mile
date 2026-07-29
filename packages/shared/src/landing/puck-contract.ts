@@ -83,8 +83,10 @@ export const BLOQUES: Record<string, BloquePuck> = {
         type: "radio",
         label: "Formulario de pedido",
         options: [
-          { label: "Mostrar", value: "si" },
-          { label: "Ocultar", value: "no" },
+          // "si" = incrustado (compat con disenos ya guardados).
+          { label: "Incrustado", value: "si" },
+          { label: "Popup", value: "popup" },
+          { label: "Oculto", value: "no" },
         ],
       },
     },
@@ -98,7 +100,17 @@ export const BLOQUES: Record<string, BloquePuck> = {
   },
   ResumenPedido: {
     label: "Formulario de pedido",
-    fields: {},
+    fields: {
+      presentacion: {
+        type: "radio",
+        label: "Presentacion",
+        options: [
+          { label: "Incrustado en la pagina", value: "incrustado" },
+          { label: "Popup (se abre con los botones)", value: "popup" },
+        ],
+      },
+    },
+    defaultProps: { presentacion: "incrustado" },
   },
   DescripcionShopify: {
     label: "Descripcion del producto (Shopify)",
@@ -386,10 +398,113 @@ export const BLOQUES: Record<string, BloquePuck> = {
   Divisor: { label: "Divisor dorado", fields: {} },
   BotonCTA: {
     label: "Boton de pedido",
-    fields: { etiqueta: texto("Texto del boton") },
-    defaultProps: { etiqueta: "Pedir ahora · Contraentrega" },
+    fields: {
+      etiqueta: texto("Texto del boton"),
+      color: {
+        type: "select",
+        label: "Color",
+        options: [
+          { label: "Dorado", value: "dorado" },
+          { label: "Morado", value: "morado" },
+          { label: "Carbon", value: "carbon" },
+        ],
+      },
+      estilo: {
+        type: "radio",
+        label: "Estilo",
+        options: [
+          { label: "Solido", value: "solido" },
+          { label: "Con borde", value: "borde" },
+        ],
+      },
+      efecto: {
+        type: "select",
+        label: "Efecto",
+        options: [
+          { label: "Brillo", value: "brillo" },
+          { label: "Pulso", value: "pulso" },
+          { label: "Brillo + pulso", value: "brillo-pulso" },
+          { label: "Ninguno", value: "ninguno" },
+        ],
+      },
+      tamano: {
+        type: "radio",
+        label: "Tamano",
+        options: [
+          { label: "Normal", value: "normal" },
+          { label: "Grande", value: "grande" },
+        ],
+      },
+      anchoBoton: {
+        type: "radio",
+        label: "Ancho",
+        options: [
+          { label: "Al contenido", value: "auto" },
+          { label: "Completo", value: "completo" },
+        ],
+      },
+    },
+    defaultProps: {
+      etiqueta: "Pedir ahora · Contraentrega",
+      color: "dorado",
+      estilo: "solido",
+      efecto: "brillo-pulso",
+      tamano: "normal",
+      anchoBoton: "auto",
+    },
   },
 };
+
+/** Personalizacion del BotonCTA (props → clases estaticas en el componente). */
+export type EstiloBotonCta = {
+  color: "dorado" | "morado" | "carbon";
+  estilo: "solido" | "borde";
+  efecto: "brillo" | "pulso" | "brillo-pulso" | "ninguno";
+  tamano: "normal" | "grande";
+  anchoBoton: "auto" | "completo";
+};
+
+/**
+ * Opciones de pagina del constructor (root de Puck): controlan el marco del
+ * sitio alrededor de la landing. Solo aplican cuando la landing usa diseno
+ * visual; sin puckData el sitio se muestra completo como siempre.
+ */
+export const CAMPOS_ROOT: Record<string, CampoPuck> = {
+  mostrarHeader: {
+    type: "radio",
+    label: "Menu del sitio (header y barra movil)",
+    options: [
+      { label: "Mostrar", value: "si" },
+      { label: "Ocultar", value: "no" },
+    ],
+  },
+  mostrarFooter: {
+    type: "radio",
+    label: "Footer del sitio",
+    options: [
+      { label: "Mostrar", value: "si" },
+      { label: "Ocultar", value: "no" },
+    ],
+  },
+};
+
+export const DEFAULTS_ROOT = { mostrarHeader: "si", mostrarFooter: "si" };
+
+/** Lee las opciones de pagina de un layout guardado (defaults: mostrar todo). */
+export function opcionesRootLanding(puckData: unknown): {
+  mostrarHeader: boolean;
+  mostrarFooter: boolean;
+} {
+  const props =
+    puckData && typeof puckData === "object"
+      ? ((puckData as { root?: { props?: Record<string, unknown> } }).root
+          ?.props ?? {})
+      : {};
+  return {
+    mostrarHeader: props.mostrarHeader !== "no",
+    mostrarFooter: props.mostrarFooter !== "no",
+  };
+}
 
 /** Type names validos — para validar `puckData` al guardar. */
 export const TIPOS_BLOQUE = Object.keys(BLOQUES);

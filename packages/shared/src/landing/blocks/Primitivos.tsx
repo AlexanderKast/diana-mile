@@ -11,7 +11,56 @@
 
 import Image from "next/image";
 import { SectionDivider } from "./SectionDivider";
-import type { FondoBloque } from "../puck-contract";
+import type { EstiloBotonCta, FondoBloque } from "../puck-contract";
+
+/**
+ * Clases del BotonCTA segun su personalizacion. TODO estatico: cada
+ * combinacion esta escrita literal para que el scanner de Tailwind la vea.
+ * La usan el bloque real (shop) y el preview del editor (admin).
+ */
+export function clasesBotonCta({
+  color,
+  estilo,
+  efecto,
+  tamano,
+  anchoBoton,
+}: EstiloBotonCta): string {
+  const base =
+    "inline-flex items-center justify-center gap-2 rounded-lg font-semibold tracking-wide transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]";
+
+  const dimension =
+    tamano === "grande"
+      ? "min-h-[52px] px-10 text-lg"
+      : "min-h-[44px] px-8 text-base";
+
+  const anchura = anchoBoton === "completo" ? "w-full" : "";
+
+  const colores =
+    estilo === "borde"
+      ? color === "morado"
+        ? "border-2 border-morado text-morado bg-transparent hover:bg-lila-suave"
+        : color === "carbon"
+          ? "border-2 border-carbon text-carbon bg-transparent hover:bg-crema"
+          : "border-2 border-dorado-oscuro text-dorado-oscuro bg-transparent hover:bg-crema"
+      : color === "morado"
+        ? "bg-morado text-blanco shadow-[0_4px_14px_rgba(107,78,140,0.35)] hover:bg-morado-oscuro"
+        : color === "carbon"
+          ? "bg-carbon text-blanco shadow-[0_4px_14px_rgba(26,23,20,0.3)] hover:bg-carbon-suave"
+          : "bg-dorado-oscuro text-blanco shadow-[0_4px_14px_rgba(168,136,94,0.35)] hover:bg-dorado";
+
+  const brillo =
+    efecto === "brillo" || efecto === "brillo-pulso" ? "btn-shine" : "";
+  const pulso =
+    efecto === "pulso" || efecto === "brillo-pulso"
+      ? color === "morado"
+        ? "cta-pulse-morado"
+        : "cta-pulse"
+      : "";
+
+  return [base, dimension, anchura, colores, brillo, pulso]
+    .filter(Boolean)
+    .join(" ");
+}
 
 type ZonaProps = { style?: React.CSSProperties; className?: string };
 type Zona = React.ComponentType<ZonaProps>;

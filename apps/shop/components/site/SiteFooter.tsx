@@ -26,7 +26,7 @@ export async function SiteFooter() {
   const año = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-arena bg-blanco px-5 pb-10 pt-12 sm:px-6 sm:pt-14">
+    <footer id="sitio-footer" className="border-t border-arena bg-blanco px-5 pb-10 pt-12 sm:px-6 sm:pt-14">
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:gap-x-10 lg:grid-cols-4">
           {/* Marca: ocupa el ancho completo en movil para que el nombre no

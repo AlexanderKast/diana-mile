@@ -141,9 +141,26 @@ body {
   animation: cta-pulse-glow 2.4s ease-in-out infinite;
 }
 
+/* Misma idea, tono morado — la usa el preview del BotonCTA del editor
+   visual (mismos efectos que en la tienda). */
+@keyframes cta-pulse-glow-morado {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(107, 78, 140, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(107, 78, 140, 0);
+  }
+}
+
+.cta-pulse-morado {
+  animation: cta-pulse-glow-morado 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn-shine::after,
-  .cta-pulse {
+  .cta-pulse,
+  .cta-pulse-morado {
     animation: none;
   }
 }

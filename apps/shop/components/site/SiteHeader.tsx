@@ -27,7 +27,7 @@ export async function SiteHeader() {
   const collections = await getCollections();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-arena/80 bg-blanco/95 backdrop-blur">
+    <header id="sitio-header" className="sticky top-0 z-40 border-b border-arena/80 bg-blanco/95 backdrop-blur">
       {/* `h-[var(--alto-header)]` y no `min-h-`: la barra de busqueda del
           catalogo se pega justo debajo con ese mismo valor, asi que el header
           tiene que medir exactamente eso. Con `min-h-` el logo se partia en dos

@@ -110,7 +110,20 @@ function SheetContent({ compact }: { compact: boolean }) {
   );
 }
 
-export function OrderBottomSheet() {
+/**
+ * modo:
+ *  - "auto" (default, paginas legacy): panel inline solo en desktop y
+ *    bandeja flotante solo en movil.
+ *  - "incrustado": panel inline SIEMPRE visible (todas las pantallas);
+ *    la bandeja movil sigue disponible para los botones CTA.
+ *  - "popup": sin panel inline; la bandeja se abre al tocar cualquier CTA,
+ *    tambien en escritorio (centrada).
+ */
+export function OrderBottomSheet({
+  modo = "auto",
+}: {
+  modo?: "auto" | "incrustado" | "popup";
+}) {
   const { isOpen, closeOrderSheet } = useOrderSheet();
   const touchStartY = useRef<number | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -183,17 +196,21 @@ export function OrderBottomSheet() {
     <>
       {isOpen && (
         <>
-          {/* Backdrop movil */}
+          {/* Backdrop: solo movil en auto/incrustado; en popup tambien desktop */}
           <div
-            className="fixed inset-0 z-[60] bg-carbon/60 transition-opacity duration-300 md:hidden"
+            className={`fixed inset-0 z-[60] bg-carbon/60 transition-opacity duration-300 ${modo === "popup" ? "" : "md:hidden"}`}
             onClick={closeOrderSheet}
             aria-hidden="true"
           />
 
-          {/* Bandeja movil */}
+          {/* Bandeja (en popup tambien en desktop, centrada) */}
           <div
             ref={dialogRef}
-            className="fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-[16px] bg-blanco transition-transform duration-300 ease-out md:hidden"
+            className={`fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-[16px] bg-blanco transition-transform duration-300 ease-out ${
+              modo === "popup"
+                ? "md:bottom-auto md:top-1/2 md:left-1/2 md:right-auto md:w-full md:max-w-lg md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl"
+                : "md:hidden"
+            }`}
             style={{
               paddingBottom: "max(16px, env(safe-area-inset-bottom))",
               transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
@@ -232,13 +249,15 @@ export function OrderBottomSheet() {
         </>
       )}
 
-      {/* Panel sticky desktop */}
-      <div
-        id="order-form-desktop"
-        className="hidden md:block md:sticky md:top-[120px] rounded-2xl border border-arena bg-blanco p-5"
-      >
-        <SheetContent compact={false} />
-      </div>
+      {/* Panel inline: desktop en auto, siempre en incrustado, nunca en popup */}
+      {modo !== "popup" && (
+        <div
+          id="order-form-desktop"
+          className={`${modo === "incrustado" ? "block" : "hidden md:block"} md:sticky md:top-[120px] rounded-2xl border border-arena bg-blanco p-5`}
+        >
+          <SheetContent compact={false} />
+        </div>
+      )}
     </>
   );
 }

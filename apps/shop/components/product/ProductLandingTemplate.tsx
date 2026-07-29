@@ -3,7 +3,10 @@ import dynamic from "next/dynamic";
 import sanitizeHtml from "sanitize-html";
 import { Render, type Data } from "@measured/puck";
 import type { Product } from "@diana-mile/shared/types";
-import { layoutTieneFormulario } from "@diana-mile/shared/landing/puck-contract";
+import {
+  layoutTieneFormulario,
+  opcionesRootLanding,
+} from "@diana-mile/shared/landing/puck-contract";
 import { configShop, type PuckMetadata } from "@/lib/puck/config.server";
 import type { ResolvedLanding } from "@/lib/product-content";
 import type { PricingConfig } from "@/lib/pricing-server";
@@ -133,8 +136,13 @@ export function ProductLandingTemplate({
       descriptionHtml,
       authenticity: landing.authenticity,
     };
+    // Opciones de pagina del editor: ocultar el marco del sitio. Los
+    // marcadores los lee globals.css con :has() para apagar header/footer.
+    const marco = opcionesRootLanding(landing.puckData);
     return (
       <OrderSheetProvider product={product} pricing={pricing}>
+        {!marco.mostrarHeader && <span data-ocultar-header hidden />}
+        {!marco.mostrarFooter && <span data-ocultar-footer hidden />}
         {esCod && pricing.discountPopupActivo && <ExitIntentPopup />}
         <BackToTopButton />
         <TituloWhatsApp valor={product.title} />
