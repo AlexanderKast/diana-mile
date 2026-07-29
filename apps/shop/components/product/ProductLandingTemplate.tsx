@@ -1,7 +1,9 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import sanitizeHtml from "sanitize-html";
+import { Render, type Data } from "@measured/puck";
 import type { Product } from "@diana-mile/shared/types";
+import { configShop, type PuckMetadata } from "@/lib/puck/config.server";
 import type { ResolvedLanding } from "@/lib/product-content";
 import type { PricingConfig } from "@/lib/pricing-server";
 import {
@@ -34,7 +36,7 @@ import { PersonalizedHeadingSuffix } from "@/components/product/PersonalizedHead
 import { PersonalizedBenefitCard } from "@/components/product/PersonalizedBenefitCard";
 import { ResultadosRealesGallery } from "@/components/product/ResultadosRealesGallery";
 import { WithoutRitualSection } from "@diana-mile/shared/landing/blocks/WithoutRitualSection";
-import { SectionDivider } from "@/components/ui/SectionDivider";
+import { SectionDivider } from "@diana-mile/shared/landing/blocks/SectionDivider";
 import { TituloWhatsApp } from "@diana-mile/shared/ui/WhatsAppFlotante";
 
 // Client components condicionales (no siempre se renderizan segun el
@@ -116,6 +118,46 @@ export function ProductLandingTemplate({
       img: ["src", "alt", "width", "height"],
     },
   });
+
+  // Layout libre del constructor visual. La SHELL transaccional (provider,
+  // popups, tracking, sticky de compra) queda fuera del canvas: el editor no
+  // puede romper el flujo de pedido por diseño.
+  if (landing.puckData) {
+    const metadata: PuckMetadata = {
+      product,
+      esCod,
+      modoCompra,
+      numeroWhatsapp,
+      enlaceVitrina,
+      descriptionHtml,
+      authenticity: landing.authenticity,
+    };
+    return (
+      <OrderSheetProvider product={product} pricing={pricing}>
+        {esCod && pricing.discountPopupActivo && <ExitIntentPopup />}
+        <BackToTopButton />
+        <TituloWhatsApp valor={product.title} />
+        <ProductViewTracking
+          contentId={product.handle}
+          contentName={product.title}
+          value={product.variants[0] ? parseFloat(product.variants[0].price) : undefined}
+        />
+        <main className="flex flex-col gap-3 pb-28">
+          <Render
+            config={configShop}
+            data={landing.puckData as Data}
+            metadata={metadata}
+          />
+          {esCod && <OrderBottomSheet />}
+        </main>
+        {esCod ? (
+          <ProductPurchaseFlow />
+        ) : (
+          <BarraVitrinaMovil product={product} numeroWhatsapp={numeroWhatsapp} />
+        )}
+      </OrderSheetProvider>
+    );
+  }
 
   return (
     <OrderSheetProvider product={product} pricing={pricing}>
