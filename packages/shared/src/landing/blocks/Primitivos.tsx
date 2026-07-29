@@ -90,6 +90,46 @@ export function ImagenBloque({
   );
 }
 
+/**
+ * Video con controles, carga perezosa (solo metadata) y portada opcional.
+ * El archivo vive en el CDN de Shopify; se sube desde el editor.
+ */
+export function VideoBloque({
+  url,
+  poster,
+  ancho,
+}: {
+  url: string;
+  poster: string;
+  ancho: "completo" | "medio";
+}) {
+  if (!url) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-4 text-center text-xs text-ceniza border border-dashed border-arena rounded-2xl">
+        Video sin archivo — sube uno desde el panel derecho.
+      </div>
+    );
+  }
+  return (
+    <div
+      className={[
+        "mx-auto w-full px-6",
+        ancho === "medio" ? "max-w-md" : "max-w-3xl",
+      ].join(" ")}
+    >
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <video
+        src={url}
+        poster={poster || undefined}
+        controls
+        playsInline
+        preload="metadata"
+        className="w-full rounded-2xl bg-carbon"
+      />
+    </div>
+  );
+}
+
 /** Grid responsive: 1 columna en movil, N en escritorio. */
 export function ColumnasBloque({
   contenido: Contenido,

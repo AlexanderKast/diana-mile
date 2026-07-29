@@ -320,6 +320,22 @@ export const BLOQUES: Record<string, BloquePuck> = {
     },
     defaultProps: { url: "", alt: "", ancho: "completo" },
   },
+  Video: {
+    label: "Video",
+    fields: {
+      url: texto("URL del video (MP4)"),
+      poster: texto("Imagen de portada (opcional)"),
+      ancho: {
+        type: "radio",
+        label: "Ancho",
+        options: [
+          { label: "Completo", value: "completo" },
+          { label: "Medio", value: "medio" },
+        ],
+      },
+    },
+    defaultProps: { url: "", poster: "", ancho: "medio" },
+  },
   Columnas: {
     label: "Columnas",
     fields: {
@@ -437,6 +453,7 @@ export const CATEGORIAS: Record<string, { title: string; components: string[] }>
       "Encabezado",
       "Texto",
       "Imagen",
+      "Video",
       "Columnas",
       "Banda",
       "Espaciador",

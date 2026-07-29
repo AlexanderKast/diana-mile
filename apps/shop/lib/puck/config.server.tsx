@@ -29,6 +29,7 @@ import {
   EspaciadorBloque,
   ImagenBloque,
   TextoBloque,
+  VideoBloque,
 } from "@diana-mile/shared/landing/blocks/Primitivos";
 import {
   BandaVitrina,
@@ -356,6 +357,9 @@ export const configShop: Config = {
     )),
     Imagen: bloque("Imagen", (props: { url: string; alt: string; ancho: "completo" | "medio" }) => (
       <ImagenBloque {...props} />
+    )),
+    Video: bloque("Video", (props: React.ComponentProps<typeof VideoBloque>) => (
+      <VideoBloque {...props} />
     )),
     Columnas: bloque(
       "Columnas",

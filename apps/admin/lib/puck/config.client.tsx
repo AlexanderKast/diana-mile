@@ -29,7 +29,9 @@ import {
   EspaciadorBloque,
   ImagenBloque,
   TextoBloque,
+  VideoBloque,
 } from "@diana-mile/shared/landing/blocks/Primitivos";
+import CampoArchivo from "@/components/admin/editor/CampoArchivo";
 
 /**
  * Datos del producto que el editor pasa como metadata para que los previews
@@ -344,9 +346,46 @@ export const configEditor: Config = {
     Texto: bloque("Texto", (props: React.ComponentProps<typeof TextoBloque>) => (
       <TextoBloque {...props} />
     )),
-    Imagen: bloque("Imagen", (props: React.ComponentProps<typeof ImagenBloque>) => (
-      <ImagenBloque {...props} />
-    )),
+    Imagen: {
+      ...bloque("Imagen", (props: React.ComponentProps<typeof ImagenBloque>) => (
+        <ImagenBloque {...props} />
+      )),
+      // En el editor la URL se llena SUBIENDO el archivo (va directo al CDN
+      // de Shopify); la prop sigue siendo un string — mismo shape que la
+      // config de la tienda.
+      fields: {
+        ...BLOQUES.Imagen.fields,
+        url: {
+          type: "custom",
+          label: "Imagen",
+          render: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+            <CampoArchivo value={value ?? ""} onChange={onChange} tipo="imagen" />
+          ),
+        },
+      } as never,
+    },
+    Video: {
+      ...bloque("Video", (props: React.ComponentProps<typeof VideoBloque>) => (
+        <VideoBloque {...props} />
+      )),
+      fields: {
+        ...BLOQUES.Video.fields,
+        url: {
+          type: "custom",
+          label: "Video",
+          render: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+            <CampoArchivo value={value ?? ""} onChange={onChange} tipo="video" />
+          ),
+        },
+        poster: {
+          type: "custom",
+          label: "Imagen de portada (opcional)",
+          render: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+            <CampoArchivo value={value ?? ""} onChange={onChange} tipo="imagen" />
+          ),
+        },
+      } as never,
+    },
     Columnas: bloque(
       "Columnas",
       (props: React.ComponentProps<typeof ColumnasBloque>) => (

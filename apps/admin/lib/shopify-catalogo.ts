@@ -13,7 +13,7 @@ export const isShopifyCatalogoConfigurado = Boolean(
   STORE_DOMAIN && ADMIN_TOKEN,
 );
 
-async function adminGraphQL<T = unknown>(
+export async function adminGraphQL<T = unknown>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<T> {
