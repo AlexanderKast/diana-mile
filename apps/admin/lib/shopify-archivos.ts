@@ -29,6 +29,87 @@ type StagedTarget = {
   parameters: { name: string; value: string }[];
 };
 
+export type ArchivoShopify = {
+  url: string;
+  alt: string;
+  /** Miniatura para la galeria (en videos, el frame de preview). */
+  miniatura: string;
+};
+
+/**
+ * Lista el contenido ya subido a Shopify (Admin > Contenido > Archivos):
+ * la biblioteca desde la que el editor deja ELEGIR en vez de re-subir.
+ */
+export async function listarArchivos(opciones: {
+  tipo: "imagen" | "video";
+  buscar?: string;
+  cursor?: string;
+}): Promise<{ archivos: ArchivoShopify[]; cursor: string | null }> {
+  const filtroTipo =
+    opciones.tipo === "video" ? "media_type:VIDEO" : "media_type:IMAGE";
+  const buscar = opciones.buscar?.trim();
+  const query = buscar ? `${filtroTipo} AND ${buscar}` : filtroTipo;
+
+  const data = await adminGraphQL<{
+    files: {
+      pageInfo: { hasNextPage: boolean; endCursor: string | null };
+      nodes: Array<{
+        __typename: string;
+        fileStatus?: string;
+        alt?: string | null;
+        image?: { url: string } | null;
+        sources?: { url: string; mimeType: string }[];
+        preview?: { image?: { url: string } | null } | null;
+      }>;
+    };
+  }>(
+    `query($query: String!, $cursor: String) {
+      files(first: 24, query: $query, after: $cursor, sortKey: CREATED_AT, reverse: true) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          __typename
+          fileStatus
+          alt
+          ... on MediaImage { image { url } }
+          ... on Video {
+            sources { url mimeType }
+            preview { image { url } }
+          }
+        }
+      }
+    }`,
+    { query, cursor: opciones.cursor || null },
+  );
+
+  const archivos: ArchivoShopify[] = [];
+  for (const nodo of data.files.nodes) {
+    if (nodo.fileStatus && nodo.fileStatus !== "READY") continue;
+    if (nodo.__typename === "MediaImage" && nodo.image?.url) {
+      archivos.push({
+        url: nodo.image.url,
+        alt: nodo.alt ?? "",
+        miniatura: nodo.image.url,
+      });
+    } else if (nodo.__typename === "Video") {
+      const fuente =
+        nodo.sources?.find((s) => s.mimeType === "video/mp4") ??
+        nodo.sources?.[0];
+      if (fuente) {
+        archivos.push({
+          url: fuente.url,
+          alt: nodo.alt ?? "",
+          miniatura: nodo.preview?.image?.url ?? "",
+        });
+      }
+    }
+  }
+
+  return {
+    archivos,
+    cursor: data.files.pageInfo.hasNextPage ? data.files.pageInfo.endCursor : null,
+  };
+}
+
 /** Paso 1: pide a Shopify una URL firmada para que el navegador suba directo. */
 export async function prepararSubida(
   filename: string,

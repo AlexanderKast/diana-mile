@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminUser } from "@diana-mile/shared/supabase/server";
 import {
   confirmarSubida,
+  listarArchivos,
   MAX_BYTES_IMAGEN,
   MAX_BYTES_VIDEO,
   MIMES_IMAGEN,
@@ -11,6 +12,33 @@ import {
 
 // Confirmar un video espera a que Shopify lo procese (hasta ~60s de poll).
 export const maxDuration = 120;
+
+/**
+ * GET ?tipo=imagen|video&buscar=&cursor= — biblioteca de Shopify (Contenido >
+ * Archivos) para elegir contenido ya subido desde el editor visual.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    if (!(await getAdminUser())) {
+      return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+    }
+    const params = request.nextUrl.searchParams;
+    const resultado = await listarArchivos({
+      tipo: params.get("tipo") === "video" ? "video" : "imagen",
+      buscar: params.get("buscar")?.slice(0, 80) ?? undefined,
+      cursor: params.get("cursor") ?? undefined,
+    });
+    return NextResponse.json(resultado, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "No se pudo listar la biblioteca.",
+        detalle: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+}
 
 /**
  * Subida de archivos del constructor visual, en dos pasos (el archivo viaja

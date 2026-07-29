@@ -1,6 +1,128 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type ArchivoLista = { url: string; alt: string; miniatura: string };
+
+/** Galeria de la biblioteca de Shopify (Contenido > Archivos). */
+function GaleriaShopify({
+  tipo,
+  onElegir,
+  onCerrar,
+}: {
+  tipo: "imagen" | "video";
+  onElegir: (url: string) => void;
+  onCerrar: () => void;
+}) {
+  const [archivos, setArchivos] = useState<ArchivoLista[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [buscar, setBuscar] = useState("");
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function cargar(reiniciar: boolean, texto: string, desde?: string | null) {
+    setCargando(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ tipo });
+      if (texto.trim()) params.set("buscar", texto.trim());
+      if (!reiniciar && desde) params.set("cursor", desde);
+      const res = await fetch(`/api/admin/archivos?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "No se pudo cargar.");
+      setArchivos((previos) =>
+        reiniciar ? data.archivos : [...previos, ...data.archivos],
+      );
+      setCursor(data.cursor);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cargar.");
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  useEffect(() => {
+    cargar(true, "");
+    // Solo al abrir: la busqueda se dispara con el boton/Enter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-2 border border-arena rounded-[4px] bg-blanco p-3">
+      <div className="flex items-center gap-2">
+        <input
+          type="search"
+          value={buscar}
+          onChange={(e) => setBuscar(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              cargar(true, buscar);
+            }
+          }}
+          placeholder="Buscar por nombre..."
+          className="flex-1 text-xs rounded-[4px] border border-arena bg-blanco px-2 py-1.5 text-carbon focus:outline-none focus:border-dorado"
+        />
+        <button
+          type="button"
+          onClick={() => cargar(true, buscar)}
+          className="px-2 py-1.5 text-xs rounded-[4px] border border-arena text-carbon hover:border-dorado"
+        >
+          Buscar
+        </button>
+        <button
+          type="button"
+          onClick={onCerrar}
+          className="px-2 py-1.5 text-xs text-ceniza hover:text-carbon"
+        >
+          Cerrar
+        </button>
+      </div>
+
+      {error && <p className="text-xs text-error">{error}</p>}
+      {!error && archivos.length === 0 && !cargando && (
+        <p className="text-xs text-ceniza py-2">Sin resultados en la biblioteca.</p>
+      )}
+
+      <div className="grid grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
+        {archivos.map((archivo) => (
+          <button
+            key={archivo.url}
+            type="button"
+            onClick={() => onElegir(archivo.url)}
+            title={archivo.alt}
+            className="relative aspect-square rounded-md overflow-hidden border border-arena hover:border-dorado focus:outline-none focus:border-dorado bg-crema"
+          >
+            {archivo.miniatura ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={archivo.miniatura}
+                alt={archivo.alt}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] text-ceniza">
+                video
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {(cargando || cursor) && (
+        <button
+          type="button"
+          onClick={() => cargar(false, buscar, cursor)}
+          disabled={cargando}
+          className="self-center px-3 py-1.5 text-xs rounded-[4px] border border-arena text-carbon hover:border-dorado disabled:opacity-60"
+        >
+          {cargando ? "Cargando..." : "Cargar más"}
+        </button>
+      )}
+    </div>
+  );
+}
 
 /**
  * Campo de subida del constructor visual: sube el archivo DIRECTO al CDN de
@@ -22,6 +144,7 @@ export default function CampoArchivo({
     "quieto",
   );
   const [error, setError] = useState<string | null>(null);
+  const [galeriaAbierta, setGaleriaAbierta] = useState(false);
 
   async function subir(archivo: File) {
     setError(null);
@@ -98,6 +221,13 @@ export default function CampoArchivo({
                 ? `Cambiar ${tipo}`
                 : `Subir ${tipo}`}
         </button>
+        <button
+          type="button"
+          onClick={() => setGaleriaAbierta((v) => !v)}
+          className="px-3 py-2 text-xs font-medium rounded-[4px] border border-arena bg-blanco text-carbon hover:border-dorado"
+        >
+          {galeriaAbierta ? "Ocultar biblioteca" : "Elegir de Shopify"}
+        </button>
         {value && (
           <button
             type="button"
@@ -108,6 +238,16 @@ export default function CampoArchivo({
           </button>
         )}
       </div>
+      {galeriaAbierta && (
+        <GaleriaShopify
+          tipo={tipo}
+          onElegir={(url) => {
+            onChange(url);
+            setGaleriaAbierta(false);
+          }}
+          onCerrar={() => setGaleriaAbierta(false)}
+        />
+      )}
       {value &&
         (tipo === "imagen" ? (
           // eslint-disable-next-line @next/next/no-img-element
