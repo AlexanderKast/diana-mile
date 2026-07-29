@@ -84,7 +84,7 @@ const IMAGE_SLOT = {
 type ProductLandingTemplateProps = {
   product: Product;
   pricing: PricingConfig;
-  numeroWhatsapp: string;
+  numeroWhatsapp: string | null;
   landing: ResolvedLanding;
 };
 
