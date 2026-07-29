@@ -350,6 +350,28 @@ export const configEditor: Config = {
       ...bloque("Imagen", (props: React.ComponentProps<typeof ImagenBloque>) => (
         <ImagenBloque {...props} />
       )),
+      // Al subir/cambiar la imagen se mide su proporcion real (ancho/alto)
+      // y se guarda con el bloque: la tienda la muestra completa en su
+      // formato original (1:1, 4:5, 9:16...), sin recortes.
+      resolveData: (async (
+        data: { props: Record<string, unknown> },
+        params: { changed: Record<string, boolean | undefined> },
+      ) => {
+        const url = data.props.url as string | undefined;
+        if (!params.changed.url || !url) return { props: data.props };
+        const proporcion = await new Promise<number>((resolve) => {
+          const imagen = new window.Image();
+          imagen.onload = () =>
+            resolve(
+              imagen.naturalHeight > 0
+                ? Number((imagen.naturalWidth / imagen.naturalHeight).toFixed(4))
+                : 0,
+            );
+          imagen.onerror = () => resolve(0);
+          imagen.src = url;
+        });
+        return { props: { ...data.props, proporcion } };
+      }) as never,
       // En el editor la URL se llena SUBIENDO el archivo (va directo al CDN
       // de Shopify); la prop sigue siendo un string — mismo shape que la
       // config de la tienda.

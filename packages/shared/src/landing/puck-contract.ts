@@ -318,7 +318,11 @@ export const BLOQUES: Record<string, BloquePuck> = {
         ],
       },
     },
-    defaultProps: { url: "", alt: "", ancho: "completo" },
+    // `proporcion` (ancho/alto) no tiene field: la calcula el editor al
+    // subir/cambiar la imagen y la tienda la usa para reservar el espacio
+    // exacto — la imagen se muestra COMPLETA en su formato original
+    // (1:1, 4:5, 9:16...), nunca recortada.
+    defaultProps: { url: "", alt: "", ancho: "completo", proporcion: 0 },
   },
   Video: {
     label: "Video",

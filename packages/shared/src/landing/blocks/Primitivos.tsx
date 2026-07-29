@@ -60,24 +60,31 @@ export function ImagenBloque({
   url,
   alt,
   ancho,
+  proporcion,
 }: {
   url: string;
   alt: string;
   ancho: "completo" | "medio";
+  /** ancho/alto de la imagen original (la calcula el editor). 0 = desconocida. */
+  proporcion?: number;
 }) {
   if (!url) {
     return (
       <div className="mx-auto max-w-md px-6 py-4 text-center text-xs text-ceniza border border-dashed border-arena rounded-2xl">
-        Imagen sin URL — pega el enlace de la foto en el panel derecho.
+        Imagen sin URL — sube una desde el panel derecho.
       </div>
     );
   }
   return (
     <div
       className={[
-        "relative mx-auto w-full overflow-hidden rounded-2xl aspect-[4/3]",
+        "relative mx-auto w-full overflow-hidden rounded-2xl",
         ancho === "medio" ? "max-w-md" : "max-w-3xl",
       ].join(" ")}
+      // La imagen conserva SU formato (1:1, 4:5, 9:16...): el contenedor
+      // reserva la proporcion exacta y no se recorta nada. Sin proporcion
+      // conocida (URL pegada a mano sin pasar por el editor) cae a 4:3.
+      style={{ aspectRatio: proporcion && proporcion > 0 ? String(proporcion) : "4 / 3" }}
     >
       <Image
         src={url}
