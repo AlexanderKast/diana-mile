@@ -187,6 +187,25 @@ export type Product = {
 };
 
 /**
+ * Variante de landing del rotador de pauta (tabla `landing_variantes`).
+ * `contenido` es un ProductLandingContent PARCIAL: solo los bloques que la
+ * variante sobrescribe; el resto lo hereda de la landing publica del
+ * producto via applyOverrides. Se renderiza en /l/<slug> (noindex) y el
+ * link de pauta /go/<producto_handle> rota entre las que esten activas.
+ */
+export type LandingVariante = {
+  id: string;
+  producto_handle: string;
+  slug: string;
+  nombre: string;
+  contenido: ProductLandingContent;
+  estado: "activa" | "pausada";
+  posicion: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
  * Contenido editorial del hero de una categoria (metafield JSON
  * `diana_mile.collection_content`). Igual que `ProductLandingContent`, todo
  * es opcional: sin metafield, la pagina de categoria cae a un fallback
