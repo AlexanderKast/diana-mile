@@ -37,6 +37,16 @@ type ConstructorLandingFormProps = {
   productoImagenUrl: string | null;
   contenidoInicial: ProductLandingContent | null;
   variantes: VarianteResumen[];
+  /**
+   * Donde guardar (PUT). Default: la landing publica del producto (metafield
+   * Shopify). Las variantes del rotador pasan /api/admin/landings/<id>.
+   */
+  saveEndpoint?: string;
+  /**
+   * Modo variante del rotador: oculta el generador IA y el editor de colores
+   * de variantes de producto (son del producto, no de la landing variante).
+   */
+  modoVariante?: boolean;
 };
 
 type Enabled = {
@@ -54,6 +64,8 @@ export default function ConstructorLandingForm({
   productoImagenUrl,
   contenidoInicial,
   variantes,
+  saveEndpoint,
+  modoVariante = false,
 }: ConstructorLandingFormProps) {
   const [mostrarPreview, setMostrarPreview] = useState(true);
   const [content, setContent] = useState<ProductLandingContent>(
@@ -162,10 +174,12 @@ export default function ConstructorLandingForm({
       if (!enabled.comparison) delete payload.comparison;
       if (!enabled.freeGuide) delete payload.freeGuide;
 
-      const res = await fetch(`/api/admin/productos/${handle}`, {
+      const res = await fetch(saveEndpoint ?? `/api/admin/productos/${handle}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        // El endpoint de variantes espera { contenido }; el del producto, el
+        // JSON de la landing directo.
+        body: JSON.stringify(modoVariante ? { contenido: payload } : payload),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -232,20 +246,22 @@ export default function ConstructorLandingForm({
           >
             {mostrarPreview ? "Ocultar preview" : "👁 Ver preview"}
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setMostrarIA((v) => !v)}
-          >
-            ✨ Generar con IA
-          </Button>
+          {!modoVariante && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setMostrarIA((v) => !v)}
+            >
+              ✨ Generar con IA
+            </Button>
+          )}
           <Button onClick={guardar} disabled={guardando}>
             {guardando ? "Guardando..." : "Guardar landing"}
           </Button>
         </div>
       </div>
 
-      {mostrarIA && (
+      {mostrarIA && !modoVariante && (
         <div className="border border-arena rounded-[4px] bg-crema/40 p-4 mb-4 flex flex-col gap-3">
           <p className="text-xs text-ceniza">
             Genera el contenido inicial de la landing con IA. Puedes revisarlo y
@@ -274,7 +290,7 @@ export default function ConstructorLandingForm({
       {error && <p className="text-sm text-error mb-4">{error}</p>}
       {showToast && (
         <p className="text-sm text-dorado-oscuro mb-4">
-          Landing guardada en Shopify.
+          {modoVariante ? "Variante guardada." : "Landing guardada en Shopify."}
         </p>
       )}
 
@@ -304,12 +320,14 @@ export default function ConstructorLandingForm({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <Seccion
-              titulo="Colores de variantes"
-              descripcion="Color propio por variante, editable a gusto (independiente del swatch de Shopify)."
-            >
-              <VariantColorsEditor handle={handle} variantes={variantes} />
-            </Seccion>
+            {!modoVariante && (
+              <Seccion
+                titulo="Colores de variantes"
+                descripcion="Color propio por variante, editable a gusto (independiente del swatch de Shopify)."
+              >
+                <VariantColorsEditor handle={handle} variantes={variantes} />
+              </Seccion>
+            )}
 
             <Seccion titulo="Encabezados generales" defaultOpen>
               <div className="grid md:grid-cols-2 gap-4">
