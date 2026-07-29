@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ConstructorLandingForm from "@/components/admin/constructor/ConstructorLandingForm";
+import EditorTabs from "@/components/admin/editor/EditorTabs";
 import { obtenerProducto } from "@/lib/shopify-catalogo";
 
 type ProductoConstructorPageProps = {
@@ -34,7 +34,7 @@ export default async function ProductoConstructorPage({
       <p className="text-sm text-carbon-suave mb-6">
         Constructor de landing · handle: {producto.handle}
       </p>
-      <ConstructorLandingForm
+      <EditorTabs
         handle={producto.handle}
         productoTitulo={producto.title}
         productoImagenUrl={producto.imagenUrl}

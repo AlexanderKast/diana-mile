@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import type { LandingVariante } from "@diana-mile/shared/types";
-import ConstructorLandingForm from "@/components/admin/constructor/ConstructorLandingForm";
+import EditorTabs from "@/components/admin/editor/EditorTabs";
 import { obtenerProducto } from "@/lib/shopify-catalogo";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +72,7 @@ export default async function VarianteEditorPage({
         demás se hereda. Cero urgencia fabricada, cero testimonios inventados —
         el volumen se atribuye a Nu Skin y la marca visible es Milito.
       </p>
-      <ConstructorLandingForm
+      <EditorTabs
         handle={producto.handle}
         productoTitulo={producto.title}
         productoImagenUrl={producto.imagenUrl}
