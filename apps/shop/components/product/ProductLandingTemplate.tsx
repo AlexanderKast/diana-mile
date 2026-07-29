@@ -148,7 +148,6 @@ export function ProductLandingTemplate({
             data={landing.puckData as Data}
             metadata={metadata}
           />
-          {esCod && <OrderBottomSheet />}
         </main>
         {esCod ? (
           <ProductPurchaseFlow />

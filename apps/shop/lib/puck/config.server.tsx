@@ -46,6 +46,7 @@ import { SkinTypeSelector } from "@/components/product/SkinTypeSelector";
 import { AuthenticitySeals } from "@/components/product/AuthenticitySeals";
 import { ResultadosRealesGallery } from "@/components/product/ResultadosRealesGallery";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
+import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
 import { BotonCTABlock } from "@/components/product/puck/BotonCTABlock";
 
 /**
@@ -130,7 +131,13 @@ export const configShop: Config = {
                 )}
               </div>
               {esCod ? (
-                <ProductHeroCTA showAuthenticity={authenticity} skinType={null} />
+                <>
+                  <ProductHeroCTA showAuthenticity={authenticity} skinType={null} />
+                  {/* En desktop el sheet renderiza inline bajo el CTA, igual
+                      que en el arbol legacy: sin esto el boton "salta" a una
+                      zona vacia al final de la pagina. */}
+                  <OrderBottomSheet />
+                </>
               ) : (
                 <BloqueVitrina product={product} numeroWhatsapp={numeroWhatsapp} />
               )}
