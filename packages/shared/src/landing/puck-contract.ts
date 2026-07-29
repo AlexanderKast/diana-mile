@@ -63,9 +63,42 @@ export const BLOQUES: Record<string, BloquePuck> = {
     fields: {
       eyebrow: texto("Texto pequeno sobre el titulo"),
       tagline: parrafo("Promesa bajo el titulo"),
+      mostrarGaleria: {
+        type: "radio",
+        label: "Galeria de fotos",
+        options: [
+          { label: "Mostrar", value: "si" },
+          { label: "Ocultar", value: "no" },
+        ],
+      },
+      mostrarSellos: {
+        type: "radio",
+        label: "Sellos de confianza",
+        options: [
+          { label: "Mostrar", value: "si" },
+          { label: "Ocultar", value: "no" },
+        ],
+      },
+      mostrarFormulario: {
+        type: "radio",
+        label: "Formulario de pedido",
+        options: [
+          { label: "Mostrar", value: "si" },
+          { label: "Ocultar", value: "no" },
+        ],
+      },
     },
-    defaultProps: { eyebrow: "", tagline: "" },
-    protegido: true,
+    defaultProps: {
+      eyebrow: "",
+      tagline: "",
+      mostrarGaleria: "si",
+      mostrarSellos: "si",
+      mostrarFormulario: "si",
+    },
+  },
+  ResumenPedido: {
+    label: "Formulario de pedido",
+    fields: {},
   },
   DescripcionShopify: {
     label: "Descripcion del producto (Shopify)",
@@ -342,6 +375,25 @@ export const BLOQUES: Record<string, BloquePuck> = {
 export const TIPOS_BLOQUE = Object.keys(BLOQUES);
 
 /**
+ * Red de seguridad del layout: true si en algun lugar del arbol (incluidos
+ * slots anidados) hay un bloque que monte el formulario de pedido — un
+ * ResumenPedido, o un HeroCompra con el formulario visible. Si no lo hay,
+ * la tienda monta el formulario al final de la pagina por su cuenta: borrar
+ * bloques en el editor nunca puede dejar una landing sin forma de comprar.
+ */
+export function layoutTieneFormulario(nodo: unknown): boolean {
+  if (Array.isArray(nodo)) return nodo.some(layoutTieneFormulario);
+  if (!nodo || typeof nodo !== "object") return false;
+  const objeto = nodo as Record<string, unknown>;
+  if (objeto.type === "ResumenPedido") return true;
+  if (objeto.type === "HeroCompra") {
+    const props = objeto.props as Record<string, unknown> | undefined;
+    if (props?.mostrarFormulario !== "no") return true;
+  }
+  return Object.values(objeto).some(layoutTieneFormulario);
+}
+
+/**
  * Categorias de la barra lateral del editor, en orden. Los bloques que no
  * aparezcan aqui no se muestran (pero siguen siendo validos al renderizar).
  */
@@ -350,6 +402,7 @@ export const CATEGORIAS: Record<string, { title: string; components: string[] }>
     title: "Producto",
     components: [
       "HeroCompra",
+      "ResumenPedido",
       "DescripcionShopify",
       "ResultadosReales",
       "MosaicoFotos",

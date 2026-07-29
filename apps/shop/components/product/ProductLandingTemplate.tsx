@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import sanitizeHtml from "sanitize-html";
 import { Render, type Data } from "@measured/puck";
 import type { Product } from "@diana-mile/shared/types";
+import { layoutTieneFormulario } from "@diana-mile/shared/landing/puck-contract";
 import { configShop, type PuckMetadata } from "@/lib/puck/config.server";
 import type { ResolvedLanding } from "@/lib/product-content";
 import type { PricingConfig } from "@/lib/pricing-server";
@@ -148,6 +149,14 @@ export function ProductLandingTemplate({
             data={landing.puckData as Data}
             metadata={metadata}
           />
+          {/* Red de seguridad: si el diseno no incluye ningun bloque con el
+              formulario de pedido, se monta aqui — borrar bloques en el
+              editor nunca deja la landing sin forma de comprar. */}
+          {esCod && !layoutTieneFormulario(landing.puckData) && (
+            <div className="px-6 md:px-10 max-w-xl mx-auto w-full">
+              <OrderBottomSheet />
+            </div>
+          )}
         </main>
         {esCod ? (
           <ProductPurchaseFlow />

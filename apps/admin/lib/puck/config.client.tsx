@@ -99,20 +99,43 @@ export const configEditor: Config = {
     // ─── Previews de bloques acoplados al shop ───────────────────────────
     HeroCompra: bloque(
       "HeroCompra",
-      ({ eyebrow, tagline, puck }: { eyebrow: string; tagline: string; puck: Meta }) => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 pt-4">
-          {puck.metadata.imagenUrl ? (
-            // El editor no optimiza imagenes: preview simple.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={puck.metadata.imagenUrl}
-              alt={puck.metadata.titulo}
-              className="w-full aspect-square object-cover rounded-2xl"
-            />
-          ) : (
-            <div className="w-full aspect-square rounded-2xl bg-crema" />
-          )}
+      ({
+        eyebrow,
+        tagline,
+        mostrarGaleria,
+        mostrarSellos,
+        mostrarFormulario,
+        puck,
+      }: {
+        eyebrow: string;
+        tagline: string;
+        mostrarGaleria: "si" | "no";
+        mostrarSellos: "si" | "no";
+        mostrarFormulario: "si" | "no";
+        puck: Meta;
+      }) => (
+        <div
+          className={`grid grid-cols-1 ${mostrarGaleria !== "no" ? "md:grid-cols-2" : ""} gap-6 px-6 pt-4`}
+        >
+          {mostrarGaleria !== "no" &&
+            (puck.metadata.imagenUrl ? (
+              // El editor no optimiza imagenes: preview simple.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={puck.metadata.imagenUrl}
+                alt={puck.metadata.titulo}
+                className="w-full aspect-square object-cover rounded-2xl"
+              />
+            ) : (
+              <div className="w-full aspect-square rounded-2xl bg-crema" />
+            ))}
           <div className="flex flex-col gap-3">
+            {mostrarSellos !== "no" && (
+              <div className="flex gap-2 text-[10px] text-ceniza uppercase tracking-wide">
+                <span className="border border-arena rounded-full px-2 py-0.5">100% original</span>
+                <span className="border border-arena rounded-full px-2 py-0.5">Contraentrega</span>
+              </div>
+            )}
             {eyebrow && (
               <p className="text-[11px] text-ceniza uppercase tracking-wide">{eyebrow}</p>
             )}
@@ -121,13 +144,25 @@ export const configEditor: Config = {
             </h1>
             {tagline && <p className="text-sm text-carbon-suave">{tagline}</p>}
             <BotonFalso etiqueta="Pedir ahora · Contraentrega" />
-            <p className="text-[11px] text-ceniza">
-              Galeria, sellos de confianza y formulario reales se montan en la tienda.
-            </p>
+            {mostrarFormulario !== "no" && (
+              <div className="border border-dashed border-arena rounded-2xl p-3">
+                <p className="text-xs text-ceniza">
+                  Formulario de pedido (resumen, packs y datos) — real en la tienda.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ),
     ),
+    ResumenPedido: bloque("ResumenPedido", () => (
+      <Sistema titulo="Formulario de pedido">
+        <p className="text-sm text-carbon-suave">
+          Resumen del pedido, packs y formulario contraentrega. Colocalo UNA
+          sola vez; si ningun bloque lo incluye, la tienda lo agrega al final.
+        </p>
+      </Sistema>
+    )),
     DescripcionShopify: bloque("DescripcionShopify", () => (
       <Sistema titulo="Descripcion del producto (Shopify)">
         <p className="text-sm text-carbon-suave">

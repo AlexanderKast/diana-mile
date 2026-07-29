@@ -102,21 +102,42 @@ export const configShop: Config = {
     // ─── Producto / transaccionales ──────────────────────────────────────
     HeroCompra: bloque(
       "HeroCompra",
-      ({ eyebrow, tagline, puck }: { eyebrow: string; tagline: string; puck: Meta }) => {
+      ({
+        eyebrow,
+        tagline,
+        mostrarGaleria,
+        mostrarSellos,
+        mostrarFormulario,
+        puck,
+      }: {
+        eyebrow: string;
+        tagline: string;
+        mostrarGaleria: "si" | "no";
+        mostrarSellos: "si" | "no";
+        mostrarFormulario: "si" | "no";
+        puck: Meta;
+      }) => {
         const { product, esCod, numeroWhatsapp, modoCompra, authenticity } =
           puck.metadata;
+        const conGaleria = mostrarGaleria !== "no";
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 px-6 pt-3 md:px-10 min-w-0">
-            <div className="md:sticky md:top-24 md:self-start min-w-0">
-              <ProductGallery images={product.images} />
-            </div>
-            <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
-              <div className="flex flex-col gap-2">
-                <div className="md:hidden">
-                  <TrustBadges modo={modoCompra} />
-                </div>
-                <DesktopTrustRow showAuthenticity={authenticity} modo={modoCompra} />
+          <div
+            className={`grid grid-cols-1 ${conGaleria ? "md:grid-cols-2" : ""} md:gap-8 px-6 pt-3 md:px-10 min-w-0`}
+          >
+            {conGaleria && (
+              <div className="md:sticky md:top-24 md:self-start min-w-0">
+                <ProductGallery images={product.images} />
               </div>
+            )}
+            <div className="flex flex-col gap-4 pt-4 md:pt-0 min-w-0">
+              {mostrarSellos !== "no" && (
+                <div className="flex flex-col gap-2">
+                  <div className="md:hidden">
+                    <TrustBadges modo={modoCompra} />
+                  </div>
+                  <DesktopTrustRow showAuthenticity={authenticity} modo={modoCompra} />
+                </div>
+              )}
               <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
                 {eyebrow && (
                   <p className="text-[11px] text-ceniza uppercase tracking-wide">
@@ -136,7 +157,7 @@ export const configShop: Config = {
                   {/* En desktop el sheet renderiza inline bajo el CTA, igual
                       que en el arbol legacy: sin esto el boton "salta" a una
                       zona vacia al final de la pagina. */}
-                  <OrderBottomSheet />
+                  {mostrarFormulario !== "no" && <OrderBottomSheet />}
                 </>
               ) : (
                 <BloqueVitrina product={product} numeroWhatsapp={numeroWhatsapp} />
@@ -145,6 +166,18 @@ export const configShop: Config = {
           </div>
         );
       },
+    ),
+    ResumenPedido: bloque("ResumenPedido", ({ puck }: { puck: Meta }) =>
+      puck.metadata.esCod ? (
+        <div className="px-6 md:px-10 max-w-xl mx-auto w-full">
+          <OrderBottomSheet />
+        </div>
+      ) : (
+        <BloqueVitrina
+          product={puck.metadata.product}
+          numeroWhatsapp={puck.metadata.numeroWhatsapp}
+        />
+      ),
     ),
     DescripcionShopify: bloque("DescripcionShopify", ({ puck }: { puck: Meta }) => {
       const html = puck.metadata.descriptionHtml;
