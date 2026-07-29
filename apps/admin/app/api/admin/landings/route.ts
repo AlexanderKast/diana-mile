@@ -3,7 +3,10 @@ import {
   createAdminSupabaseClient,
   getAdminUser,
 } from "@diana-mile/shared/supabase/server";
-import { validarLandingContent } from "@/lib/validar-landing";
+import {
+  excedeTamanoLanding,
+  validarLandingContent,
+} from "@/lib/validar-landing";
 
 const SLUG_VALIDO = /^[a-z0-9-]{2,60}$/;
 
@@ -81,6 +84,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "El contenido de la landing tiene un formato invalido." },
         { status: 400 },
+      );
+    }
+    if (contenido !== undefined && excedeTamanoLanding(contenido)) {
+      return NextResponse.json(
+        { error: "La landing supera el tamano maximo (60KB)." },
+        { status: 413 },
       );
     }
 

@@ -4,7 +4,10 @@ import {
   guardarLandingProducto,
   obtenerProducto,
 } from "@/lib/shopify-catalogo";
-import { validarLandingContent } from "@/lib/validar-landing";
+import {
+  excedeTamanoLanding,
+  validarLandingContent,
+} from "@/lib/validar-landing";
 
 type RouteParams = { params: Promise<{ handle: string }> };
 
@@ -48,6 +51,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { error: "El contenido de la landing tiene un formato invalido." },
         { status: 400 },
+      );
+    }
+
+    if (excedeTamanoLanding(body)) {
+      return NextResponse.json(
+        {
+          error:
+            "La landing supera el tamano maximo (60KB). Reduce bloques o usa 'guardar sin contenido clasico'.",
+        },
+        { status: 413 },
       );
     }
 

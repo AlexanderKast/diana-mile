@@ -42,7 +42,9 @@
     "./whatsapp/mensajes": "./src/whatsapp/mensajes.ts",
     "./whatsapp/clics": "./src/whatsapp/clics.ts",
     "./botcake/ia/upsell": "./src/botcake/ia/upsell.ts",
-    "./analitica/visitas": "./src/analitica/visitas.ts"
+    "./analitica/visitas": "./src/analitica/visitas.ts",
+    "./landing/*": "./src/landing/*.ts",
+    "./landing/blocks/*": "./src/landing/blocks/*.tsx"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

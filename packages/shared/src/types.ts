@@ -108,6 +108,18 @@ export type LandingFreeGuide = {
 };
 
 /**
+ * Layout libre del constructor visual (Puck). Tipo ESTRUCTURAL a proposito:
+ * shared no toma la dependencia de @measured/puck; shop y admin lo castean
+ * a `Data` de Puck en sus bordes. Ambas apps deben correr la MISMA version
+ * exacta de Puck para que este JSON se renderice identico (ver AGENTS.md).
+ */
+export type LandingPuckData = {
+  root: { props?: Record<string, unknown> };
+  content: Array<Record<string, unknown>>;
+  zones?: Record<string, Array<Record<string, unknown>>>;
+};
+
+/**
  * Contenido editorial de la landing de un producto. TODO es opcional: el
  * resolver (`resolveLanding` en el app shop) completa cada bloque ausente
  * con un fallback neutral derivado del titulo/descripcion del producto, de
@@ -144,6 +156,14 @@ export type ProductLandingContent = {
   closingHeading?: string;
   /** Muestra el badge "100% original" y stats de uso (marcas revendidas). */
   authenticity?: boolean;
+  /**
+   * Layout libre del constructor visual. Si esta presente, la landing se
+   * renderiza con Puck (`<Render>`) y los 22 campos de arriba quedan como
+   * respaldo legacy; si falta, se usa el arbol fijo de siempre. Como todo
+   * campo de este tipo, en `applyOverrides` es reemplazo completo: una
+   * variante con `puckData` sustituye el layout entero del producto.
+   */
+  puckData?: LandingPuckData;
 };
 
 /**

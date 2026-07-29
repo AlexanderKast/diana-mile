@@ -9,6 +9,7 @@ import type {
   LandingStep,
   LandingTestimonial,
   LandingTimelineStage,
+  LandingPuckData,
   LandingUGCPost,
   LandingWithoutRitual,
   Product,
@@ -45,6 +46,8 @@ export type ResolvedLanding = {
   freeGuide: LandingFreeGuide | null;
   closingHeading: string;
   authenticity: boolean;
+  /** Layout libre del constructor visual; null = arbol fijo legacy. */
+  puckData: LandingPuckData | null;
 };
 
 export function isEpochProduct(product: Product): boolean {
@@ -182,6 +185,7 @@ function neutralLanding(product: Product): ResolvedLanding {
     freeGuide: FREE_GUIDE_DEFAULT,
     closingHeading: "Tu piel te lo va a agradecer",
     authenticity: false,
+    puckData: null,
   };
 }
 
@@ -397,6 +401,7 @@ function epochLanding(product: Product): ResolvedLanding {
       ],
     },
     authenticity: true,
+    puckData: null,
   };
 }
 
@@ -446,6 +451,7 @@ export function applyOverrides(
     merged.closingHeading = content.closingHeading;
   if (content.authenticity !== undefined)
     merged.authenticity = content.authenticity;
+  if (content.puckData !== undefined) merged.puckData = content.puckData;
   return merged;
 }
 
