@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { normalizeColombianMobile } from "@/lib/phone";
 import { upsertAbandonedDraftOrder } from "@/lib/shopify";
+import { leerVarianteCookie } from "@/lib/atribucion";
 
 const FUENTE = "checkout_abandonado";
 
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminSupabaseClient();
+    const landingVariante = leerVarianteCookie(request);
 
     const { data: existente } = await supabase
       .from("leads")
@@ -56,6 +58,7 @@ export async function POST(request: NextRequest) {
           ciudad: ciudad || null,
           producto_interes: producto_interes || null,
           shopify_draft_order_id: draftOrderId,
+          landing_variante: landingVariante,
         })
         .eq("id", existente.id);
     } else {
@@ -67,6 +70,7 @@ export async function POST(request: NextRequest) {
         fuente: FUENTE,
         convertido: false,
         shopify_draft_order_id: draftOrderId,
+        landing_variante: landingVariante,
       });
     }
 

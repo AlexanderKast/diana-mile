@@ -24,6 +24,8 @@ export type DatosClic = {
   utmContent?: string | null;
   utmTerm?: string | null;
   referrer?: string | null;
+  /** Slug de la variante del rotador de landings que origino el clic. */
+  landingVariante?: string | null;
 };
 
 /**
@@ -69,6 +71,7 @@ export async function registrarClic(
     utm_content: corto(datos.utmContent, 200),
     utm_term: corto(datos.utmTerm, 200),
     referrer: corto(datos.referrer, 500),
+    landing_variante: corto(datos.landingVariante, 100),
   });
 
   if (error) {

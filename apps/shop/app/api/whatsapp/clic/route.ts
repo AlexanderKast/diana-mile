@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { clicDesdeCuerpo, registrarClic } from "@diana-mile/shared/whatsapp/clics";
+import { leerVarianteCookie } from "@/lib/atribucion";
 
 /**
  * Recibe el clic al boton de WhatsApp justo antes de que la persona se
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
       await registrarClic(createAdminSupabaseClient(), {
         ...datos,
         origen: datos.origen ?? "shop",
+        landingVariante: leerVarianteCookie(request),
       });
     }
   } catch (err) {

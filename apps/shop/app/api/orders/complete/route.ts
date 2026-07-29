@@ -16,6 +16,8 @@ import { costosAlVender } from "@diana-mile/shared/finanzas/costos-venta";
 import { signTelefonoToken } from "@/lib/push-token";
 import { sendMetaCapiEvent } from "@/lib/tracking/meta-capi";
 import { sendTikTokEvent } from "@/lib/tracking/tiktok-events";
+import { derivarFuente } from "@diana-mile/shared/analitica/visitas";
+import { leerAtribCookie, leerVarianteCookie } from "@/lib/atribucion";
 
 /**
  * Paso "Confirmar pedido": convierte el draft order (creado/actualizado en
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
       descuentoAplicado,
       envioPrioritario,
       canal,
+      busqueda,
     } = body ?? {};
 
     if (!draftOrderId || !nombre || !telefono || !variantId || !slug) {
@@ -144,6 +147,29 @@ export async function POST(request: NextRequest) {
         total: precioTotal,
       });
 
+      // Atribucion del pedido. La query de la pagina manda (el form COD vive
+      // en la misma pagina, no hay navegacion que la pierda); si no trae utm,
+      // caen los guardados en la cookie ml_attrib por /go/ al entrar de pauta.
+      const query = new URLSearchParams(
+        typeof busqueda === "string" ? busqueda : "",
+      );
+      const atribCookie = leerAtribCookie(request);
+      const utm = {
+        utm_source: query.get("utm_source") || atribCookie.utm_source || null,
+        utm_medium: query.get("utm_medium") || atribCookie.utm_medium || null,
+        utm_campaign:
+          query.get("utm_campaign") || atribCookie.utm_campaign || null,
+        utm_content:
+          query.get("utm_content") || atribCookie.utm_content || null,
+      };
+      const canalAdquisicion = derivarFuente({
+        utmSource: utm.utm_source,
+        utmMedium: utm.utm_medium,
+        fbclid: query.has("fbclid") || Boolean(request.cookies.get("_fbc")?.value),
+        ttclid: query.has("ttclid"),
+        gclid: query.has("gclid"),
+      }).fuente;
+
       const { data: pedidoInsertado, error: insertError } = await supabase
         .from("pedidos")
         .insert({
@@ -174,6 +200,12 @@ export async function POST(request: NextRequest) {
           // De donde salio la venta. Lo manda el agente cuando cierra por
           // chat; el formulario de la web no manda nada y cuenta como web.
           canal_venta: canal === "whatsapp" ? "whatsapp" : "web",
+          canal_adquisicion: canalAdquisicion,
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_content: utm.utm_content,
+          landing_variante: leerVarianteCookie(request),
           notas: notas || null,
         })
         .select("id")

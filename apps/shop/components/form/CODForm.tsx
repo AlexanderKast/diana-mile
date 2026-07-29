@@ -357,6 +357,9 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           slug: product.handle,
           descuentoAplicado: discountApplied,
           envioPrioritario,
+          // Query de la pagina tal cual: el servidor desarma los utm y
+          // deriva el canal de adquisicion del pedido.
+          busqueda: window.location.search,
         }),
       });
 
