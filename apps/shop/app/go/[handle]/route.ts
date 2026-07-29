@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import { getLandingVariante } from "@/lib/landing-variantes-server";
 import { COOKIE_ATRIB, COOKIE_VARIANTE } from "@/lib/atribucion";
+import { elegirThompson, type EstadisticaVariante } from "@/lib/bandit";
 
 // La rotacion depende de cookies y de un contador en Supabase: jamas cachear.
 export const dynamic = "force-dynamic";
@@ -11,6 +13,30 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 dias
 function corto(valor: string | null): string | undefined {
   const limpio = valor?.trim().slice(0, 200);
   return limpio || undefined;
+}
+
+/**
+ * Modo auto (Thompson sampling): mas trafico a la variante que mas
+ * convierte, sin dejar de explorar las demas. Devuelve null si no hay
+ * variantes activas o si algo falla — el caller cae al round-robin.
+ */
+async function elegirPorBandit(
+  supabase: SupabaseClient,
+  handle: string,
+  metrica: string,
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc("estadisticas_landing", {
+    p_handle: handle,
+    p_metrica: metrica,
+  });
+  if (error || !Array.isArray(data) || data.length === 0) return null;
+
+  const stats: EstadisticaVariante[] = data.map((fila) => ({
+    slug: String(fila.slug),
+    visitas: Number(fila.visitas) || 0,
+    conversiones: Number(fila.conversiones) || 0,
+  }));
+  return elegirThompson(stats);
 }
 
 /**
@@ -50,11 +76,29 @@ export async function GET(
   if (!slugElegido) {
     try {
       const supabase = createAdminSupabaseClient();
-      const { data, error } = await supabase.rpc("rotar_landing", {
+
+      // Cada producto define su reparto: 'rotacion' (parejo, default) o
+      // 'auto' (bandit). Sin fila de config todavia = rotacion pareja.
+      const { data: config } = await supabase.rpc("config_rotacion", {
         p_handle: handle,
       });
-      if (!error && typeof data === "string" && data) {
-        slugElegido = data;
+      const fila = Array.isArray(config) ? config[0] : null;
+
+      if (fila?.modo === "auto") {
+        slugElegido = await elegirPorBandit(
+          supabase,
+          handle,
+          fila.metrica === "clics" ? "clics" : "pedidos",
+        );
+      }
+
+      if (!slugElegido) {
+        const { data, error } = await supabase.rpc("rotar_landing", {
+          p_handle: handle,
+        });
+        if (!error && typeof data === "string" && data) {
+          slugElegido = data;
+        }
       }
     } catch (error) {
       console.error("[go] error rotando landing:", error);

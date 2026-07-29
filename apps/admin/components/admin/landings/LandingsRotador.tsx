@@ -16,12 +16,38 @@ export type MetricasVariante = {
   facturado: number;
 };
 
+export type ConfigRotacion = {
+  modo: "rotacion" | "auto";
+  metrica: "pedidos" | "clics";
+};
+
 type LandingsRotadorProps = {
   variantes: LandingVariante[];
   metricas: Record<string, MetricasVariante>;
+  configs: Record<string, ConfigRotacion>;
   shopUrl: string;
   periodoLabel: string;
 };
+
+const MODOS: { valor: string; label: string; ayuda: string }[] = [
+  {
+    valor: "rotacion",
+    label: "Rotación pareja",
+    ayuda: "Reparte visitantes por igual entre las variantes activas.",
+  },
+  {
+    valor: "auto:pedidos",
+    label: "Auto · por pedidos",
+    ayuda:
+      "El sistema aprende solo: manda cada vez más tráfico a la variante con mejor tasa de pedidos (últimos 30 días), sin dejar de probar las demás.",
+  },
+  {
+    valor: "auto:clics",
+    label: "Auto · por clics WhatsApp",
+    ayuda:
+      "Igual que auto por pedidos, pero optimiza la variante que más clics a WhatsApp genera.",
+  },
+];
 
 const SIN_METRICAS: MetricasVariante = {
   visitas: 0,
@@ -48,6 +74,7 @@ function slugDesdeNombre(nombre: string): string {
 export default function LandingsRotador({
   variantes,
   metricas,
+  configs,
   shopUrl,
   periodoLabel,
 }: LandingsRotadorProps) {
@@ -122,6 +149,32 @@ export default function LandingsRotador({
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cambiar estado.");
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function cambiarModo(productoHandle: string, valor: string) {
+    const [modo, metrica] = valor.split(":");
+    setOcupado(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/landings/rotacion", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          producto_handle: productoHandle,
+          modo,
+          metrica: metrica ?? "pedidos",
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "No se pudo cambiar el modo.");
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cambiar modo.");
     } finally {
       setOcupado(false);
     }
@@ -226,6 +279,40 @@ export default function LandingsRotador({
                 {copiado === linkRotador ? "Copiado ✓" : "Copiar link para pauta"}
               </button>
             </div>
+
+            {(() => {
+              const config = configs[handle] ?? {
+                modo: "rotacion" as const,
+                metrica: "pedidos" as const,
+              };
+              const valorActual =
+                config.modo === "auto"
+                  ? `auto:${config.metrica}`
+                  : "rotacion";
+              const modoActual = MODOS.find((m) => m.valor === valorActual);
+              return (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-ceniza">Reparto:</span>
+                  <select
+                    value={valorActual}
+                    onChange={(e) => cambiarModo(handle, e.target.value)}
+                    disabled={ocupado}
+                    className="text-xs rounded-[4px] border border-arena bg-blanco px-2 py-1.5 text-carbon focus:outline-none focus:border-dorado"
+                  >
+                    {MODOS.map((m) => (
+                      <option key={m.valor} value={m.valor}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                  {modoActual && (
+                    <span className="text-xs text-ceniza max-w-md">
+                      {modoActual.ayuda}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="overflow-x-auto mt-4">
               <table className="w-full text-sm">

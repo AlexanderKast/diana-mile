@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import type { LandingVariante } from "@diana-mile/shared/types";
 import LandingsRotador, {
+  type ConfigRotacion,
   type MetricasVariante,
 } from "@/components/admin/landings/LandingsRotador";
 
@@ -34,7 +35,7 @@ export default async function LandingsPage({
 
   // Pocas filas cada una (solo eventos atribuidos a variantes): se agrupan
   // aqui en JS, mismo criterio que el panel de metricas.
-  const [variantesRes, visitasRes, clicsRes, pedidosRes] = await Promise.all([
+  const [variantesRes, visitasRes, clicsRes, pedidosRes, rotacionRes] = await Promise.all([
     supabase
       .from("landing_variantes")
       .select("*")
@@ -56,9 +57,20 @@ export default async function LandingsPage({
       .select("landing_variante, precio_total, cantidad")
       .not("landing_variante", "is", null)
       .gte("created_at", desde),
+    supabase
+      .from("landing_rotacion")
+      .select("producto_handle, modo, metrica"),
   ]);
 
   const variantes = (variantesRes.data ?? []) as LandingVariante[];
+
+  const configs: Record<string, ConfigRotacion> = {};
+  for (const r of rotacionRes.data ?? []) {
+    configs[String(r.producto_handle)] = {
+      modo: r.modo === "auto" ? "auto" : "rotacion",
+      metrica: r.metrica === "clics" ? "clics" : "pedidos",
+    };
+  }
 
   const metricas: Record<string, MetricasVariante> = {};
   const de = (slug: string): MetricasVariante =>
@@ -110,6 +122,7 @@ export default async function LandingsPage({
       <LandingsRotador
         variantes={variantes}
         metricas={metricas}
+        configs={configs}
         shopUrl={SHOP_URL}
         periodoLabel={periodo.label}
       />
