@@ -62,7 +62,8 @@ export default function LandingMagica({
   onCerrar,
 }: {
   productoHandle: string;
-  onAplicar: (data: Data) => void;
+  /** nombreAngulo viaja para que la landing guarde con que enfoque se hizo. */
+  onAplicar: (data: Data, nombreAngulo: string | null) => void;
   onCerrar: () => void;
 }) {
   const [paso, setPaso] = useState<"angulo" | "brief" | "copy" | "imagenes">(
@@ -225,7 +226,8 @@ export default function LandingMagica({
   const todasListas = copys.length > 0 && listas.length === copys.length;
 
   function aplicar() {
-    onAplicar(landingMagica(listas.map((e) => e.imagen)) as Data);
+    const nombreAngulo = angulos.find((a) => a.id === anguloId)?.nombre ?? null;
+    onAplicar(landingMagica(listas.map((e) => e.imagen)) as Data, nombreAngulo);
     onCerrar();
   }
 

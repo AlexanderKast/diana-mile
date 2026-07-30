@@ -48,6 +48,12 @@ export type ResolvedLanding = {
   authenticity: boolean;
   /** Layout libre del constructor visual; null = arbol fijo legacy. */
   puckData: LandingPuckData | null;
+  /**
+   * Enfoque de venta de esta landing (ej. "Acné en el rostro"), si se
+   * construyo con un angulo. Lo usa el boton de WhatsApp de la pagina para
+   * que el mensaje diga para que problema es el producto, no solo cual es.
+   */
+  anguloVenta: string | null;
 };
 
 export function isEpochProduct(product: Product): boolean {
@@ -186,6 +192,7 @@ function neutralLanding(product: Product): ResolvedLanding {
     closingHeading: "Tu piel te lo va a agradecer",
     authenticity: false,
     puckData: null,
+    anguloVenta: null,
   };
 }
 
@@ -452,6 +459,7 @@ export function applyOverrides(
   if (content.authenticity !== undefined)
     merged.authenticity = content.authenticity;
   if (content.puckData !== undefined) merged.puckData = content.puckData;
+  if (content.anguloVenta !== undefined) merged.anguloVenta = content.anguloVenta;
   return merged;
 }
 

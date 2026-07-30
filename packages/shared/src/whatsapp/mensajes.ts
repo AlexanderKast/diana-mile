@@ -22,6 +22,13 @@ export type ContextoEnlace = {
    * no sirve: "epoch-polishing-bar" no es como ella lo llama.
    */
   titulo?: string | null;
+  /**
+   * Enfoque de venta de la landing de producto (ej. "Acné en el rostro"),
+   * cuando la pagina lo conoce. Sin esto el mensaje solo dice que producto
+   * vio, no para que problema es — y eso es lo que decide si quien atiende
+   * responde con el contexto correcto de una.
+   */
+  angulo?: string | null;
   origen?: OrigenApp;
 };
 
@@ -62,8 +69,14 @@ export function mensajeWhatsApp(ctx: ContextoEnlace): string {
   }
 
   // Producto puntual: es la pagina que mas vende y la que mas dudas
-  // genera, asi que el mensaje nombra el producto de frente.
+  // genera, asi que el mensaje nombra el producto de frente. Con angulo,
+  // nombra tambien PARA QUE es (ej. "para el acne"): quien atiende contesta
+  // desde el problema, no adivinando por que escribio.
   if (/^\/productos\/.+/.test(ruta)) {
+    const angulo = ctx.angulo?.trim();
+    if (titulo && angulo) {
+      return `Hola, estaba en la tienda Milito y vi el producto para ${angulo}: el ${titulo}. Quiero más información.`;
+    }
     return titulo
       ? `Hola, estoy viendo el ${titulo} y quiero saber mas antes de pedirlo.`
       : "Hola, estoy viendo un producto en la tienda y quiero saber mas.";

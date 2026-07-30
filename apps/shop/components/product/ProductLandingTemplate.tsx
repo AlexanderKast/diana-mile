@@ -161,7 +161,7 @@ export function ProductLandingTemplate({
         {!marco.mostrarFooter && <span data-ocultar-footer hidden />}
         {esCod && pricing.discountPopupActivo && <ExitIntentPopup />}
         <BackToTopButton />
-        <TituloWhatsApp valor={product.title} />
+        <TituloWhatsApp valor={product.title} angulo={landing.anguloVenta} />
         <ProductViewTracking
           contentId={product.handle}
           contentName={product.title}

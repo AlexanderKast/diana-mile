@@ -89,6 +89,12 @@ export default function EditorVisual({
   const [mostrarIA, setMostrarIA] = useState(false);
   const [mostrarPlantillas, setMostrarPlantillas] = useState(false);
   const [mostrarMagica, setMostrarMagica] = useState(false);
+  // Enfoque de venta con el que se aplico Landing magica (o el que ya traia
+  // el contenido guardado): viaja en el metafield para que el boton de
+  // WhatsApp de la tienda sepa para que problema es el producto.
+  const [anguloVenta, setAnguloVenta] = useState<string | null>(
+    contenidoInicial.anguloVenta ?? null,
+  );
   const [brief, setBrief] = useState("");
   const [generando, setGenerando] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,6 +180,7 @@ export default function EditorVisual({
       const contenido: ProductLandingContent = {
         ...contenidoInicial,
         puckData: dataActual.current as unknown as LandingPuckData,
+        ...(anguloVenta ? { anguloVenta } : {}),
       };
       const res = await fetch(saveEndpoint, {
         method: "PUT",
@@ -297,8 +304,9 @@ export default function EditorVisual({
       {mostrarMagica && (
         <LandingMagica
           productoHandle={productoHandle}
-          onAplicar={(data) => {
+          onAplicar={(data, nombreAngulo) => {
             reemplazarCanvas(data);
+            if (nombreAngulo) setAnguloVenta(nombreAngulo);
             setMensaje("Landing mágica aplicada — revisa y guarda.");
             setTimeout(() => setMensaje(null), 5000);
           }}

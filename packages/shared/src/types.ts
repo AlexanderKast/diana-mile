@@ -164,6 +164,13 @@ export type ProductLandingContent = {
    * variante con `puckData` sustituye el layout entero del producto.
    */
   puckData?: LandingPuckData;
+  /**
+   * Enfoque de venta de esta landing (ej. "Acné en el rostro"), si se
+   * construyo con un angulo (Landing magica u otro editor). El boton de
+   * WhatsApp de la pagina lo usa para que el mensaje diga para que problema
+   * es el producto, no solo cual es.
+   */
+  anguloVenta?: string;
 };
 
 /**

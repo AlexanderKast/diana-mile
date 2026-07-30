@@ -33,9 +33,10 @@ import {
 
 const ContextoTitulo = createContext<{
   titulo: string | null;
+  angulo: string | null;
   numero: string | null;
-  fijar: (t: string | null) => void;
-}>({ titulo: null, numero: null, fijar: () => {} });
+  fijar: (t: string | null, a?: string | null) => void;
+}>({ titulo: null, angulo: null, numero: null, fijar: () => {} });
 
 /**
  * El numero se recibe del servidor y viaja por aqui, no se lee del entorno
@@ -50,8 +51,16 @@ export function ProveedorWhatsApp({
   children: ReactNode;
   numero?: string | null;
 }) {
-  const [titulo, fijar] = useState<string | null>(null);
-  const valor = useMemo(() => ({ titulo, numero, fijar }), [titulo, numero]);
+  const [titulo, setTitulo] = useState<string | null>(null);
+  const [angulo, setAngulo] = useState<string | null>(null);
+  const fijar = (t: string | null, a: string | null = null) => {
+    setTitulo(t);
+    setAngulo(a);
+  };
+  const valor = useMemo(
+    () => ({ titulo, angulo, numero, fijar }),
+    [titulo, angulo, numero],
+  );
   return (
     <ContextoTitulo.Provider value={valor}>{children}</ContextoTitulo.Provider>
   );
@@ -62,12 +71,19 @@ export function ProveedorWhatsApp({
  * se limpia solo, para que el boton no siga nombrando un producto que ya
  * no se esta viendo.
  */
-export function TituloWhatsApp({ valor }: { valor: string | null }) {
+export function TituloWhatsApp({
+  valor,
+  angulo = null,
+}: {
+  valor: string | null;
+  /** Enfoque de venta de esta landing (ej. "Acné en el rostro"), si lo hay. */
+  angulo?: string | null;
+}) {
   const { fijar } = useContext(ContextoTitulo);
   useEffect(() => {
-    fijar(valor);
-    return () => fijar(null);
-  }, [valor, fijar]);
+    fijar(valor, angulo);
+    return () => fijar(null, null);
+  }, [valor, angulo, fijar]);
   return null;
 }
 
@@ -82,8 +98,8 @@ export function useEnlaceWhatsApp(
   origen: OrigenApp = "shop",
 ): { href: string | null; mensaje: string; alHacerClic: () => void } {
   const pathname = usePathname() ?? "/";
-  const { titulo, numero: delContexto } = useContext(ContextoTitulo);
-  const ctx = { ruta: pathname, titulo, origen };
+  const { titulo, angulo, numero: delContexto } = useContext(ContextoTitulo);
+  const ctx = { ruta: pathname, titulo, angulo, origen };
   const mensaje = mensajeWhatsApp(ctx);
 
   return {
