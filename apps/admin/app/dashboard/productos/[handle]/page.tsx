@@ -38,11 +38,17 @@ export default async function ProductoConstructorPage({
       <p className="text-sm text-carbon-suave mb-1">
         Constructor de landing · handle: {producto.handle}
       </p>
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-4">
         <HistorialVersiones
           referencia={`producto:${producto.handle}`}
           saveEndpoint={`/api/admin/productos/${producto.handle}`}
         />
+        <Link
+          href={`/dashboard/productos/${producto.handle}/angulos`}
+          className="text-sm text-dorado-oscuro hover:underline"
+        >
+          Ángulos de venta →
+        </Link>
       </div>
       <EditorTabs
         handle={producto.handle}

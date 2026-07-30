@@ -126,6 +126,26 @@ export const PLANTILLAS = {
     categoria: "MARKETING",
   },
   /**
+   * Le pregunta a la clienta como le fue y le pide permiso para publicar
+   * su opinion. Vars: 1 nombre, 2 producto.
+   *
+   * El permiso tiene que estar en el CUERPO de la plantilla, no en una
+   * variable: es lo unico que convierte la respuesta en algo publicable.
+   * El texto aprobado dice, en resumen: "¿como te fue con {{2}}? Si nos
+   * das permiso, nos encantaria publicar tu comentario en nuestra pagina."
+   *
+   * MARKETING y no UTILITY: se le esta pidiendo un favor a la clienta,
+   * no informandole de su pedido. Quien pidio parar promociones no la
+   * recibe.
+   *
+   * PENDIENTE: crear en Botcake y pegar aqui el id que devuelva Meta.
+   */
+  solicitudTestimonio: {
+    nombre: "solicitud_testimonio_milito",
+    id: process.env.BOTCAKE_TEMPLATE_TESTIMONIO ?? "",
+    categoria: "MARKETING",
+  },
+  /**
    * Mensaje diario de la comunidad. Vars: 1 el mensaje, 2 nombre.
    * El texto va como variable para no tener que aprobar una plantilla
    * nueva cada dia.

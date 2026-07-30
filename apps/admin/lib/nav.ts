@@ -78,6 +78,9 @@ export const NAV_GRUPOS: NavGroup[] = [
       // Dentro de Catálogo
       { label: "Landings", href: "/dashboard/productos", roles: ADMIN, oculto: true },
       { label: "Rotador de landings", href: "/dashboard/landings", roles: ADMIN, oculto: true },
+      // Va en Catálogo y no en WhatsApp: se recolectan por chat, pero lo
+      // que se hace con ellos es alimentar landings.
+      { label: "Testimonios", href: "/dashboard/testimonios", roles: ADMIN, oculto: true },
       // Dentro de Finanzas
       { label: "Costos", href: "/dashboard/financiero/costos", roles: FINANZAS, oculto: true },
       { label: "Costos fijos", href: "/dashboard/financiero/costos-fijos", roles: FINANZAS, oculto: true },
@@ -125,6 +128,7 @@ export const SECCIONES: Record<string, { href: string; label: string }[]> = {
     { href: "/dashboard/catalogo", label: "Productos" },
     { href: "/dashboard/productos", label: "Landings" },
     { href: "/dashboard/landings", label: "Rotador" },
+    { href: "/dashboard/testimonios", label: "Testimonios" },
   ],
   finanzas: [
     { href: "/dashboard/financiero", label: "Resumen" },

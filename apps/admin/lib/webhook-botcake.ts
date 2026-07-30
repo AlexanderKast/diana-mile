@@ -9,6 +9,7 @@ import {
 } from "@/lib/shopify";
 import { cancelarPedido } from "@diana-mile/shared/botcake/cancelacion";
 import { cancelarSeguimiento } from "@diana-mile/shared/botcake/seguimiento";
+import { capturarTestimonio } from "@diana-mile/shared/botcake/testimonios";
 import { escalarAHumano } from "@diana-mile/shared/botcake/ia/escalamiento";
 import { enviarTexto } from "@diana-mile/shared/botcake/client";
 import {
@@ -372,6 +373,24 @@ export async function procesar(payload: PayloadBotcake): Promise<void> {
       );
       return;
     }
+    /**
+     * Si a esta clienta se le pidio un testimonio hace poco, su respuesta
+     * se guarda para moderar. Va ANTES de la IA para quedarse con el texto
+     * crudo, y no corta el flujo: la conversacion sigue normal, ella no
+     * tiene por que notar que ademas se archivo lo que dijo.
+     *
+     * PARA QUE ESTO FUNCIONE hace falta que el webhook este recibiendo los
+     * mensajes reales (Botcake apuntando a /api/admin/webhooks/botcake/
+     * <token>) y que exista la plantilla `solicitud_testimonio_milito` con
+     * su id en BOTCAKE_TEMPLATE_TESTIMONIO. Sin la plantilla no se pide
+     * nada, y sin solicitud esta captura no guarda nada: es inofensiva.
+     */
+    await capturarTestimonio(supabase, {
+      telefonoE164: telefono,
+      texto: payload.texto.trim(),
+      nombre: payload.nombre ?? pedido?.nombre ?? null,
+    });
+
     const resultado = await responderMensaje(supabase, {
       telefonoE164: telefono,
       texto: payload.texto.trim(),

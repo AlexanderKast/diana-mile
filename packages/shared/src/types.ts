@@ -207,6 +207,28 @@ export type Product = {
 };
 
 /**
+ * Opinion de una clienta real, recolectada por WhatsApp tras la entrega
+ * (tabla `testimonios`).
+ *
+ * Publicable SOLO con `estado === "aprobado"` y `consentimiento === true`.
+ * Son dos cosas distintas: que ella autorizara publicarlo y que alguien del
+ * equipo lo revisara. Ninguna de las dos la decide el sistema.
+ */
+export type Testimonio = {
+  id: string;
+  pedido_id: string | null;
+  telefono: string | null;
+  producto_handle: string | null;
+  texto: string;
+  nombre: string | null;
+  ciudad: string | null;
+  estado: "pendiente" | "aprobado" | "rechazado";
+  consentimiento: boolean;
+  solicitado_at: string | null;
+  created_at: string;
+};
+
+/**
  * Variante de landing del rotador de pauta (tabla `landing_variantes`).
  * `contenido` es un ProductLandingContent PARCIAL: solo los bloques que la
  * variante sobrescribe; el resto lo hereda de la landing publica del

@@ -230,10 +230,54 @@ REGLAS DURAS (violarlas invalida la respuesta):
 Respondes SIEMPRE y UNICAMENTE con un objeto JSON valido, sin markdown.`;
 
 /**
+ * El angulo, si lo hay, va ANTES que el producto: es desde donde se escribe
+ * todo el copy. La ficha de Shopify solo aporta los datos duros.
+ *
+ * @param {Record<string, unknown> | null | undefined} angulo
+ */
+function bloqueAngulo(angulo) {
+  if (!angulo) return "";
+
+  const campos = [
+    ["Angulo de venta", angulo.angulo_venta],
+    ["Problema de la clienta", angulo.problema],
+    ["Avatar", angulo.avatar],
+    ["Resultado que ella desea", angulo.resultado_deseado],
+    ["Solucion ideal", angulo.solucion_ideal],
+    ["Mecanismo unico", angulo.mecanismo_unico],
+  ].filter(([, valor]) => typeof valor === "string" && valor.trim());
+
+  const paisVenta =
+    typeof angulo.pais_venta === "string" && angulo.pais_venta.trim()
+      ? angulo.pais_venta.trim()
+      : null;
+  const paisLogistica =
+    typeof angulo.pais_logistica === "string" && angulo.pais_logistica.trim()
+      ? angulo.pais_logistica.trim()
+      : null;
+  if (paisVenta) {
+    campos.push([
+      "Pais",
+      paisLogistica && paisLogistica !== paisVenta
+        ? `se vende en ${paisVenta}, se despacha desde ${paisLogistica}`
+        : `se vende y se despacha en ${paisVenta}`,
+    ]);
+  }
+
+  if (!campos.length) return "";
+
+  return `ANGULO DE VENTA (manda sobre todo lo demas: el copy entero se escribe desde aqui):
+${campos.map(([etiqueta, valor]) => `- ${etiqueta}: ${String(valor).trim()}`).join("\n")}
+
+`;
+}
+
+/**
  * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
- * @param {{ brief?: string | null, secciones: string[], precios?: string | null }} datos
+ * @param {{ brief?: string | null, secciones: string[], precios?: string | null, angulo?: Record<string, unknown> | null }} datos
  */
 export function buildSeccionesUserPrompt(product, datos) {
+  const anguloBlock = bloqueAngulo(datos.angulo);
   const briefBlock = datos.brief
     ? `\nBRIEF (lenguaje de audiencia, tiene prioridad):\n"""\n${datos.brief.trim()}\n"""\n`
     : "";
@@ -244,7 +288,7 @@ export function buildSeccionesUserPrompt(product, datos) {
     datos.secciones.includes(s.tipo),
   );
 
-  return `Escribe el copy de estas secciones-imagen para la landing del producto:
+  return `${anguloBlock}Escribe el copy de estas secciones-imagen para la landing del producto:
 
 PRODUCTO:
 - Titulo: ${product.title}
@@ -274,7 +318,7 @@ Todo en espanol con tildes correctas. Sin markdown.`;
 
 /**
  * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
- * @param {{ apiKey: string, model?: string, brief?: string | null, secciones: string[], precios?: string | null }} options
+ * @param {{ apiKey: string, model?: string, brief?: string | null, secciones: string[], precios?: string | null, angulo?: Record<string, unknown> | null }} options
  */
 export async function generateCopySecciones(product, options) {
   return callMistral({
@@ -286,6 +330,7 @@ export async function generateCopySecciones(product, options) {
       brief: options.brief ?? null,
       secciones: options.secciones,
       precios: options.precios ?? null,
+      angulo: options.angulo ?? null,
     }),
   });
 }

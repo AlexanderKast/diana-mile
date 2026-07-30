@@ -15,7 +15,9 @@ export type TipoMensaje =
   | "escalamiento"
   | "cancelacion"
   /** Mensaje de valor que sale una vez al dia a la comunidad. */
-  | "diario";
+  | "diario"
+  /** Le pide a una clienta que cuente como le fue, tras la entrega. */
+  | "testimonio";
 
 export type MensajeNuevo = {
   telefonoE164: string;
