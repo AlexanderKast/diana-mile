@@ -72,6 +72,15 @@ La tienda organiza el catálogo en 4 categorías — Shopify **Collections manua
 - `admins` — allowlist de `user_id` autorizados al dashboard (Supabase Auth por sí solo NO basta — ver comentario en la migración)
 - RLS activo en las 4 tablas; todo el acceso de escritura pasa por `service_role` desde server (`@diana-mile/shared/supabase/server`)
 
+### Rotador de landings y Landing mágica (ver `docs/LANDING-MAGICA.md`)
+
+- `landing_variantes` / `landing_rotacion` — variantes ocultas por producto y su modo de reparto (round-robin o bandit)
+- `landing_versiones` — historial con autor de cada guardado, para restaurar
+- `plantillas_secciones` — plantilla de layout activa por tipo, subida a mano
+- `referencias_secciones` — biblioteca de referencias de layout; el bucket **privado** `referencias-secciones` guarda los archivos y solo se leen con `download()` server-side (nunca se publican)
+- `angulos_venta` — onboarding del producto: enfoque de mensaje reutilizable (`datos` JSONB, contrato en `packages/shared/src/landing/angulo.ts`)
+- `testimonios` — recolectados por WhatsApp post-entrega; solo llegan a una landing con `estado='aprobado'` y `consentimiento=true`
+
 ## Styling
 
 Tailwind 4 con tokens custom en `app/globals.css` vía `@theme inline`. Paleta: dorado (lujo, acento principal) + lila/morado (identidad personal de "Mile", acento secundario) sobre base crema/carbon. Fuentes: Cormorant (display) + Inter (sans). Animaciones utilitarias: `cta-pulse`, `btn-shine`, `fade-in-up`, respeta `prefers-reduced-motion`.

@@ -34,7 +34,15 @@ Antes de agregar otra, hay que pedirlo. Si aparece una dependencia en un
 
 ## Honestidad del contenido
 
-- Cero testimonios, reseñas o conteos de clientas inventados.
+- Cero testimonios, reseñas o conteos de clientas inventados. Tampoco se
+  toman reseñas de terceros de la web y se presentan como propias. Los
+  testimonios salen del recolector post-entrega (`testimonios`, aprobados a
+  mano y con consentimiento) o no existen.
+- Cero antes/después generados o retocados. Solo fotos reales de clientas o
+  material oficial de Nu Skin, y en ese caso con la atribución visible.
+- Las referencias de layout (`referencias_secciones`) son inspiración de
+  composición, nunca de contenido: que una referencia muestre un
+  antes/después o una reseña con estrellas no autoriza dibujar una.
 - El volumen ("miles de mujeres") se le atribuye a **Nu Skin**, nunca a la
   tienda. La tienda solo reclama lo suyo: contraentrega, cobertura medida,
   acompañamiento.
