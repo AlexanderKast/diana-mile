@@ -175,6 +175,12 @@ export function construirPromptSeccion(args: {
       bloques.push(
         `CONTEXTO para decidir la imagen (NO es texto a dibujar):\n${contexto.join("\n")}`,
       );
+      // Sin esto la escena sale generica (una mujer lavandose los hombros
+      // en una landing sobre codos, por ejemplo): el texto habla del angulo
+      // y la foto de otra cosa, y la seccion deja de vender.
+      bloques.push(
+        "La ESCENA debe mostrar la zona del cuerpo o la situación de la que habla el enfoque: si el enfoque es una zona concreta, encuádrala a ella (con tratamiento editorial y discreto, nunca sugerente), no una escena genérica de baño. Texto e imagen tienen que hablar de lo mismo.",
+      );
     }
   }
 
@@ -183,25 +189,34 @@ export function construirPromptSeccion(args: {
   if (direccion) bloques.push(`Dirección de esta sección: ${direccion}`);
 
   // 5 · Paleta
+  //
+  // Los codigos hex son INSTRUCCION DE COLOR, no contenido: sin decirlo, el
+  // modelo los dibuja como si fueran una etiqueta mas de la composicion.
   let paleta =
-    "Paleta de la marca Milito: fondo crema #F2EDE6 o blanco cálido #FAFAF8, texto principal carbón #1A1714, acento dorado elegante #C4A882, acento secundario morado #6B4E8C. Titulares en serif editorial elegante; cuerpo en sans-serif limpia. Estética premium de skincare, luz suave, minimalista.";
+    "Paleta de la marca Milito (los códigos de color son instrucciones para ti, JAMÁS se escriben ni se dibujan dentro de la imagen): fondo crema #F2EDE6 o blanco cálido #FAFAF8, texto principal carbón #1A1714, acento dorado elegante #C4A882, acento secundario morado #6B4E8C. Titulares en serif editorial elegante; cuerpo en sans-serif limpia. Estética premium de skincare, luz suave, minimalista.";
   if (angulo?.color_predominante) {
-    paleta += ` Acento adicional permitido: ${angulo.color_predominante}, subordinado a la paleta.`;
+    paleta += ` Acento adicional permitido: ${angulo.color_predominante}, subordinado a la paleta (tampoco se dibuja).`;
   }
   bloques.push(paleta);
 
   // 6 · Copy literal
+  // Los textos van en lineas propias SIN comillas ni corchetes. Probado:
+  // con «» el modelo dibuja las comillas dentro de la imagen, y sigue
+  // haciendolo aunque el prompt le diga que no. La unica via fiable es no
+  // darle ningun delimitador que pueda confundir con contenido.
   const textos: string[] = [
-    "Renderiza EXACTAMENTE los siguientes textos, carácter por carácter, respetando tildes y eñes, sin traducir ni corregir:",
-    `TITULAR: «${copy.titular}»`,
+    "Renderiza EXACTAMENTE los textos de la lista de abajo, carácter por carácter, respetando tildes y eñes, sin traducir ni corregir. Cada línea es un texto; la etiqueta en mayúsculas dice qué papel cumple y NO se dibuja.",
+    "",
+    `TITULAR:`,
+    copy.titular,
   ];
-  if (copy.subtitular) textos.push(`SUBTITULAR: «${copy.subtitular}»`);
+  if (copy.subtitular) textos.push("", "SUBTITULAR:", copy.subtitular);
   if (copy.bullets?.length) {
-    textos.push("BULLETS:");
-    for (const b of copy.bullets) textos.push(`- «${b}»`);
+    textos.push("", "BULLETS (uno por línea):");
+    for (const b of copy.bullets) textos.push(b);
   }
-  if (copy.cta) textos.push(`CTA: «${copy.cta}»`);
-  if (copy.precio_texto) textos.push(`PRECIO: «${copy.precio_texto}»`);
+  if (copy.cta) textos.push("", "BOTÓN:", copy.cta);
+  if (copy.precio_texto) textos.push("", "PRECIO:", copy.precio_texto);
   bloques.push(textos.join("\n"));
 
   if (copy.notas_visuales) {
@@ -220,7 +235,7 @@ export function construirPromptSeccion(args: {
 
   // 8 · Prohibiciones
   const prohibiciones = [
-    "PROHIBIDO: agregar cualquier texto que no esté entre comillas arriba, logotipos o marcas ajenas, marcas de agua, cifras/sellos/certificaciones no indicados, contadores de stock, cuentas regresivas o cualquier urgencia inventada.",
+    "PROHIBIDO: dibujar cualquier texto que no esté en la lista de arriba. Nada de esta instrucción se dibuja: ni los códigos de color, ni las etiquetas en mayúsculas (TITULAR, BULLETS, BOTÓN, PRECIO), ni comillas de ningún tipo alrededor de los textos, ni el nombre del tipo de sección. Tampoco logotipos o marcas ajenas, marcas de agua, cifras, sellos o certificaciones no indicados, contadores de stock, cuentas regresivas ni urgencia inventada.",
   ];
   if (PROHIBICIONES_TIPO[tipo]) prohibiciones.push(PROHIBICIONES_TIPO[tipo]);
   bloques.push(prohibiciones.join(" "));
