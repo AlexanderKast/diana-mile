@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createAdminSupabaseClient,
   getAdminUser,
@@ -20,9 +21,13 @@ const TIPOS_VALIDOS = new Set([
   "autoridad",
   "uso",
   "sensorial",
+  "testimonios",
+  "antes_despues",
   "logistica",
   "faq",
 ]);
+
+const BUCKET_REFERENCIAS = "referencias-secciones";
 
 /** Fotos de referencia que se le mandan al modelo ademas de la plantilla. */
 const MAX_FOTOS_PRODUCTO = 3;
@@ -61,6 +66,28 @@ async function descargarComoB64(
   const buffer = Buffer.from(await res.arrayBuffer());
   return {
     mimeType: res.headers.get("content-type")?.split(";")[0] || "image/jpeg",
+    dataB64: buffer.toString("base64"),
+  };
+}
+
+/**
+ * Baja una referencia del bucket PRIVADO con el SDK, no por URL: no hay host
+ * que validar ni URL firmada que pueda filtrarse, asi que la allowlist
+ * anti-SSRF de descargarComoB64 se queda intacta (solo cdn.shopify.com).
+ */
+async function descargarReferencia(
+  supabase: SupabaseClient,
+  ruta: string,
+): Promise<{ mimeType: string; dataB64: string }> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET_REFERENCIAS)
+    .download(ruta);
+  if (error || !data) {
+    throw new Error(`No se pudo leer la referencia ${ruta}.`);
+  }
+  const buffer = Buffer.from(await data.arrayBuffer());
+  return {
+    mimeType: data.type || "image/png",
     dataB64: buffer.toString("base64"),
   };
 }
@@ -121,23 +148,36 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // La plantilla SIEMPRE sale de la tabla, nunca del body: una URL que
-    // elija el cliente convertiria este endpoint en un proxy de descargas.
-    // Es opcional; sin ella el prompt cae a un layout descrito por tipo,
-    // que da resultados mas genericos pero sirve igual.
+    // La referencia de layout NUNCA viene del cliente: una URL elegida por
+    // el body convertiria este endpoint en un proxy de descargas. Cascada:
+    // biblioteca privada (aleatoria, para variar la composicion cada vez) →
+    // plantilla activa del tipo → sin referencia (layout descrito en texto).
     const supabase = createAdminSupabaseClient();
-    const { data: plantilla } = await supabase
-      .from("plantillas_secciones")
-      .select("url_imagen")
-      .eq("tipo_seccion", tipo)
-      .eq("activa", true)
-      .maybeSingle();
-    const plantillaUrl: string | null = plantilla?.url_imagen ?? null;
-
-    // La plantilla va PRIMERA: el prompt se refiere a ella como "la primera
-    // imagen adjunta".
     const referencias: { mimeType: string; dataB64: string }[] = [];
-    if (plantillaUrl) referencias.push(await descargarComoB64(plantillaUrl));
+    let referenciaId: string | null = null;
+
+    const { data: aleatoria } = await supabase.rpc(
+      "referencia_seccion_aleatoria",
+      { p_tipo: tipo },
+    );
+    const elegida = Array.isArray(aleatoria) ? aleatoria[0] : null;
+
+    if (elegida?.ruta_storage) {
+      referencias.push(await descargarReferencia(supabase, elegida.ruta_storage));
+      referenciaId = elegida.id ?? null;
+    } else {
+      const { data: plantilla } = await supabase
+        .from("plantillas_secciones")
+        .select("url_imagen")
+        .eq("tipo_seccion", tipo)
+        .eq("activa", true)
+        .maybeSingle();
+      if (plantilla?.url_imagen) {
+        referencias.push(await descargarComoB64(plantilla.url_imagen));
+      }
+    }
+    const hayReferencia = referencias.length > 0;
+
     for (const imagen of producto.imagenes.slice(0, MAX_FOTOS_PRODUCTO)) {
       referencias.push(await descargarComoB64(imagen.url));
     }
@@ -146,7 +186,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       tipo,
       copy,
       productoTitulo: producto.title,
-      hayPlantilla: Boolean(plantillaUrl),
+      hayReferencia,
     });
 
     const generada = await generarImagenSeccion({ prompt, referencias });
@@ -163,7 +203,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       copy.titular,
     );
 
-    return NextResponse.json({ url, width, height, tipo }, { status: 200 });
+    // referencia_id es solo telemetria (para apagar una referencia mala):
+    // la imagen de referencia jamas se expone al editor ni a la landing.
+    return NextResponse.json(
+      { url, width, height, tipo, referencia_id: referenciaId },
+      { status: 200 },
+    );
   } catch (error) {
     const mensaje = error instanceof Error ? error.message : String(error);
     if (error && typeof error === "object" && "reintentable" in error) {
