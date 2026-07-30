@@ -69,11 +69,19 @@ export default async function LandingVariantePage({
   );
 
   return (
-    <ProductLandingTemplate
-      product={product}
-      pricing={pricing}
-      numeroWhatsapp={numeroWhatsapp}
-      landing={landing}
-    />
+    <>
+      {variante.estado === "pausada" && (
+        <div className="bg-carbon text-blanco text-center text-xs py-2 px-4">
+          VISTA PREVIA — esta variante está pausada y no recibe tráfico del
+          rotador. Actívala en el panel cuando esté lista.
+        </div>
+      )}
+      <ProductLandingTemplate
+        product={product}
+        pricing={pricing}
+        numeroWhatsapp={numeroWhatsapp}
+        landing={landing}
+      />
+    </>
   );
 }

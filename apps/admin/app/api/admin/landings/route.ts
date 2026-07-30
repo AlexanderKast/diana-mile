@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { producto_handle, slug, nombre, contenido } = body ?? {};
+    const { producto_handle, slug, nombre, contenido, estado } = body ?? {};
 
     if (!producto_handle || typeof producto_handle !== "string") {
       return NextResponse.json(
@@ -92,6 +92,12 @@ export async function POST(request: NextRequest) {
         { status: 413 },
       );
     }
+    if (estado !== undefined && estado !== "activa" && estado !== "pausada") {
+      return NextResponse.json(
+        { error: "El estado debe ser 'activa' o 'pausada'." },
+        { status: 400 },
+      );
+    }
 
     const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase
@@ -101,6 +107,7 @@ export async function POST(request: NextRequest) {
         slug,
         nombre: nombre.slice(0, 120),
         contenido: contenido ?? {},
+        ...(estado ? { estado } : {}),
       })
       .select("*")
       .single();

@@ -24,7 +24,13 @@ export type BloquePuck = {
   protegido?: boolean;
 };
 
-const texto = (label: string): CampoPuck => ({ type: "text", label });
+// contentEditable: los textos se editan tocandolos directo en el canvas
+// (ademas del panel derecho) — la curva de aprendizaje mas baja posible.
+const texto = (label: string): CampoPuck => ({
+  type: "text",
+  label,
+  contentEditable: true,
+});
 const parrafo = (label: string): CampoPuck => ({ type: "textarea", label });
 const lista = (
   label: string,
@@ -158,6 +164,10 @@ export const BLOQUES: Record<string, BloquePuck> = {
     fields: {},
   },
   Garantia: { label: "Garantia", fields: {} },
+  CorteDespacho: {
+    label: "Corte de despacho (countdown real)",
+    fields: {},
+  },
   Comunidad: { label: "Comunidad", fields: {} },
   NuSkin: { label: "Respaldo Nu Skin", fields: {} },
   BandaCTA: {
@@ -601,6 +611,7 @@ export const CATEGORIAS: Record<string, { title: string; components: string[] }>
     components: [
       "HeroCompra",
       "ResumenPedido",
+      "CorteDespacho",
       "DescripcionShopify",
       "ResultadosReales",
       "MosaicoFotos",

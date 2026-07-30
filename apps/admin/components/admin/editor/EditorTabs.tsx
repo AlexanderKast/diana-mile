@@ -14,6 +14,8 @@ type EditorTabsProps = {
   variantes: VarianteResumen[];
   saveEndpoint?: string;
   modoVariante?: boolean;
+  /** URL de la landing real en la tienda ("Ver en la tienda"). */
+  urlPreview?: string;
 };
 
 /**
@@ -30,6 +32,7 @@ export default function EditorTabs({
   variantes,
   saveEndpoint,
   modoVariante = false,
+  urlPreview,
 }: EditorTabsProps) {
   const [vista, setVista] = useState<"visual" | "clasico">("visual");
   const endpoint = saveEndpoint ?? `/api/admin/productos/${handle}`;
@@ -65,6 +68,8 @@ export default function EditorTabs({
           envolverEnContenido={modoVariante}
           productoTitulo={productoTitulo}
           productoImagenUrl={productoImagenUrl}
+          productoHandle={handle}
+          urlPreview={urlPreview}
         />
       ) : (
         <ConstructorLandingForm

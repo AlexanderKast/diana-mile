@@ -219,6 +219,15 @@ export const configEditor: Config = {
         </p>
       </Sistema>
     )),
+    CorteDespacho: bloque("CorteDespacho", () => (
+      <Sistema titulo="Corte de despacho">
+        <p className="text-sm text-carbon-suave">
+          ⏱ Countdown REAL al corte de despacho (10:00 AM Colombia): "Pide en
+          2h 14m y sale hoy". Fuera de horario muestra "sale manana" o "sale el
+          lunes". Es la unica urgencia permitida — nunca inventa escasez.
+        </p>
+      </Sistema>
+    )),
     Comunidad: bloque("Comunidad", () => (
       <Sistema titulo="Comunidad">
         <p className="text-sm text-carbon-suave">Seccion de comunidad Milito.</p>

@@ -80,6 +80,7 @@ export default async function VarianteEditorPage({
         variantes={[]}
         saveEndpoint={`/api/admin/landings/${variante.id}`}
         modoVariante
+        urlPreview={`${SHOP_URL}/l/${variante.slug}`}
       />
     </div>
   );

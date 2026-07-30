@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import EditorTabs from "@/components/admin/editor/EditorTabs";
 import { obtenerProducto } from "@/lib/shopify-catalogo";
 
+const SHOP_URL =
+  process.env.NEXT_PUBLIC_SHOP_URL ?? "https://shop.militolife.com";
+
 type ProductoConstructorPageProps = {
   params: Promise<{ handle: string }>;
 };
@@ -40,6 +43,7 @@ export default async function ProductoConstructorPage({
         productoImagenUrl={producto.imagenUrl}
         contenidoInicial={producto.landingContent}
         variantes={producto.variantes}
+        urlPreview={`${SHOP_URL}/productos/${producto.handle}`}
       />
     </div>
   );

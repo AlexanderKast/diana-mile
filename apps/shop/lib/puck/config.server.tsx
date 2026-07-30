@@ -54,6 +54,7 @@ import { AuthenticitySeals } from "@/components/product/AuthenticitySeals";
 import { ResultadosRealesGallery } from "@/components/product/ResultadosRealesGallery";
 import { SocialCTABand } from "@/components/ui/SocialCTABand";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
+import { ScarcityBar } from "@/components/product/ScarcityBar";
 import { BotonCTABlock } from "@/components/product/puck/BotonCTABlock";
 
 /**
@@ -230,6 +231,11 @@ export const configShop: Config = {
     }),
     Garantia: bloque("Garantia", ({ puck }: { puck: Meta }) => (
       <GuaranteeSection modo={puck.metadata.modoCompra} />
+    )),
+    CorteDespacho: bloque("CorteDespacho", () => (
+      <div className="px-6 max-w-xl mx-auto w-full">
+        <ScarcityBar />
+      </div>
     )),
     Comunidad: bloque("Comunidad", () => <CommunitySection />),
     NuSkin: bloque("NuSkin", () => <NuskinSection />),

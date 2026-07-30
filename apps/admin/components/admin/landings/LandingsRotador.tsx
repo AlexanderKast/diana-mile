@@ -131,6 +131,37 @@ export default function LandingsRotador({
     }
   }
 
+  async function duplicarVariante(v: LandingVariante) {
+    const nombre = window.prompt(
+      "Nombre de la copia:",
+      `${v.nombre} (copia)`,
+    );
+    if (!nombre?.trim()) return;
+    setOcupado(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/landings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          producto_handle: v.producto_handle,
+          slug: `${v.slug.slice(0, 48)}-${Date.now().toString(36).slice(-4)}`,
+          nombre: nombre.trim(),
+          contenido: v.contenido ?? {},
+          // Nace pausada: no entra al rotador hasta que la edites y actives.
+          estado: "pausada",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "No se pudo duplicar.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al duplicar.");
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   async function cambiarEstado(v: LandingVariante) {
     setOcupado(true);
     setError(null);
@@ -378,6 +409,14 @@ export default function LandingsRotador({
                           {formatCOP(m.facturado)}
                         </td>
                         <td className="py-2 pr-3 whitespace-nowrap text-right">
+                          <button
+                            type="button"
+                            onClick={() => duplicarVariante(v)}
+                            disabled={ocupado}
+                            className="text-xs text-carbon-suave hover:text-carbon mr-3"
+                          >
+                            Duplicar
+                          </button>
                           <button
                             type="button"
                             onClick={() => cambiarEstado(v)}
