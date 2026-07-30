@@ -391,9 +391,12 @@ export const configShop: Config = {
     Texto: bloque("Texto", (props: React.ComponentProps<typeof TextoBloque>) => (
       <TextoBloque {...props} />
     )),
-    Imagen: bloque("Imagen", (props: { url: string; alt: string; ancho: "completo" | "medio" }) => (
-      <ImagenBloque {...props} />
-    )),
+    Imagen: bloque(
+      "Imagen",
+      (props: React.ComponentProps<typeof ImagenBloque>) => (
+        <ImagenBloque {...props} />
+      ),
+    ),
     Video: bloque("Video", (props: React.ComponentProps<typeof VideoBloque>) => (
       <VideoBloque {...props} />
     )),

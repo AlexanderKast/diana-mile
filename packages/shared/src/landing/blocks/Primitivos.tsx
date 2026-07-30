@@ -161,6 +161,13 @@ export function TextoBloque({
   );
 }
 
+const ANCHO_IMAGEN = {
+  completo: "max-w-3xl rounded-2xl",
+  medio: "max-w-md rounded-2xl",
+  // Secciones-imagen estilo landing apilada: borde a borde, sin esquinas.
+  sangria: "max-w-none rounded-none",
+} as const;
+
 export function ImagenBloque({
   url,
   alt,
@@ -170,7 +177,7 @@ export function ImagenBloque({
 }: {
   url: string;
   alt: string;
-  ancho: "completo" | "medio";
+  ancho: "completo" | "medio" | "sangria";
   /** ancho/alto de la imagen original (la calcula el editor). 0 = desconocida. */
   proporcion?: number;
   /** true en la primera imagen del layout (LCP): carga con prioridad. */
@@ -186,8 +193,8 @@ export function ImagenBloque({
   return (
     <div
       className={[
-        "relative mx-auto w-full overflow-hidden rounded-2xl",
-        ancho === "medio" ? "max-w-md" : "max-w-3xl",
+        "relative mx-auto w-full overflow-hidden",
+        ANCHO_IMAGEN[ancho] ?? ANCHO_IMAGEN.completo,
       ].join(" ")}
       // La imagen conserva SU formato (1:1, 4:5, 9:16...): el contenedor
       // reserva la proporcion exacta y no se recorta nada. Sin proporcion

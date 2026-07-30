@@ -113,7 +113,10 @@ type RawProductNode = {
   status: string;
   featuredImage: { url: string } | null;
   metafield: RawMetafield;
-  variants?: { edges: { node: { id: string; title: string } }[] };
+  variants?: { edges: { node: { id: string; title: string; price?: string } }[] };
+  images?: {
+    nodes: { url: string; altText: string | null; width: number; height: number }[];
+  };
 };
 
 type RawCollectionNode = {
@@ -139,6 +142,15 @@ export type ProductoResumen = {
 export type VarianteResumen = {
   id: string;
   title: string;
+  /** Precio en COP como string de Shopify (ej. "89700.00"). */
+  price?: string;
+};
+
+export type ImagenProducto = {
+  url: string;
+  alt: string | null;
+  width: number;
+  height: number;
 };
 
 export type ProductoDetalle = {
@@ -152,6 +164,8 @@ export type ProductoDetalle = {
   imagenUrl: string | null;
   landingContent: ProductLandingContent | null;
   variantes: VarianteResumen[];
+  /** Todas las fotos del producto (referencias para el generador de imagenes). */
+  imagenes: ImagenProducto[];
 };
 
 const PRODUCT_FIELDS = `
@@ -204,7 +218,8 @@ export async function obtenerProducto(
         status
         featuredImage { url }
         metafield(namespace: "diana_mile", key: "landing_content") { value }
-        variants(first: 25) { edges { node { id title } } }
+        variants(first: 25) { edges { node { id title price } } }
+        images(first: 20) { nodes { url altText width height } }
       }
     }`,
     { handle },
@@ -224,6 +239,13 @@ export async function obtenerProducto(
     variantes: (node.variants?.edges ?? []).map((e) => ({
       id: e.node.id,
       title: e.node.title,
+      price: e.node.price,
+    })),
+    imagenes: (node.images?.nodes ?? []).map((n) => ({
+      url: n.url,
+      alt: n.altText,
+      width: n.width,
+      height: n.height,
     })),
   };
 }

@@ -406,6 +406,7 @@ export const BLOQUES: Record<string, BloquePuck> = {
         options: [
           { label: "Completo", value: "completo" },
           { label: "Medio", value: "medio" },
+          { label: "Sangría (borde a borde)", value: "sangria" },
         ],
       },
     },
