@@ -371,6 +371,7 @@ REGLAS DURAS (violarlas invalida la respuesta):
 - La marca visible es "Milito" o "Milito Life Shop". Jamas "Diana".
 - Mercado Colombia, espanol de Colombia impecable CON TODAS SUS TILDES, precios en pesos colombianos (COP).
 - Cada campo: maximo 700 caracteres, en prosa corrida. Sin markdown, sin vinetas, sin numeracion, sin titulos.
+- El angulo puede venir en jerga o lenguaje coloquial/directo colombiano (ej. "sapo" = mal olor corporal). Decodifica el termino literal y escribe el brief sobre ESE problema concreto, en espanol profesional pero sin diluirlo — evitarlo o generalizarlo ("un producto para el cuidado personal") no es mas seguro, es un brief que no sirve. Zonas del cuerpo intimas o incomodas de nombrar se tratan igual que cualquier otra: con el mismo nivel de detalle y tacto profesional, nunca con vaguedad para esquivarlas.
 
 Respondes SIEMPRE y UNICAMENTE con un objeto JSON valido, sin texto adicional ni bloques de codigo markdown.`;
 
@@ -393,9 +394,19 @@ export function buildAnguloUserPrompt(product, datos) {
 Todos los campos deben desarrollar ESTE angulo en concreto (el problema, la
 clienta, el deseo y el mecanismo se escriben para el). No escribas un brief
 generico del producto: si el angulo habla de un uso o una zona especifica,
-el brief entero va de eso. Si el angulo no encaja con lo que el producto
-realmente hace segun los datos, ajustalo a lo que si es cierto en vez de
-inventar propiedades.\n`
+el brief entero va de eso.
+EL ANGULO NUNCA SE CAMBIA POR OTRO QUE "ENCAJE MEJOR" CON EL PRODUCTO. Si el
+angulo pide rostro, el brief es de rostro — aunque el producto tenga fama de
+usarse en otra zona del cuerpo. Reposicionar el mismo producto en un enfoque
+distinto es EXACTAMENTE para que sirve un angulo; cambiarlo por tu cuenta le
+arruina la prueba a quien lo pidio. Lo unico que se ajusta a los datos
+reales es COMO conecta el producto con ese angulo (el "mecanismo_unico" y
+"detalles_producto" describen lo que el producto de verdad hace, sin
+inventar propiedades) — nunca DE QUE zona o problema habla el brief.
+Si el nombre del angulo esta en jerga, es informal o suena incomodo,
+decodificalo igual y escribe sobre eso con precision — un brief generico
+("cuidado personal", "bienestar diario") que evita el termino especifico
+esta mal hecho, aunque sea mas comodo de escribir.\n`
     : "";
 
   // Lo que el admin ya escribio manda. El modelo rellena huecos, no

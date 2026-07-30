@@ -204,6 +204,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     );
   } catch (error) {
     const mensaje = error instanceof Error ? error.message : String(error);
+    // Sin esto un 500 no dejaba rastro en el log del servidor — solo el
+    // status y el tiempo, nunca el motivo real.
+    console.error("generar-seccion fallo:", error);
     if (error && typeof error === "object" && "reintentable" in error) {
       return NextResponse.json({ error: mensaje, reintentable: true }, { status: 429 });
     }

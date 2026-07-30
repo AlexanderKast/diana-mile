@@ -61,8 +61,9 @@ async function leerMaquetasPorTipo(
           referencia: elegida.referencia,
           tipo,
         });
-      } catch {
+      } catch (error) {
         // Esta seccion se queda sin MAQUETA; el resto no se ve afectado.
+        console.warn(`No se pudo leer la maqueta de "${tipo}":`, error);
       }
     }
   };

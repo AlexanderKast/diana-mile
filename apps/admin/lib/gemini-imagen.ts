@@ -58,26 +58,39 @@ export async function generarImagenSeccion(args: {
     });
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: partes }],
-        generationConfig: {
-          responseModalities: ["IMAGE"],
-          imageConfig: {
-            aspectRatio: args.aspectRatio ?? "9:16",
-            imageSize: args.imageSize ?? "2K",
-          },
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
-      }),
-    },
-  );
+        body: JSON.stringify({
+          contents: [{ parts: partes }],
+          generationConfig: {
+            responseModalities: ["IMAGE"],
+            imageConfig: {
+              aspectRatio: args.aspectRatio ?? "9:16",
+              imageSize: args.imageSize ?? "2K",
+            },
+          },
+        }),
+      },
+    );
+  } catch (causa) {
+    // Fetch que ni siquiera llega a responder (ECONNRESET, timeout de red):
+    // no es culpa del prompt ni de la cuota, es la red cayendose a mitad de
+    // una llamada de 20-30s. Vale la pena reintentar igual que un 429.
+    const error: ErrorReintentable = new Error(
+      "No se pudo conectar con Gemini (falla de red). Reintenta en unos segundos.",
+    );
+    error.reintentable = true;
+    error.cause = causa;
+    throw error;
+  }
 
   const cuerpo = await res.text();
   let json: RespuestaGemini;
@@ -92,6 +105,17 @@ export async function generarImagenSeccion(args: {
     const error: ErrorReintentable = new Error(
       "Gemini esta limitando las peticiones (cuota agotada)." +
         (espera ? ` Reintenta en ${espera} segundos.` : " Reintenta en unos minutos."),
+    );
+    error.reintentable = true;
+    throw error;
+  }
+
+  // 500/502/503/504: casi siempre "modelo saturado, reintenta" del lado de
+  // Google (lo vimos en vivo probando la key), no un prompt roto — un fallo
+  // de verdad en el prompt vuelve 400, no 5xx.
+  if (res.status >= 500) {
+    const error: ErrorReintentable = new Error(
+      `Gemini respondio ${res.status} (servidor saturado): ${json.error?.message ?? cuerpo.slice(0, 200)}`,
     );
     error.reintentable = true;
     throw error;
