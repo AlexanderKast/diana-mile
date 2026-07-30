@@ -168,6 +168,15 @@ export const BLOQUES: Record<string, BloquePuck> = {
     label: "Corte de despacho (countdown real)",
     fields: {},
   },
+  BotonWhatsApp: {
+    label: "Boton de WhatsApp",
+    fields: { etiqueta: texto("Texto del boton") },
+    defaultProps: { etiqueta: "Preguntar por WhatsApp" },
+  },
+  PruebaSocial: {
+    label: "Pedidos entregados (dato real)",
+    fields: {},
+  },
   Comunidad: { label: "Comunidad", fields: {} },
   NuSkin: { label: "Respaldo Nu Skin", fields: {} },
   BandaCTA: {
@@ -559,14 +568,27 @@ export const CAMPOS_ROOT: Record<string, CampoPuck> = {
       { label: "Ocultar", value: "no" },
     ],
   },
+  mostrarStickyCta: {
+    type: "radio",
+    label: "Barra fija de compra (abajo)",
+    options: [
+      { label: "Mostrar", value: "si" },
+      { label: "Ocultar", value: "no" },
+    ],
+  },
 };
 
-export const DEFAULTS_ROOT = { mostrarHeader: "si", mostrarFooter: "si" };
+export const DEFAULTS_ROOT = {
+  mostrarHeader: "si",
+  mostrarFooter: "si",
+  mostrarStickyCta: "si",
+};
 
 /** Lee las opciones de pagina de un layout guardado (defaults: mostrar todo). */
 export function opcionesRootLanding(puckData: unknown): {
   mostrarHeader: boolean;
   mostrarFooter: boolean;
+  mostrarStickyCta: boolean;
 } {
   const props =
     puckData && typeof puckData === "object"
@@ -576,6 +598,7 @@ export function opcionesRootLanding(puckData: unknown): {
   return {
     mostrarHeader: props.mostrarHeader !== "no",
     mostrarFooter: props.mostrarFooter !== "no",
+    mostrarStickyCta: props.mostrarStickyCta !== "no",
   };
 }
 
@@ -612,6 +635,8 @@ export const CATEGORIAS: Record<string, { title: string; components: string[] }>
       "HeroCompra",
       "ResumenPedido",
       "CorteDespacho",
+      "BotonWhatsApp",
+      "PruebaSocial",
       "DescripcionShopify",
       "ResultadosReales",
       "MosaicoFotos",

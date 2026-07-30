@@ -112,7 +112,57 @@ export default function EditorVisual({
     setKb(Math.round(JSON.stringify(data).length / 1024));
   }
 
+  /** Avisos de calidad (no bloquean): lo que un pro revisaria antes de pautar. */
+  function avisosDeCalidad(data: Data): string[] {
+    const avisos: string[] = [];
+    const bloques = (data.content ?? []) as Array<{
+      type?: string;
+      props?: Record<string, unknown>;
+    }>;
+    const imagenesSinAlt = bloques.filter(
+      (b) => b.type === "Imagen" && b.props?.url && !b.props?.alt,
+    ).length;
+    if (imagenesSinAlt > 0) {
+      avisos.push(
+        `${imagenesSinAlt} imagen(es) sin texto alternativo (accesibilidad y SEO).`,
+      );
+    }
+    const videosSinPoster = bloques.filter(
+      (b) => b.type === "Video" && b.props?.url && !b.props?.poster,
+    ).length;
+    if (videosSinPoster > 0) {
+      avisos.push(
+        `${videosSinPoster} video(s) sin imagen de portada (se ve un cuadro negro al cargar).`,
+      );
+    }
+    const totalVideos = bloques.filter((b) => b.type === "Video").length;
+    if (totalVideos > 2) {
+      avisos.push(
+        `${totalVideos} videos en una sola pagina: en datos moviles pesa mucho.`,
+      );
+    }
+    const primerosTipos = bloques.slice(0, 3).map((b) => b.type);
+    const hayCtaTemprano = primerosTipos.some((t) =>
+      ["HeroCompra", "BotonCTA", "BandaCTA", "ResumenPedido", "BotonWhatsApp"].includes(
+        t ?? "",
+      ),
+    );
+    if (bloques.length > 0 && !hayCtaTemprano) {
+      avisos.push(
+        "Ningun boton de pedido en los primeros 3 bloques: en movil la primera pantalla decide.",
+      );
+    }
+    return avisos;
+  }
+
   async function guardar() {
+    const avisos = avisosDeCalidad(dataActual.current);
+    if (avisos.length > 0) {
+      const seguir = window.confirm(
+        `Antes de guardar, revisa:\n\n• ${avisos.join("\n• ")}\n\n¿Guardar de todas formas?`,
+      );
+      if (!seguir) return;
+    }
     setGuardando(true);
     setError(null);
     setMensaje(null);

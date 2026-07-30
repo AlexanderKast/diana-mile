@@ -166,12 +166,15 @@ export function ImagenBloque({
   alt,
   ancho,
   proporcion,
+  prioridad,
 }: {
   url: string;
   alt: string;
   ancho: "completo" | "medio";
   /** ancho/alto de la imagen original (la calcula el editor). 0 = desconocida. */
   proporcion?: number;
+  /** true en la primera imagen del layout (LCP): carga con prioridad. */
+  prioridad?: boolean;
 }) {
   if (!url) {
     return (
@@ -197,6 +200,8 @@ export function ImagenBloque({
         fill
         className="object-cover"
         sizes="(min-width: 768px) 768px, 100vw"
+        priority={Boolean(prioridad)}
+        fetchPriority={prioridad ? "high" : undefined}
       />
     </div>
   );

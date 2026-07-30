@@ -56,6 +56,8 @@ import { SocialCTABand } from "@/components/ui/SocialCTABand";
 import { OrderBottomSheet } from "@/components/form/OrderBottomSheet";
 import { ScarcityBar } from "@/components/product/ScarcityBar";
 import { BotonCTABlock } from "@/components/product/puck/BotonCTABlock";
+import { BotonWhatsAppBloque } from "@/components/product/puck/BotonWhatsAppBloque";
+import { PruebaSocialBloque } from "@/components/product/puck/PruebaSocialBloque";
 
 /**
  * Contexto real del producto que los bloques leen via `puck.metadata`.
@@ -237,6 +239,10 @@ export const configShop: Config = {
         <ScarcityBar />
       </div>
     )),
+    BotonWhatsApp: bloque("BotonWhatsApp", ({ etiqueta }: { etiqueta: string }) => (
+      <BotonWhatsAppBloque etiqueta={etiqueta} />
+    )),
+    PruebaSocial: bloque("PruebaSocial", () => <PruebaSocialBloque />),
     Comunidad: bloque("Comunidad", () => <CommunitySection />),
     NuSkin: bloque("NuSkin", () => <NuskinSection />),
     BandaCTA: bloque(

@@ -139,6 +139,22 @@ export function ProductLandingTemplate({
     // Opciones de pagina del editor: ocultar el marco del sitio. Los
     // marcadores los lee globals.css con :has() para apagar header/footer.
     const marco = opcionesRootLanding(landing.puckData);
+
+    // LCP: la primera Imagen del layout carga con prioridad; el resto lazy.
+    const dataConPrioridad = (() => {
+      const contenido = landing.puckData.content;
+      const indice = contenido.findIndex(
+        (b) => (b as { type?: string }).type === "Imagen",
+      );
+      if (indice < 0) return landing.puckData;
+      const copia = [...contenido];
+      const bloqueImagen = copia[indice] as { props?: Record<string, unknown> };
+      copia[indice] = {
+        ...bloqueImagen,
+        props: { ...bloqueImagen.props, prioridad: true },
+      };
+      return { ...landing.puckData, content: copia };
+    })();
     return (
       <OrderSheetProvider product={product} pricing={pricing}>
         {!marco.mostrarHeader && <span data-ocultar-header hidden />}
@@ -154,7 +170,7 @@ export function ProductLandingTemplate({
         <main className="flex flex-col gap-3 pb-28">
           <Render
             config={configShop}
-            data={landing.puckData as Data}
+            data={dataConPrioridad as Data}
             metadata={metadata}
           />
           {/* Red de seguridad: si el diseno no incluye ningun bloque con el
@@ -166,11 +182,12 @@ export function ProductLandingTemplate({
             </div>
           )}
         </main>
-        {esCod ? (
-          <ProductPurchaseFlow />
-        ) : (
-          <BarraVitrinaMovil product={product} numeroWhatsapp={numeroWhatsapp} />
-        )}
+        {marco.mostrarStickyCta &&
+          (esCod ? (
+            <ProductPurchaseFlow />
+          ) : (
+            <BarraVitrinaMovil product={product} numeroWhatsapp={numeroWhatsapp} />
+          ))}
       </OrderSheetProvider>
     );
   }

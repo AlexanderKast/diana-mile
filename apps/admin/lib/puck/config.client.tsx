@@ -219,6 +219,22 @@ export const configEditor: Config = {
         </p>
       </Sistema>
     )),
+    BotonWhatsApp: bloque("BotonWhatsApp", ({ etiqueta }: { etiqueta: string }) => (
+      <div className="flex justify-center px-6 py-4">
+        <span className="inline-flex items-center gap-2 min-h-[44px] px-8 rounded-lg bg-[#25D366] text-blanco text-base font-semibold">
+          🟢 {etiqueta}
+        </span>
+      </div>
+    )),
+    PruebaSocial: bloque("PruebaSocial", () => (
+      <Sistema titulo="Pedidos entregados (dato real)">
+        <p className="text-sm text-carbon-suave">
+          Muestra el conteo REAL de pedidos entregados ("130+ pedidos
+          entregados contraentrega"). Se oculta solo si aun no hay volumen
+          suficiente (min. 25) — nunca inventa numeros.
+        </p>
+      </Sistema>
+    )),
     CorteDespacho: bloque("CorteDespacho", () => (
       <Sistema titulo="Corte de despacho">
         <p className="text-sm text-carbon-suave">
