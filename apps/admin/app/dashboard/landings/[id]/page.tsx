@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import type { LandingVariante } from "@diana-mile/shared/types";
 import EditorTabs from "@/components/admin/editor/EditorTabs";
+import HistorialVersiones from "@/components/admin/editor/HistorialVersiones";
 import { obtenerProducto } from "@/lib/shopify-catalogo";
 
 export const dynamic = "force-dynamic";
@@ -67,11 +68,18 @@ export default async function VarianteEditorPage({
           {SHOP_URL}/l/{variante.slug} ↗
         </a>
       </p>
-      <p className="text-xs text-ceniza mb-6 max-w-2xl">
+      <p className="text-xs text-ceniza mb-1 max-w-2xl">
         Solo los bloques que edites aquí sobrescriben la landing pública; lo
         demás se hereda. Cero urgencia fabricada, cero testimonios inventados —
         el volumen se atribuye a Nu Skin y la marca visible es Milito.
       </p>
+      <div className="mb-4">
+        <HistorialVersiones
+          referencia={`variante:${variante.id}`}
+          saveEndpoint={`/api/admin/landings/${variante.id}`}
+          envolverEnContenido
+        />
+      </div>
       <EditorTabs
         handle={producto.handle}
         productoTitulo={producto.title}

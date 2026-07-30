@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import EditorTabs from "@/components/admin/editor/EditorTabs";
+import HistorialVersiones from "@/components/admin/editor/HistorialVersiones";
 import { obtenerProducto } from "@/lib/shopify-catalogo";
 
 const SHOP_URL =
@@ -34,9 +35,15 @@ export default async function ProductoConstructorPage({
         <h1 className="font-display text-2xl text-carbon">{producto.title}</h1>
         <span className="text-xs text-ceniza uppercase">{producto.status}</span>
       </div>
-      <p className="text-sm text-carbon-suave mb-6">
+      <p className="text-sm text-carbon-suave mb-1">
         Constructor de landing · handle: {producto.handle}
       </p>
+      <div className="mb-4">
+        <HistorialVersiones
+          referencia={`producto:${producto.handle}`}
+          saveEndpoint={`/api/admin/productos/${producto.handle}`}
+        />
+      </div>
       <EditorTabs
         handle={producto.handle}
         productoTitulo={producto.title}

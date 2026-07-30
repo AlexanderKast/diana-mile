@@ -4,10 +4,12 @@ import {
   guardarLandingProducto,
   obtenerProducto,
 } from "@/lib/shopify-catalogo";
+import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import {
   excedeTamanoLanding,
   validarLandingContent,
 } from "@/lib/validar-landing";
+import { archivarVersion } from "@/lib/landing-versiones";
 
 type RouteParams = { params: Promise<{ handle: string }> };
 
@@ -40,7 +42,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    if (!(await getAdminUser())) {
+    const usuario = await getAdminUser();
+    if (!usuario) {
       return NextResponse.json({ error: "No autorizado." }, { status: 401 });
     }
 
@@ -71,6 +74,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         { status: 404 },
       );
     }
+
+    // Archivar la landing vigente antes de pisarla, con el autor del cambio.
+    await archivarVersion(
+      createAdminSupabaseClient(),
+      `producto:${handle}`,
+      producto.landingContent,
+      usuario.email ?? null,
+    );
 
     await guardarLandingProducto(producto.id, body);
 

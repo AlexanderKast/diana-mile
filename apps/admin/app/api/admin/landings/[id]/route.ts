@@ -7,16 +7,19 @@ import {
   excedeTamanoLanding,
   validarLandingContent,
 } from "@/lib/validar-landing";
+import { archivarVersion } from "@/lib/landing-versiones";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 /**
  * Actualiza una variante: contenido, nombre, estado (activa/pausada) o
  * posicion en la rotacion. Solo toca los campos que vengan en el body.
+ * Cada cambio de contenido archiva la version anterior con su autor.
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    if (!(await getAdminUser())) {
+    const usuario = await getAdminUser();
+    if (!usuario) {
       return NextResponse.json({ error: "No autorizado." }, { status: 401 });
     }
 
@@ -72,6 +75,24 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const supabase = createAdminSupabaseClient();
+
+    // Archivar la version vigente antes de pisarla (solo si cambia contenido).
+    if (cambios.contenido !== undefined) {
+      const { data: actual } = await supabase
+        .from("landing_variantes")
+        .select("contenido")
+        .eq("id", id)
+        .maybeSingle();
+      if (actual) {
+        await archivarVersion(
+          supabase,
+          `variante:${id}`,
+          actual.contenido,
+          usuario.email ?? null,
+        );
+      }
+    }
+
     const { data, error } = await supabase
       .from("landing_variantes")
       .update(cambios)

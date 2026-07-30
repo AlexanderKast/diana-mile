@@ -8,6 +8,7 @@ import type {
   ProductLandingContent,
 } from "@diana-mile/shared/types";
 import { legacyAPuck } from "@diana-mile/shared/landing/legacy-a-puck";
+import { PLANTILLAS } from "@diana-mile/shared/landing/plantillas";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { Textarea } from "@diana-mile/shared/ui/Input";
 import { configEditor, type EditorMetadata } from "@/lib/puck/config.client";
@@ -85,6 +86,7 @@ export default function EditorVisual({
   const [error, setError] = useState<string | null>(null);
   const [borradorPendiente, setBorradorPendiente] = useState<Borrador | null>(null);
   const [mostrarIA, setMostrarIA] = useState(false);
+  const [mostrarPlantillas, setMostrarPlantillas] = useState(false);
   const [brief, setBrief] = useState("");
   const [generando, setGenerando] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -235,6 +237,13 @@ export default function EditorVisual({
         )}
         <button
           type="button"
+          onClick={() => setMostrarPlantillas((v) => !v)}
+          className="mr-2 px-3 py-2 text-sm rounded-[4px] border border-arena bg-blanco text-carbon hover:border-dorado"
+        >
+          Plantillas
+        </button>
+        <button
+          type="button"
           onClick={() => setMostrarIA((v) => !v)}
           className="mr-2 px-3 py-2 text-sm rounded-[4px] border border-arena bg-blanco text-carbon hover:border-dorado"
         >
@@ -273,6 +282,33 @@ export default function EditorVisual({
           >
             Descartar
           </Button>
+        </div>
+      )}
+
+      {mostrarPlantillas && (
+        <div className="border border-arena rounded-[4px] bg-crema/40 p-4 mb-3">
+          <p className="text-xs text-ceniza mb-3">
+            Empieza desde un layout probado. REEMPLAZA lo que hay en el lienzo
+            (no lo guardado) — luego editas textos e imágenes.
+          </p>
+          <div className="grid md:grid-cols-3 gap-3">
+            {PLANTILLAS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  reemplazarCanvas(p.construir() as Data);
+                  setMostrarPlantillas(false);
+                  setMensaje(`Plantilla "${p.nombre}" aplicada al lienzo.`);
+                  setTimeout(() => setMensaje(null), 4000);
+                }}
+                className="text-left border border-arena rounded-[4px] bg-blanco p-3 hover:border-dorado"
+              >
+                <p className="text-sm font-medium text-carbon">{p.nombre}</p>
+                <p className="text-xs text-ceniza mt-1">{p.descripcion}</p>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
