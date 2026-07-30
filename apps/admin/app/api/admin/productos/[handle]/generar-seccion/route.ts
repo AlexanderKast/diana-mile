@@ -36,9 +36,17 @@ const BUCKET_REFERENCIAS = "referencias-secciones";
 /** Fotos de referencia que se le mandan al modelo ademas de la plantilla. */
 const MAX_FOTOS_PRODUCTO = 3;
 
-/** 3:4 nominal a 2K — solo se usa si no se pudo leer el tamano real. */
-const ANCHO_FALLBACK = 1536;
+/**
+ * Tamano nominal a 2K por proporcion — solo se usa si no se pudo leer el
+ * real. Errar aqui deforma la seccion en el editor, asi que el fallback
+ * tiene que seguir la proporcion que se le pidio al modelo, no una fija.
+ */
 const ALTO_FALLBACK = 2048;
+const ANCHO_FALLBACK: Record<string, number> = {
+  "9:16": 1152,
+  "3:4": 1536,
+  "4:5": 1638,
+};
 
 /** Unico origen del que este endpoint acepta descargar (anti-SSRF). */
 const HOST_CDN = "cdn.shopify.com";
@@ -102,13 +110,16 @@ async function descargarReferencia(
  * Se hace a mano porque el repo no admite dependencias de imagen y el
  * editor necesita el tamano exacto para no deformar la seccion.
  */
-function medirPNG(buffer: Buffer, mimeType: string) {
+function medirPNG(buffer: Buffer, mimeType: string, proporcion: string) {
   if (mimeType.includes("png") && buffer.length >= 24) {
     const width = buffer.readUInt32BE(16);
     const height = buffer.readUInt32BE(20);
     if (width > 0 && height > 0) return { width, height };
   }
-  return { width: ANCHO_FALLBACK, height: ALTO_FALLBACK };
+  return {
+    width: ANCHO_FALLBACK[proporcion] ?? ANCHO_FALLBACK["9:16"],
+    height: ALTO_FALLBACK,
+  };
 }
 
 /**
@@ -215,13 +226,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       angulo,
     });
 
+    const proporcion = angulo?.proporcion ?? "9:16";
     const generada = await generarImagenSeccion({
       prompt,
       referencias,
-      aspectRatio: angulo?.proporcion ?? "3:4",
+      aspectRatio: proporcion,
     });
     const buffer = Buffer.from(generada.dataB64, "base64");
-    const { width, height } = medirPNG(buffer, generada.mimeType);
+    const { width, height } = medirPNG(buffer, generada.mimeType, proporcion);
 
     // La extension tiene que coincidir con el mimeType que declara Gemini:
     // Shopify rechaza la subida si el nombre dice .png y el tipo es otro.

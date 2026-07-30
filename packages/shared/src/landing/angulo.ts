@@ -36,7 +36,12 @@ export type TipoSeccion = (typeof TIPOS_SECCION_VALIDOS)[number];
  */
 export const LIMITE_TEXTO = 700;
 
-export type ProporcionAngulo = "3:4" | "4:5";
+/**
+ * 9:16 es el formato por defecto: las secciones se apilan en una landing que
+ * se ve en el celular, y el vertical largo es el que llena la pantalla sin
+ * dejar la seccion a medio cuadro.
+ */
+export type ProporcionAngulo = "9:16" | "3:4" | "4:5";
 export type SexoPersonajes = "femenino" | "masculino" | "mixto";
 
 export type UnidadOferta = {
@@ -84,7 +89,7 @@ export type AnguloVenta = {
 
 export const ANGULO_VACIO: AnguloVenta = {
   nombre_producto: "",
-  proporcion: "3:4",
+  proporcion: "9:16",
   pais_venta: "Colombia",
   pais_logistica: "Colombia",
   detalles_producto: "",
@@ -228,7 +233,7 @@ export function normalizarAngulo(crudo: unknown): AnguloVenta {
     // Campo opcional: se omite si viene vacio, para que no quede un string
     // en blanco viajando al prompt de imagen como si fuera un color.
     ...(color ? { color_predominante: color } : {}),
-    proporcion: unaDe(fuente.proporcion, ["3:4", "4:5"] as const, "3:4"),
+    proporcion: unaDe(fuente.proporcion, ["9:16", "3:4", "4:5"] as const, "9:16"),
     pais_venta: texto(fuente.pais_venta, ANGULO_VACIO.pais_venta) ||
       ANGULO_VACIO.pais_venta,
     pais_logistica:

@@ -564,7 +564,7 @@ export default function AngulosVenta({
               Proporción de las imágenes
             </legend>
             <div className="flex gap-4 pt-1">
-              {(["3:4", "4:5"] as const).map((valor) => (
+              {(["9:16", "3:4", "4:5"] as const).map((valor) => (
                 <label
                   key={valor}
                   className="flex items-center gap-2 text-sm text-carbon"

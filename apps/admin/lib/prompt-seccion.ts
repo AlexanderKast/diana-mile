@@ -46,7 +46,7 @@ const DIRECCION_TIPO: Record<string, string> = {
   hero:
     "Composición de gancho: el titular carga el mayor peso tipográfico de toda la landing y ocupa el tercio superior; el producto es el héroe óptico al centro, iluminado; el fondo sugiere el contexto de la clienta descrita. La emoción es el ALIVIO del problema, no el problema.",
   oferta:
-    "Tabla de packs: 1, 2 y 3 unidades en tarjetas, la de mejor valor destacada. Cada precio con su comparativo tachado SOLO si te lo dieron entre comillas. Todas las cifras en pesos colombianos con separador de miles ($89.700). Prohibido calcular, redondear o inventar cifras.",
+    "Tabla de packs: 1, 2 y 3 unidades en tarjetas. La destacada es la de MAYOR cantidad, que es la de mejor precio por unidad; las otras dos quedan apagadas. Cada tarjeta dibuja tantas unidades reales del producto como dice su cantidad. Cada precio con su comparativo tachado SOLO si te lo dieron. Todas las cifras en pesos colombianos con separador de miles ($89.700). Prohibido calcular, redondear o inventar cifras.",
   beneficios:
     "Lista escaneable: 3 o 4 beneficios, cada uno con un ícono de línea fina propio y coherente con los demás. El texto manda sobre la decoración; el producto aparece pequeño y discreto.",
   comparativa:
@@ -107,7 +107,35 @@ const PROHIBICIONES_TIPO: Record<string, string> = {
     "Las cifras de trayectoria y respaldo son del fabricante; no le atribuyas volumen ni años a la tienda.",
 };
 
-/** Tipos donde una persona en la composicion aporta y no afirma nada. */
+/**
+ * Hechos VERIFICABLES del negocio, para los espacios sobrantes de la maqueta.
+ *
+ * Las maquetas de referencia son ricas: traen filas de iconos, pies de
+ * confianza y badges que el copy de una seccion no alcanza a llenar. Borrar
+ * esos bloques empobrece el diseno; dejarlos vacios hace que el modelo los
+ * rellene con mentiras ("Formula dermatologicamente probada", "Resultados
+ * visibles"). La salida es darle una lista blanca: si sobra espacio, se
+ * llena con esto, que es cierto y esta verificado.
+ *
+ * Para agregar una linea aqui tiene que ser un hecho comprobable de la
+ * operacion. Nada de beneficios del producto: eso va en el copy.
+ */
+const HECHOS_CONFIANZA = [
+  "Pago contraentrega",
+  "Envío 24-72 horas",
+  "Producto original Nu Skin",
+  "Asesoría por WhatsApp",
+  "Cobertura nacional",
+  "Si llega en mal estado, se repone",
+];
+
+/**
+ * Una persona en la composicion se permite en CUALQUIER seccion: prohibirla
+ * en oferta, comparativa o logistica solo hacia el diseno mas frio, y una
+ * modelo generica no afirma nada por si sola. Lo que no cambia es que sea
+ * generica — sin nombre, sin cita, sin estrellas —, porque eso si seria un
+ * testimonio inventado.
+ */
 const PERMITE_PERSONAS = new Set([
   "hero",
   "sensorial",
@@ -115,6 +143,11 @@ const PERMITE_PERSONAS = new Set([
   "beneficios",
   "testimonios",
   "antes_despues",
+  "oferta",
+  "comparativa",
+  "autoridad",
+  "logistica",
+  "faq",
 ]);
 
 export function construirPromptSeccion(args: {
@@ -136,11 +169,34 @@ export function construirPromptSeccion(args: {
   );
 
   // 2 · Uso de la referencia
+  // El producto gana a la maqueta: con la maqueta pesando tanto, el modelo
+  // dibujaba una caja generica con el estilo de la referencia en vez del
+  // empaque real. La fidelidad del envase no se negocia.
   const productoReal =
-    "reprodúcelo IDÉNTICO (envase, etiqueta, tapa, proporciones, tipografía del empaque); no lo rediseñes ni lo estilices.";
+    "reprodúcelo IDÉNTICO (envase, etiqueta, colores del empaque, tipografía impresa, proporciones); no lo rediseñes, no lo estilices y no lo adaptes al estilo de la maqueta. Si la maqueta y la foto del producto se contradicen, MANDA LA FOTO DEL PRODUCTO.";
   if (hayReferencia) {
+    // La referencia es el PLANO, no un humor. Decir solo "inspirate" hacia
+    // que el modelo la mirara por encima y devolviera su layout de siempre;
+    // hay que pedirle la retícula calcada y prohibirle unicamente el
+    // contenido, que es lo que de verdad no se puede tomar prestado.
     bloques.push(
-      `La PRIMERA imagen adjunta es SOLO REFERENCIA DE ESTILO Y COMPOSICIÓN: inspírate en su estructura, jerarquía visual y ritmo, pero NO la copies — crea un diseño NUEVO adaptado a este producto, con la paleta de esta marca y el copy indicado abajo. Está PROHIBIDO reproducir su marca, sus textos, sus fotos, sus personas o su paleta. Si la referencia muestra contenido que aquí no aplica (un antes/después, una reseña con estrellas, cifras de resultados), IGNÓRALO: de ella se toma únicamente la retícula y la jerarquía.\nLas demás imágenes adjuntas son el PRODUCTO REAL: ${productoReal}`,
+      [
+        "La PRIMERA imagen adjunta es la MAQUETA que debes seguir. Analízala y REPLICA SU ESTRUCTURA con fidelidad:",
+        "- El mismo número de bloques y el mismo orden de arriba abajo.",
+        "- La misma retícula: cuántas columnas, dónde va la foto y dónde el texto, qué queda a la izquierda y qué a la derecha.",
+        "- Las mismas proporciones: qué porcentaje del alto ocupa cada bloque, cuánto aire hay entre ellos, dónde están los márgenes.",
+        "- La misma jerarquía tipográfica: qué texto es el más grande, cuál va en serif y cuál en sans, dónde hay una caja o un botón y de qué forma.",
+        "- Los mismos recursos de composición: recortes, formas, divisorias, superposiciones, viñetas, badges — si la maqueta los tiene, van.",
+        "Si al terminar tu diseño no se puede superponer sobre la maqueta y hacer coincidir los bloques, está mal hecho.",
+        "",
+        "Lo ÚNICO que cambia es el contenido: PROHIBIDO reproducir su marca, sus textos, sus fotos, sus personas, sus iconos o su paleta. Cada hueco de esa estructura se llena con este producto, esta paleta y el copy de abajo.",
+        // Sin esta regla el modelo trata la maqueta como un formulario a
+        // completar: si trae un badge de rating, se inventa "4.9/5 · 500
+        // reseñas"; si trae una tarjeta de testimonio, redacta una cita y la
+        // firma con un nombre. Visto en produccion las dos veces.
+        "LA ESTRUCTURA SE COPIA, LOS DATOS NO SE INVENTAN. La maqueta manda sobre el layout, jamás sobre el contenido. Si un bloque de la maqueta pide un dato que no está en el copy de abajo — estrellas de calificación, número de reseñas, conteo de clientes, una cita firmada con un nombre, un porcentaje de resultados, un sello de garantía, un antes/después —, ese bloque NO se rellena: se ELIMINA y su espacio se reparte entre los bloques que sí tienen contenido. Un bloque vacío es correcto; un bloque inventado invalida toda la imagen.",
+        `Las demás imágenes adjuntas son el PRODUCTO REAL: ${productoReal}`,
+      ].join("\n"),
     );
   } else {
     const layout = LAYOUTS[tipo] ?? "composición vertical limpia con el producto al centro.";
@@ -188,6 +244,23 @@ export function construirPromptSeccion(args: {
   const direccion = DIRECCION_TIPO[tipo];
   if (direccion) bloques.push(`Dirección de esta sección: ${direccion}`);
 
+  // 4b · Energia de respuesta directa
+  //
+  // Sin esto sale un editorial de revista: bonito, silencioso y que no
+  // vende. La agresividad aqui es TIPOGRAFICA Y DE CONTRASTE, no de
+  // contenido — las reglas de honestidad del bloque 8 no se tocan.
+  bloques.push(
+    [
+      "ENERGÍA: esto es publicidad de respuesta directa, no un editorial de revista. Sube el volumen visual:",
+      "- El titular ocupa de verdad su espacio: tipografía pesada y grande, que se lea de un vistazo con el celular a un brazo de distancia.",
+      "- Contraste alto entre bloques: usa bloques de color plenos, fondos oscuros o de acento donde la maqueta los tenga, no todo crema sobre crema.",
+      "- Palabras clave del titular resaltadas (peso, color de acento o subrayado), como en los anuncios que convierten.",
+      "- El botón se ve como un BOTÓN: relleno sólido de color, bordes definidos, texto en alto contraste. Nunca un botón fantasma perdido en el fondo.",
+      "- Cada bloque de texto tiene su soporte visual: tarjeta, píldora, ícono o fondo propio. Nada de texto suelto flotando.",
+      "Alto impacto y alta legibilidad a la vez: sigue siendo premium, pero grita.",
+    ].join("\n"),
+  );
+
   // 5 · Paleta
   //
   // Los codigos hex son INSTRUCCION DE COLOR, no contenido: sin decirlo, el
@@ -217,6 +290,29 @@ export function construirPromptSeccion(args: {
   }
   if (copy.cta) textos.push("", "BOTÓN:", copy.cta);
   if (copy.precio_texto) textos.push("", "PRECIO:", copy.precio_texto);
+
+  // LA LISTA ES CERRADA, y hay que decirlo contando.
+  //
+  // Prohibir por categorias no sirve: se le prohibieron estrellas y
+  // testimonios, y en la siguiente pasada invento "Formula
+  // dermatologicamente probada" y "Resultados visibles con el uso
+  // constante" en unos iconos que la maqueta traia vacios. Mientras quede
+  // un hueco de la maqueta sin llenar, el modelo lo llena. La unica regla
+  // que cierra el agujero es una cuenta exacta y un repaso final.
+  const totalTextos =
+    1 +
+    (copy.subtitular ? 1 : 0) +
+    (copy.bullets?.length ?? 0) +
+    (copy.cta ? 1 : 0) +
+    (copy.precio_texto ? 1 : 0);
+  textos.push(
+    "",
+    "SI LA MAQUETA TIENE MÁS ESPACIOS DE TEXTO QUE LOS DE ARRIBA (filas de íconos, pies de confianza, badges), no los borres: llénalos ÚNICAMENTE con frases de esta lista de hechos verificados, tal cual están escritas y sin repetir ninguna:",
+    ...HECHOS_CONFIANZA.map((h) => `- ${h}`),
+    "",
+    `Fuera de los ${totalTextos} textos de arriba y de esa lista de hechos, NO existe ni un texto más. Prohibido redactar beneficios, propiedades, sellos o frases de relleno por tu cuenta, aunque suenen razonables y aunque la maqueta parezca pedirlos.`,
+    "Antes de dar la imagen por terminada, lee cada texto que dibujaste y comprueba que está literalmente en una de las dos listas. El que no esté, se borra.",
+  );
   bloques.push(textos.join("\n"));
 
   if (copy.notas_visuales) {
@@ -236,12 +332,14 @@ export function construirPromptSeccion(args: {
   // 8 · Prohibiciones
   const prohibiciones = [
     "PROHIBIDO: dibujar cualquier texto que no esté en la lista de arriba. Nada de esta instrucción se dibuja: ni los códigos de color, ni las etiquetas en mayúsculas (TITULAR, BULLETS, BOTÓN, PRECIO), ni comillas de ningún tipo alrededor de los textos, ni el nombre del tipo de sección. Tampoco logotipos o marcas ajenas, marcas de agua, cifras, sellos o certificaciones no indicados, contadores de stock, cuentas regresivas ni urgencia inventada.",
+    // Cada elemento de esta lista se dibujo de verdad en una prueba real.
+    "PROHIBIDO EN PARTICULAR, aunque la maqueta los tenga: estrellas o puntuaciones de calificación, número de reseñas, conteos de clientes (\"más de 10.000 clientas\"), citas de testimonio con o sin nombre, sellos de \"garantía de satisfacción\" o de devolución del dinero, promesas de envío gratis o umbrales de compra, e ingredientes o propiedades que no estén escritos arriba. Nada de eso existe si no te lo entregaron en el copy.",
   ];
   if (PROHIBICIONES_TIPO[tipo]) prohibiciones.push(PROHIBICIONES_TIPO[tipo]);
   bloques.push(prohibiciones.join(" "));
 
   // 9 · Formato
-  const proporcion = angulo?.proporcion ?? "3:4";
+  const proporcion = angulo?.proporcion ?? "9:16";
   bloques.push(
     `Salida: imagen publicitaria vertical ${proporcion}, fotorrealista con tipografía editorial nítida y legible, español de Colombia.`,
   );

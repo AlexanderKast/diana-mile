@@ -36,7 +36,7 @@ export async function generarImagenSeccion(args: {
   prompt: string;
   /** Plantilla de layout primero, luego fotos del producto. Maximo 4. */
   referencias: { mimeType: string; dataB64: string }[];
-  aspectRatio?: "3:4" | "4:5";
+  aspectRatio?: "9:16" | "3:4" | "4:5";
   imageSize?: "1K" | "2K";
 }): Promise<{ dataB64: string; mimeType: string }> {
   const modelo = process.env.GEMINI_IMAGE_MODEL || MODELO_POR_DEFECTO;
@@ -63,7 +63,7 @@ export async function generarImagenSeccion(args: {
         generationConfig: {
           responseModalities: ["IMAGE"],
           imageConfig: {
-            aspectRatio: args.aspectRatio ?? "3:4",
+            aspectRatio: args.aspectRatio ?? "9:16",
             imageSize: args.imageSize ?? "2K",
           },
         },
