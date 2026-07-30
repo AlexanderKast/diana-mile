@@ -146,10 +146,46 @@ export default function CampoArchivo({
   const [error, setError] = useState<string | null>(null);
   const [galeriaAbierta, setGaleriaAbierta] = useState(false);
 
-  async function subir(archivo: File) {
+  /**
+   * Redimensiona imagenes grandes en el navegador antes de subirlas (max
+   * 1600px de lado, WebP). Una foto de celular de 4MB queda en ~200KB sin
+   * perdida visible; el CDN y next/image hacen el resto al servir.
+   */
+  async function optimizarImagen(archivo: File): Promise<File> {
+    if (!archivo.type.startsWith("image/") || archivo.type === "image/gif") {
+      return archivo;
+    }
+    if (archivo.size < 400 * 1024) return archivo;
+    try {
+      const bitmap = await createImageBitmap(archivo);
+      const MAX = 1600;
+      const escala = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+      if (escala === 1 && archivo.size < 1024 * 1024) return archivo;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * escala);
+      canvas.height = Math.round(bitmap.height * escala);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return archivo;
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/webp", 0.85),
+      );
+      if (!blob || blob.size >= archivo.size) return archivo;
+      return new File(
+        [blob],
+        archivo.name.replace(/\.[^.]+$/, "") + ".webp",
+        { type: "image/webp" },
+      );
+    } catch {
+      return archivo;
+    }
+  }
+
+  async function subir(archivoOriginal: File) {
     setError(null);
     setEstado("subiendo");
     try {
+      const archivo = await optimizarImagen(archivoOriginal);
       const prep = await fetch("/api/admin/archivos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
