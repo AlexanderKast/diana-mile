@@ -2,6 +2,7 @@
 
 import type { LandingSkinType } from "@diana-mile/shared/types";
 import { formatCOP } from "@diana-mile/shared/utils";
+import { ENTREGA_BADGE } from "@diana-mile/shared/logistica/despacho";
 import { useOrderSheet } from "@/components/product/OrderSheetContext";
 import { ScarcityBar } from "@/components/product/ScarcityBar";
 import { AuthenticitySeals } from "@/components/product/AuthenticitySeals";
@@ -115,7 +116,7 @@ export function ProductHeroCTA({
 
       <div className="flex items-center justify-center gap-1.5 text-xs text-ceniza">
         <LockIcon className="text-ceniza" />
-        Pago al recibir · Envío 24-72h
+        Pago al recibir · {ENTREGA_BADGE}
       </div>
 
       <ScarcityBar />

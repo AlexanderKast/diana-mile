@@ -42,8 +42,10 @@ export function TestimonialsSection({
               <p className="text-[11px] text-carbon-suave">Pagas al recibir</p>
             </div>
             <div>
-              <p className="font-display text-3xl text-morado-oscuro">24-72h</p>
-              <p className="text-[11px] text-carbon-suave">Despacho estimado</p>
+              {/* Decia "24-72h": solo se cumple en Medellin y su area. Ver
+                  `shared/logistica/despacho`. */}
+              <p className="font-display text-3xl text-morado-oscuro">1-5</p>
+              <p className="text-[11px] text-carbon-suave">Días hábiles según tu ciudad</p>
             </div>
             <div>
               <p className="font-display text-3xl text-morado-oscuro">WA</p>

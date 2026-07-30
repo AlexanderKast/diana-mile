@@ -62,7 +62,7 @@ const DIRECCION_TIPO: Record<string, string> = {
   antes_despues:
     "Composición de dos fotos enfrentadas con divisoria clara y etiquetas legibles. Usa TAL CUAL las fotos reales adjuntas: no las retoques, no exageres diferencias, no generes fotos nuevas de piel.",
   logistica:
-    "Grilla de 3 o 4 tarjetas con íconos de línea: pago contraentrega, envío 24-72h, garantía de reposición, cobertura. Estética de confianza, iconografía consistente.",
+    "Grilla de 3 o 4 tarjetas con íconos de línea: pago contraentrega, envío a todo el país, garantía de reposición, cobertura. Estética de confianza, iconografía consistente.",
   faq: "Lista serena de 4 preguntas: pregunta en negrita precedida de un signo, respuesta de una línea debajo, separadores finos. Mucho aire entre bloques.",
 };
 
@@ -122,7 +122,10 @@ const PROHIBICIONES_TIPO: Record<string, string> = {
  */
 const HECHOS_CONFIANZA = [
   "Pago contraentrega",
-  "Envío 24-72 horas",
+  // Decia "Envío 24-72 horas" y era falso fuera de Medellin: ver
+  // `shared/logistica/despacho`. En un badge no cabe el matiz por ciudad,
+  // asi que aqui no se promete plazo.
+  "Envío a todo el país",
   "Producto original Nu Skin",
   "Asesoría por WhatsApp",
   "Cobertura nacional",

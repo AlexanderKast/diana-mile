@@ -64,7 +64,7 @@ const COMPARISON_DEFAULT: LandingComparison = {
   rows: [
     "Producto 100% original",
     "Pagas al recibir, revisas antes de pagar",
-    "Envío a toda Colombia en 24-72h",
+    "Envío a toda Colombia: 1-2 días hábiles en Medellín, 3-5 en el resto",
     "Atención real por WhatsApp",
     "Garantía de reposición si llega mal",
   ],

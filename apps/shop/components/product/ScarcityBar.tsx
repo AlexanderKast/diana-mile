@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  CIUDAD_DESPACHO,
+  ENTREGA_DETALLE_CORTO,
+  HORA_CORTE_DESPACHO,
+} from "@diana-mile/shared/logistica/despacho";
 
-const DESPACHO_HORA = 10; // 10:00 AM Colombia (UTC-5, sin horario de verano) — corte real de despacho
+const DESPACHO_HORA = HORA_CORTE_DESPACHO;
 
 // Construye un Date "naive" cuyos campos locales (hora, dia de semana) son
 // los de Colombia, sin importar en que zona horaria corre el navegador.
@@ -71,17 +76,19 @@ export function ScarcityBar() {
             </span>
             Pide antes de las {DESPACHO_HORA}:00 AM (faltan{" "}
             <span className="font-mono font-semibold">{formatCountdown(despacho.ms)}</span>) y sale hoy
-            mismo desde Bogotá
+            mismo desde {CIUDAD_DESPACHO}
           </>
         )}
         {despacho.modo === "manana" && `Pide hoy y sale mañana antes de las ${DESPACHO_HORA}:00 AM`}
         {despacho.modo === "lunes" && "Pide hoy y sale el lunes"}
       </p>
-      {/* El resto de la pagina promete 24-72h. Decir "2 a 5 dias" a diez
-          centimetros del boton de pedir es contradecirse en el peor momento.
-          El rango real por municipio vive en `cobertura_entrega` y se lo damos
-          a la clienta cuando ya sabemos su ciudad — aqui todavia no. */}
-      <p className="mt-1 text-xs text-carbon-suave">Entrega en 24-72h en ciudades principales</p>
+      {/* Decia "24-72h en ciudades principales" y era falso: de las grandes,
+          solo Medellin entrega en ese rango; Bogota, Cali, Barranquilla,
+          Cartagena y Bucaramanga son 3-5 dias habiles. A diez centimetros
+          del boton de pedir, ese es justo el dato que despues se convierte
+          en un rechazo en la puerta. El rango exacto por municipio vive en
+          `cobertura_entrega` y se lo damos cuando ya sabemos su ciudad. */}
+      <p className="mt-1 text-xs text-carbon-suave">{ENTREGA_DETALLE_CORTO}</p>
     </div>
   );
 }

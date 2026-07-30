@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ENTREGA_BADGE } from "@diana-mile/shared/logistica/despacho";
 import { BADGE, type ModoCompra } from "@/components/product/TrustBadges";
 
 /**
@@ -14,7 +15,7 @@ import { BADGE, type ModoCompra } from "@/components/product/TrustBadges";
 
 const ITEMS_COD = [
   { src: BADGE.pagoAlRecibir, label: "Pagas al recibir" },
-  { src: BADGE.envio, label: "Envío 24-72h" },
+  { src: BADGE.envio, label: ENTREGA_BADGE },
   { src: BADGE.soporteWhatsapp, label: "Soporte por WhatsApp" },
 ];
 

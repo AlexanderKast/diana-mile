@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ENTREGA_BADGE } from "@diana-mile/shared/logistica/despacho";
 
 /**
  * Sellos generados con Magnific (gpt-2), subidos a Shopify Files — icono +
@@ -22,8 +23,12 @@ export const BADGE = {
     "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/F_Descargas_magnific_flat-trust-badge-for-a-pr_rlkBtcextc.png",
   pagoAlRecibir:
     "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/F_Descargas_magnific_flat-trust-badge-for-a-pr_gJshCl2SXO.png",
+  // El sello anterior tenia "ENVÍO 24-72H · Llega rápido a tu ciudad"
+  // dibujado DENTRO del PNG, y era falso fuera de Medellin (ver
+  // `shared/logistica/despacho`). Cambiar el `label` no bastaba: el texto
+  // viaja en la imagen. Regenerado con el mismo estilo de la familia.
   envio:
-    "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/F_Descargas_magnific_flat-trust-badge-for-a-pr_J9wEq4wOq4.png",
+    "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/sello-envio-nacional.png?v=1785397237",
   compraSegura:
     "https://cdn.shopify.com/s/files/1/0696/3783/2747/files/F_Descargas_magnific_flat-trust-badge-for-a-pr_iANkfZX3uK.png",
   soporteWhatsapp:
@@ -39,7 +44,7 @@ export type ModoCompra = "cod" | "vitrina";
 const BADGES_COD = [
   { src: BADGE.contraentrega, label: "Contraentrega Colombia" },
   { src: BADGE.pagoAlRecibir, label: "Pago al recibir" },
-  { src: BADGE.envio, label: "Envío en 24-72h" },
+  { src: BADGE.envio, label: ENTREGA_BADGE },
 ];
 
 /**

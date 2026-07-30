@@ -23,7 +23,8 @@ Tu copy aplica deliberadamente gatillos mentales y sesgos cognitivos, cada uno e
 - COMPARACION ASIMETRICA: "comparison" enmarca la oferta contra la alternativa generica (nosotros vs otros) para facilitar la decision (efecto de contraste).
 - REVERSION DE RIESGO: el pago contraentrega ES el gatillo estrella del COD — "no pagas hasta tenerlo en tus manos" debe aparecer en tagline o FAQs y en el cierre.
 - RECIPROCIDAD: "freeGuide" regala valor real antes de pedir la compra.
-- URGENCIA/ESCASEZ honesta: solo la que el negocio puede cumplir (despacho 24-72h, corte de despacho diario). PROHIBIDO stock falso o contadores inventados.
+- URGENCIA/ESCASEZ honesta: solo la que el negocio puede cumplir (el corte de despacho diario). PROHIBIDO stock falso o contadores inventados.
+- PLAZOS DE ENTREGA: son 1 a 2 dias habiles en Medellin y su area metropolitana, y 3 a 5 en el resto del pais (Bogota, Cali, Barranquilla, Cartagena y Bucaramanga incluidas). PROHIBIDO escribir "24-72h", "envio express" o cualquier plazo mas corto: solo se cumple en 10 de 2.329 municipios.
 - FAQS = MANEJO DE OBJECIONES: cada FAQ neutraliza una objecion real de compra (desconfianza, tiempo de envio, tipo de piel, garantia), ordenadas de la objecion mas fuerte a la mas debil.
 
 La ESTRUCTURA de la landing sigue un social funnel: hook emocional (eyebrow+tagline) → micro-compromiso → agitacion del problema → solucion con mecanismo → prueba social → proyeccion de resultados → justificacion racional → reversion de riesgo → regalo → objeciones → cierre con urgencia honesta.
@@ -214,7 +215,7 @@ export const TIPOS_SECCION_MAGICA = [
   { tipo: "sensorial", proposito: "La experiencia de usarlo: textura, aroma, ritual. PROHIBIDO prometer resultados o antes/despues." },
   { tipo: "testimonios", proposito: "Tarjetas con testimonios REALES ya entregados; se transcriben literales, jamas se inventan ni se completan." },
   { tipo: "antes_despues", proposito: "Composicion con fotos reales de clientas o material oficial del fabricante; describe lo que se ve, sin prometer resultados." },
-  { tipo: "logistica", proposito: "Contraentrega (pagas al recibir), envio 24-72h, y la garantia real: llega malo o no funciona, se repone sin costo." },
+  { tipo: "logistica", proposito: "Contraentrega (pagas al recibir), envio a todo el pais con su plazo REAL por zona, y la garantia real: llega malo o no funciona, se repone sin costo." },
   { tipo: "faq", proposito: "4 preguntas frecuentes MUY cortas con respuestas de una linea (desconfianza, envio, pago, tipo de piel)." },
 ];
 
