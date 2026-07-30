@@ -212,6 +212,8 @@ export const TIPOS_SECCION_MAGICA = [
   { tipo: "autoridad", proposito: "Respaldo real: producto original de Nu Skin, fabricante con decadas de trayectoria. El volumen es de Nu Skin, nunca de la tienda." },
   { tipo: "uso", proposito: "3 pasos simples de uso, numerados, una linea cada uno." },
   { tipo: "sensorial", proposito: "La experiencia de usarlo: textura, aroma, ritual. PROHIBIDO prometer resultados o antes/despues." },
+  { tipo: "testimonios", proposito: "Tarjetas con testimonios REALES ya entregados; se transcriben literales, jamas se inventan ni se completan." },
+  { tipo: "antes_despues", proposito: "Composicion con fotos reales de clientas o material oficial del fabricante; describe lo que se ve, sin prometer resultados." },
   { tipo: "logistica", proposito: "Contraentrega (pagas al recibir), envio 24-72h, y la garantia real: llega malo o no funciona, se repone sin costo." },
   { tipo: "faq", proposito: "4 preguntas frecuentes MUY cortas con respuestas de una linea (desconfianza, envio, pago, tipo de piel)." },
 ];
@@ -283,6 +285,89 @@ export async function generateCopySecciones(product, options) {
     userPrompt: buildSeccionesUserPrompt(product, {
       brief: options.brief ?? null,
       secciones: options.secciones,
+      precios: options.precios ?? null,
+    }),
+  });
+}
+
+// ── Angulo de venta: el brief estrategico ───────────────────────────────
+//
+// Esto NO escribe copy. Escribe el brief interno con el que despues se
+// escribe el copy: a quien le hablamos, que le duele, que desea, por que
+// este producto. Se genera una vez por angulo y se edita a mano; el copy
+// de cada seccion se genera muchas veces a partir de el.
+
+export const ANGULO_SYSTEM_PROMPT = `Eres un estratega de marketing directo para venta contraentrega (COD) en Colombia. Trabajas para "Milito Life Shop", una tienda que vende productos ORIGINALES de Nu Skin con pago contraentrega.
+
+Tu trabajo es escribir el BRIEF ESTRATEGICO interno de un producto: la materia prima con la que despues otro escribira el copy. NO escribes copy, ni titulares, ni frases publicitarias. Escribes analisis: quien es la clienta, que le pasa, que quiere, por que este producto le sirve y que lo hace distinto.
+
+REGLAS DURAS (violarlas invalida la respuesta):
+- PROHIBIDO inventar: testimonios, personas, nombres, cifras de ventas, numero de clientas, estudios, porcentajes de eficacia, certificaciones, premios, ingredientes que no aparezcan en los datos que se te dan, y precios o descuentos distintos de los que se te dan.
+- PROHIBIDO cualquier claim de salud y cualquier promesa de resultado. El campo "resultado_deseado" es lo que la clienta DESEA, redactado como deseo de ella ("quiere volver a verse la piel pareja"), jamas como promesa de la marca ("tu piel quedara pareja").
+- PROHIBIDA la escasez o urgencia fabricada (contadores, "solo quedan X", "solo por hoy"). La unica urgencia real es el corte de despacho.
+- El volumen, la trayectoria y el respaldo cientifico son de Nu Skin, el fabricante — nunca de la tienda. La tienda solo reclama lo suyo: producto original, contraentrega, cobertura y acompanamiento por WhatsApp.
+- La marca visible es "Milito" o "Milito Life Shop". Jamas "Diana".
+- Mercado Colombia, espanol de Colombia impecable CON TODAS SUS TILDES, precios en pesos colombianos (COP).
+- Cada campo: maximo 700 caracteres, en prosa corrida. Sin markdown, sin vinetas, sin numeracion, sin titulos.
+
+Respondes SIEMPRE y UNICAMENTE con un objeto JSON valido, sin texto adicional ni bloques de codigo markdown.`;
+
+/**
+ * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
+ * @param {{ parcial?: Record<string, unknown> | null, precios?: string | null }} datos
+ */
+export function buildAnguloUserPrompt(product, datos) {
+  const preciosBlock = datos.precios
+    ? `\nPRECIOS REALES (las unicas cifras que puedes mencionar):\n${datos.precios}\n`
+    : "";
+
+  // Lo que el admin ya escribio manda. El modelo rellena huecos, no
+  // reescribe: si pisara lo tecleado, cada prellenado borraria el criterio
+  // de quien conoce el producto.
+  const escritos = Object.entries(datos.parcial ?? {}).filter(
+    ([, valor]) => typeof valor === "string" && valor.trim(),
+  );
+  const parcialBlock = escritos.length
+    ? `\nLO QUE EL ADMIN YA ESCRIBIO (tiene PRIORIDAD y NO debe reescribirse — devuelvelo TAL CUAL y limitate a rellenar los campos vacios de forma coherente con esto):\n${escritos
+        .map(([campo, valor]) => `- ${campo}: ${String(valor).trim()}`)
+        .join("\n")}\n`
+    : "";
+
+  return `Escribe el brief estrategico de este producto de "Milito Life Shop".
+
+PRODUCTO:
+- Titulo: ${product.title}
+- Descripcion: ${product.description || "(sin descripcion)"}
+- Tipo: ${product.productType || "(no especificado)"}
+- Tags: ${(product.tags || []).join(", ") || "(ninguno)"}
+${preciosBlock}${parcialBlock}
+Devuelve un JSON con EXACTAMENTE estos 7 campos, todos string:
+
+{
+  "angulo_venta": "el enfoque comercial con el que se vende este producto: por cual de sus usos se ataca y por que ese y no otro",
+  "problema": "la situacion concreta que vive hoy la clienta y que la haria buscar este producto",
+  "avatar": "quien es ella: edad, momento de vida, contexto colombiano, como compra, que le genera desconfianza",
+  "resultado_deseado": "lo que ELLA desea lograr, redactado como deseo suyo, nunca como promesa de la marca",
+  "solucion_ideal": "que caracteristicas tendria para ella la solucion perfecta, y como este producto se acerca",
+  "mecanismo_unico": "que hace distinto a este producto segun la informacion real disponible: formulacion, origen, respaldo del fabricante Nu Skin, modelo de compra contraentrega",
+  "detalles_producto": "descripcion factual del producto: que es, que contiene segun los datos dados, presentacion, como se usa"
+}
+
+Maximo 700 caracteres por campo. Todo en espanol de Colombia con tildes. Sin markdown.`;
+}
+
+/**
+ * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
+ * @param {{ apiKey: string, model?: string, parcial?: Record<string, unknown> | null, precios?: string | null }} options
+ */
+export async function generateAnguloVenta(product, options) {
+  return callMistral({
+    apiKey: options.apiKey,
+    model: options.model,
+    maxTokens: 3072,
+    systemPrompt: ANGULO_SYSTEM_PROMPT,
+    userPrompt: buildAnguloUserPrompt(product, {
+      parcial: options.parcial ?? null,
       precios: options.precios ?? null,
     }),
   });
