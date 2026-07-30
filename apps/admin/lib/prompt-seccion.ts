@@ -158,6 +158,11 @@ export function construirPromptSeccion(args: {
   // 3 · Contexto del angulo (no es texto a dibujar)
   if (angulo) {
     const campos = CAMPOS_POR_TIPO[tipo] ?? [];
+    // El enfoque va primero en el contexto: la imagen tiene que hablar del
+    // angulo que se pidio, no del producto en abstracto.
+    const enfoque = angulo.nombre?.trim()
+      ? [`- Enfoque de esta landing: ${angulo.nombre.trim()}`]
+      : [];
     const lineas = campos
       .map((campo) => {
         const valor = angulo[campo];
@@ -165,9 +170,10 @@ export function construirPromptSeccion(args: {
         return `- ${ETIQUETAS[campo] ?? campo}: ${valor.trim()}`;
       })
       .filter(Boolean);
-    if (lineas.length > 0) {
+    const contexto = [...enfoque, ...lineas];
+    if (contexto.length > 0) {
       bloques.push(
-        `CONTEXTO para decidir la imagen (NO es texto a dibujar):\n${lineas.join("\n")}`,
+        `CONTEXTO para decidir la imagen (NO es texto a dibujar):\n${contexto.join("\n")}`,
       );
     }
   }

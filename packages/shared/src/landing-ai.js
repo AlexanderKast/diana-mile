@@ -239,6 +239,9 @@ function bloqueAngulo(angulo) {
   if (!angulo) return "";
 
   const campos = [
+    // El nombre del angulo va primero y como titulo: es el enfoque que se
+    // pidio, y el copy de TODAS las secciones tiene que hablar de eso.
+    ["ENFOQUE DE ESTA LANDING", angulo.nombre],
     ["Angulo de venta", angulo.angulo_venta],
     ["Problema de la clienta", angulo.problema],
     ["Avatar", angulo.avatar],
@@ -359,11 +362,26 @@ Respondes SIEMPRE y UNICAMENTE con un objeto JSON valido, sin texto adicional ni
 
 /**
  * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
- * @param {{ parcial?: Record<string, unknown> | null, precios?: string | null }} datos
+ * @param {{ parcial?: Record<string, unknown> | null, precios?: string | null, nombreAngulo?: string | null }} datos
  */
 export function buildAnguloUserPrompt(product, datos) {
   const preciosBlock = datos.precios
     ? `\nPRECIOS REALES (las unicas cifras que puedes mencionar):\n${datos.precios}\n`
+    : "";
+
+  // El nombre del angulo es la ENTRADA principal: no es una etiqueta para
+  // ordenar la lista, es la instruccion de por donde se ataca el producto.
+  // Un mismo exfoliante vendido por "piel aspera en brazos" o por "codos
+  // oscuros" son dos landings distintas, y todo el brief tiene que girar
+  // sobre el que se pidio.
+  const anguloBlock = datos.nombreAngulo
+    ? `\nANGULO QUE SE PIDIO — es el EJE de todo el brief: "${datos.nombreAngulo.trim()}"
+Todos los campos deben desarrollar ESTE angulo en concreto (el problema, la
+clienta, el deseo y el mecanismo se escriben para el). No escribas un brief
+generico del producto: si el angulo habla de un uso o una zona especifica,
+el brief entero va de eso. Si el angulo no encaja con lo que el producto
+realmente hace segun los datos, ajustalo a lo que si es cierto en vez de
+inventar propiedades.\n`
     : "";
 
   // Lo que el admin ya escribio manda. El modelo rellena huecos, no
@@ -385,7 +403,7 @@ PRODUCTO:
 - Descripcion: ${product.description || "(sin descripcion)"}
 - Tipo: ${product.productType || "(no especificado)"}
 - Tags: ${(product.tags || []).join(", ") || "(ninguno)"}
-${preciosBlock}${parcialBlock}
+${anguloBlock}${preciosBlock}${parcialBlock}
 Devuelve un JSON con EXACTAMENTE estos 7 campos, todos string:
 
 {
@@ -403,7 +421,7 @@ Maximo 700 caracteres por campo. Todo en espanol de Colombia con tildes. Sin mar
 
 /**
  * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
- * @param {{ apiKey: string, model?: string, parcial?: Record<string, unknown> | null, precios?: string | null }} options
+ * @param {{ apiKey: string, model?: string, parcial?: Record<string, unknown> | null, precios?: string | null, nombreAngulo?: string | null }} options
  */
 export async function generateAnguloVenta(product, options) {
   return callMistral({
@@ -414,6 +432,7 @@ export async function generateAnguloVenta(product, options) {
     userPrompt: buildAnguloUserPrompt(product, {
       parcial: options.parcial ?? null,
       precios: options.precios ?? null,
+      nombreAngulo: options.nombreAngulo ?? null,
     }),
   });
 }

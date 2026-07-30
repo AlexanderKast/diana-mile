@@ -103,7 +103,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       const supabase = createAdminSupabaseClient();
       const { data, error } = await supabase
         .from("angulos_venta")
-        .select("datos")
+        .select("nombre, datos")
         .eq("producto_handle", handle)
         .eq("id", anguloId)
         .maybeSingle();
@@ -115,7 +115,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           { status: 404 },
         );
       }
-      angulo = normalizarAngulo(data.datos);
+      // El nombre viaja junto a los datos: es el enfoque que se pidio y el
+      // prompt lo usa como titulo del brief, no como etiqueta.
+      angulo = { ...normalizarAngulo(data.datos), nombre: data.nombre };
     }
 
     // Cifras REALES inyectadas al prompt: el modelo tiene prohibido inventar.

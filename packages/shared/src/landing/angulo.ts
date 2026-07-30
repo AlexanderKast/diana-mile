@@ -48,6 +48,13 @@ export type UnidadOferta = {
 };
 
 export type AnguloVenta = {
+  /**
+   * Nombre del angulo ("Zona intima negra o percudida"). Vive en su propia
+   * columna, no en `datos`, pero se adjunta aqui al leerlo porque es la
+   * ENTRADA que dirige toda la generacion: el brief, el copy de cada
+   * seccion y la direccion de arte se escriben para ESTE enfoque.
+   */
+  nombre?: string;
   nombre_producto: string;
   color_predominante?: string;
   proporcion: ProporcionAngulo;

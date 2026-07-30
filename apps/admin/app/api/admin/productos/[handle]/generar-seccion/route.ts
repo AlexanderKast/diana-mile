@@ -4,6 +4,10 @@ import {
   createAdminSupabaseClient,
   getAdminUser,
 } from "@diana-mile/shared/supabase/server";
+import {
+  normalizarAngulo,
+  type AnguloVenta,
+} from "@diana-mile/shared/landing/angulo";
 import { generarImagenSeccion, tieneGeminiApiKey } from "@/lib/gemini-imagen";
 import { construirPromptSeccion } from "@/lib/prompt-seccion";
 import { obtenerProducto } from "@/lib/shopify-catalogo";
@@ -129,6 +133,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const body = await request.json().catch(() => ({}));
     const tipo = String(body?.tipo ?? "");
     const copy = body?.copy ?? {};
+    const anguloId =
+      typeof body?.angulo_id === "string" && body.angulo_id
+        ? body.angulo_id
+        : null;
 
     if (!TIPOS_VALIDOS.has(tipo)) {
       return NextResponse.json({ error: "Tipo de seccion invalido." }, { status: 400 });
@@ -153,6 +161,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // biblioteca privada (aleatoria, para variar la composicion cada vez) →
     // plantilla activa del tipo → sin referencia (layout descrito en texto).
     const supabase = createAdminSupabaseClient();
+
+    // El angulo se lee de la base por id (con el handle en el filtro), nunca
+    // del body: es texto que entra al prompt del modelo. Su nombre es el
+    // enfoque que dirige la direccion de arte de la seccion.
+    let angulo: AnguloVenta | null = null;
+    if (anguloId) {
+      const { data } = await supabase
+        .from("angulos_venta")
+        .select("nombre, datos")
+        .eq("producto_handle", handle)
+        .eq("id", anguloId)
+        .maybeSingle();
+      if (data) {
+        angulo = { ...normalizarAngulo(data.datos), nombre: data.nombre };
+      }
+    }
+
     const referencias: { mimeType: string; dataB64: string }[] = [];
     let referenciaId: string | null = null;
 
@@ -187,9 +212,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       copy,
       productoTitulo: producto.title,
       hayReferencia,
+      angulo,
     });
 
-    const generada = await generarImagenSeccion({ prompt, referencias });
+    const generada = await generarImagenSeccion({
+      prompt,
+      referencias,
+      aspectRatio: angulo?.proporcion ?? "3:4",
+    });
     const buffer = Buffer.from(generada.dataB64, "base64");
     const { width, height } = medirPNG(buffer, generada.mimeType);
 

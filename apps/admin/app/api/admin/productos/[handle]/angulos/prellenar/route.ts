@@ -75,6 +75,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Se normaliza antes de usarlo: llega del navegador y podria traer
     // cualquier cosa, incluidas fotos de un dominio ajeno.
     const parcial = normalizarAngulo(body?.parcial);
+    // El nombre del angulo no vive en `datos` (es columna propia), pero es
+    // la entrada que dirige todo el brief: se pasa aparte al modelo.
+    const nombreAngulo =
+      typeof body?.nombre === "string" ? body.nombre.trim().slice(0, 120) : "";
 
     const producto = await obtenerProducto(handle);
     if (!producto) {
@@ -128,7 +132,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         productType: producto.productType,
         tags: producto.tags,
       },
-      { apiKey, parcial: parcialEstrategia, precios: precios || null },
+      {
+        apiKey,
+        parcial: parcialEstrategia,
+        precios: precios || null,
+        nombreAngulo: nombreAngulo || null,
+      },
     )) as Record<string, unknown>;
 
     const base: Record<string, unknown> = {

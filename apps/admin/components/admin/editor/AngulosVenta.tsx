@@ -330,7 +330,9 @@ export default function AngulosVenta({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ parcial: datos }),
+          // El nombre del angulo dirige todo el brief: sin el, el modelo
+          // escribe algo generico del producto en vez del enfoque pedido.
+          body: JSON.stringify({ parcial: datos, nombre }),
         },
       );
       const data = await res.json();
