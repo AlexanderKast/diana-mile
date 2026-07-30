@@ -107,6 +107,21 @@ API).
 | `GEMINI_API_KEY` | `apps/admin` | Generación de imágenes (obligatoria) |
 | `GEMINI_IMAGE_MODEL` | `apps/admin` | Opcional: cambiar de modelo sin desplegar |
 | `MISTRAL_API_KEY` | `apps/admin` | Copy y prellenado del ángulo |
+| `BOTCAKE_TEMPLATE_TESTIMONIO` | `apps/shop` y `apps/admin` | Id de la plantilla aprobada `solicitud_testimonio_milito`. Sin ella el recolector queda inerte: no se pide nada y no se captura nada. |
+
+### Encender el recolector de testimonios
+
+1. Crear en Botcake la plantilla `solicitud_testimonio_milito` y esperar su
+   aprobación por Meta (el texto está en
+   `packages/shared/src/botcake/plantillas.ts`).
+2. Copiar su id a `BOTCAKE_TEMPLATE_TESTIMONIO` en ambos entornos.
+3. Confirmar que el webhook de Botcake apunta a la ruta del admin con su
+   token: la captura de la respuesta vive ahí
+   (`apps/admin/lib/webhook-botcake.ts`), antes del agente de IA, para
+   quedarse con el texto crudo de la clienta.
+
+El cron de WhatsApp existente (pg_cron cada 15 min) se encarga del resto:
+busca pedidos entregados hace 3+ días sin solicitud previa, en tandas de 20.
 
 ## Archivos clave
 
