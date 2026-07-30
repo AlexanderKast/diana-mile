@@ -224,3 +224,35 @@ export async function confirmarSubida(
   }
   throw new Error("El archivo no quedo listo a tiempo. Intenta de nuevo.");
 }
+
+/**
+ * Gemelo server-side del flujo del navegador (CampoArchivo): preparar →
+ * POST al bucket → confirmar, pero con el archivo ya en memoria. Lo usa el
+ * generador de secciones-imagen, donde la imagen nace en el servidor y
+ * nunca pasa por el navegador. Devuelve la URL de cdn.shopify.com.
+ */
+export async function subirImagenBuffer(
+  buffer: Buffer,
+  filename: string,
+  mimeType: string,
+  alt: string,
+): Promise<string> {
+  const target = await prepararSubida(filename, mimeType, buffer.length);
+
+  const form = new FormData();
+  // Los parametros firmados van ANTES del campo "file": el bucket de
+  // Shopify (GCS) ignora los que lleguen despues.
+  for (const p of target.parameters) form.append(p.name, p.value);
+  // Se copia a Uint8Array porque el Buffer de Node puede apuntar a un
+  // SharedArrayBuffer y el tipo BlobPart no lo acepta.
+  form.append("file", new Blob([new Uint8Array(buffer)], { type: mimeType }), filename);
+
+  const res = await fetch(target.url, { method: "POST", body: form });
+  if (!res.ok) {
+    throw new Error(
+      `La subida al CDN fallo (${res.status}): ${(await res.text()).slice(0, 300)}`,
+    );
+  }
+
+  return confirmarSubida(target.resourceUrl, mimeType, alt);
+}

@@ -12,6 +12,7 @@ import { PLANTILLAS } from "@diana-mile/shared/landing/plantillas";
 import { Button } from "@diana-mile/shared/ui/Button";
 import { Textarea } from "@diana-mile/shared/ui/Input";
 import { configEditor, type EditorMetadata } from "@/lib/puck/config.client";
+import LandingMagica from "@/components/admin/editor/LandingMagica";
 
 const usePuck = createUsePuck();
 
@@ -87,6 +88,7 @@ export default function EditorVisual({
   const [borradorPendiente, setBorradorPendiente] = useState<Borrador | null>(null);
   const [mostrarIA, setMostrarIA] = useState(false);
   const [mostrarPlantillas, setMostrarPlantillas] = useState(false);
+  const [mostrarMagica, setMostrarMagica] = useState(false);
   const [brief, setBrief] = useState("");
   const [generando, setGenerando] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -237,6 +239,13 @@ export default function EditorVisual({
         )}
         <button
           type="button"
+          onClick={() => setMostrarMagica((v) => !v)}
+          className="mr-2 px-3 py-2 text-sm rounded-[4px] border border-dorado bg-blanco text-carbon hover:bg-crema"
+        >
+          🪄 Landing mágica
+        </button>
+        <button
+          type="button"
           onClick={() => setMostrarPlantillas((v) => !v)}
           className="mr-2 px-3 py-2 text-sm rounded-[4px] border border-arena bg-blanco text-carbon hover:border-dorado"
         >
@@ -283,6 +292,18 @@ export default function EditorVisual({
             Descartar
           </Button>
         </div>
+      )}
+
+      {mostrarMagica && (
+        <LandingMagica
+          productoHandle={productoHandle}
+          onAplicar={(data) => {
+            reemplazarCanvas(data);
+            setMensaje("Landing mágica aplicada — revisa y guarda.");
+            setTimeout(() => setMensaje(null), 5000);
+          }}
+          onCerrar={() => setMostrarMagica(false)}
+        />
       )}
 
       {mostrarPlantillas && (

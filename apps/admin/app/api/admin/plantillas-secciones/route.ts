@@ -52,8 +52,22 @@ export async function POST(request: NextRequest) {
     if (!TIPOS_VALIDOS.has(tipo_seccion)) {
       return NextResponse.json({ error: "Tipo de seccion invalido." }, { status: 400 });
     }
-    if (typeof url_imagen !== "string" || !url_imagen.startsWith("https://")) {
-      return NextResponse.json({ error: "Falta la URL de la imagen." }, { status: 400 });
+    // Solo URLs del CDN de Shopify (a donde sube CampoArchivo). El servidor
+    // despues DESCARGA esta URL para adjuntarla al modelo de imagen: aceptar
+    // hosts arbitrarios seria un SSRF servido en bandeja.
+    let hostValido = false;
+    try {
+      const parsed = new URL(String(url_imagen));
+      hostValido =
+        parsed.protocol === "https:" && parsed.hostname === "cdn.shopify.com";
+    } catch {
+      hostValido = false;
+    }
+    if (!hostValido) {
+      return NextResponse.json(
+        { error: "La imagen debe estar en el CDN de Shopify (subela con el boton de subir)." },
+        { status: 400 },
+      );
     }
 
     const supabase = createAdminSupabaseClient();

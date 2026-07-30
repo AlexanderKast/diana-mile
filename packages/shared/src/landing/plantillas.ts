@@ -26,6 +26,83 @@ function fabrica(
   };
 }
 
+/** Una seccion-imagen generada por "Landing magica". */
+export type SeccionImagen = {
+  tipo: string;
+  url: string;
+  width: number;
+  height: number;
+  titular: string;
+};
+
+/** Orden canonico de las secciones-imagen en la landing final. */
+const ORDEN_SECCIONES = [
+  "hero",
+  "oferta",
+  "beneficios",
+  "comparativa",
+  "autoridad",
+  "uso",
+  "sensorial",
+  "logistica",
+  "faq",
+];
+
+/**
+ * Arma el layout de "Landing magica": las secciones-imagen apiladas en
+ * sangria (borde a borde) con los bloques transaccionales REALES
+ * intercalados — el formulario, el corte de despacho y los botones nunca
+ * son imagenes. Los transaccionales se insertan relativos a las secciones
+ * presentes, asi que generar solo algunas sigue produciendo una landing
+ * completa y comprable.
+ */
+export function landingMagica(imagenes: SeccionImagen[]): LandingPuckData {
+  const porTipo = new Map(imagenes.map((s) => [s.tipo, s]));
+  const bloques: Array<[string, Record<string, unknown>?]> = [
+    // Hero transaccional compacto: titulo + precio + CTA; el formulario se
+    // abre en popup para no competir con la imagen hero generada.
+    ["HeroCompra", { mostrarGaleria: "no", mostrarFormulario: "popup" }],
+  ];
+
+  const imagen = (s: SeccionImagen): [string, Record<string, unknown>] => [
+    "Imagen",
+    {
+      url: s.url,
+      alt: s.titular,
+      ancho: "sangria",
+      proporcion:
+        s.width > 0 && s.height > 0
+          ? Number((s.width / s.height).toFixed(4))
+          : 0.75,
+    },
+  ];
+
+  for (const tipo of ORDEN_SECCIONES) {
+    const seccion = porTipo.get(tipo);
+    if (!seccion) continue;
+
+    // El formulario incrustado va ANTES de la imagen de FAQ (cierre del
+    // funnel); si no hay FAQ, se agrega al final del recorrido.
+    if (tipo === "faq") {
+      bloques.push(["ResumenPedido", { presentacion: "incrustado" }]);
+    }
+
+    bloques.push(imagen(seccion));
+
+    if (tipo === "hero") bloques.push(["CorteDespacho"]);
+    if (tipo === "oferta" || tipo === "comparativa") {
+      bloques.push(["BotonCTA", { etiqueta: "Pedir ahora · Contraentrega" }]);
+    }
+  }
+
+  if (!porTipo.has("faq")) {
+    bloques.push(["ResumenPedido", { presentacion: "incrustado" }]);
+  }
+  bloques.push(["Cierre"]);
+
+  return fabrica(bloques);
+}
+
 export const PLANTILLAS: Plantilla[] = [
   {
     id: "directa",
