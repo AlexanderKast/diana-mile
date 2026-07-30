@@ -15,11 +15,19 @@ checkout real de la tienda.
    reales, personajes, logística. Se guarda y se reutiliza: un ángulo por
    enfoque de mensaje, y cada uno produce una landing distinta para probar
    en pauta.
-2. **Copy** — Mistral escribe el texto EXACTO de cada sección a partir del
-   ángulo. El admin lo revisa y corrige **antes** de gastar imágenes: es la
-   defensa principal contra erratas, porque después el texto queda dibujado.
+2. **Copy** — por cada sección se sortea PRIMERO su referencia de layout de
+   la biblioteca, Gemini la "lee" (visión → texto: cuántos bloques, cuántas
+   palabras caben en cada uno) y esa lectura entra al prompt de Mistral, que
+   escribe el texto EXACTO respetando ese espacio. El admin lo revisa y
+   corrige **antes** de gastar imágenes: es la defensa principal contra
+   erratas, porque después el texto queda dibujado. La referencia sorteada
+   queda fijada (`referencia_id` viaja con cada sección) para el paso
+   siguiente. Sin `GEMINI_API_KEY` o si la lectura de una sección falla, esa
+   sección se queda sin maqueta y el copy cae a las reglas generales de
+   longitud — no bloquea el resto.
 3. **Imagen** — por cada sección, Gemini (Nano Banana Pro) recibe:
-   - una **referencia de layout** tomada al azar de la biblioteca,
+   - la **misma referencia de layout** que ya leyó el paso de copy (no se
+     vuelve a sortear otra),
    - las **fotos reales del producto** (hasta 3),
    - el copy literal entre comillas,
    - la paleta y las reglas de la marca.
@@ -104,8 +112,9 @@ API).
 
 | Variable | Dónde | Para qué |
 |---|---|---|
-| `GEMINI_API_KEY` | `apps/admin` | Generación de imágenes (obligatoria) |
-| `GEMINI_IMAGE_MODEL` | `apps/admin` | Opcional: cambiar de modelo sin desplegar |
+| `GEMINI_API_KEY` | `apps/admin` | Generación de imágenes y lectura de maquetas (obligatoria) |
+| `GEMINI_IMAGE_MODEL` | `apps/admin` | Opcional: cambiar el modelo de imagen sin desplegar |
+| `GEMINI_VISION_MODEL` | `apps/admin` | Opcional: cambiar el modelo que lee las maquetas (default `gemini-2.5-flash`) |
 | `MISTRAL_API_KEY` | `apps/admin` | Copy y prellenado del ángulo |
 | `BOTCAKE_TEMPLATE_TESTIMONIO` | `apps/shop` y `apps/admin` | Id de la plantilla aprobada `solicitud_testimonio_milito`. Sin ella el recolector queda inerte: no se pide nada y no se captura nada. |
 
@@ -125,7 +134,8 @@ busca pedidos entregados hace 3+ días sin solicitud previa, en tandas de 20.
 
 ## Archivos clave
 
-- `apps/admin/lib/gemini-imagen.ts` — cliente REST del modelo de imagen
+- `apps/admin/lib/gemini-imagen.ts` — cliente REST del modelo de imagen y de la lectura de maquetas
+- `apps/admin/lib/referencias-secciones.ts` — descarga y cascada de elección de referencia (compartida entre copy e imagen)
 - `apps/admin/lib/prompt-seccion.ts` — dirección de arte por tipo
 - `apps/admin/app/api/admin/productos/[handle]/{copy-secciones,generar-seccion,angulos}/`
 - `apps/admin/components/admin/editor/{LandingMagica,AngulosVenta}.tsx`

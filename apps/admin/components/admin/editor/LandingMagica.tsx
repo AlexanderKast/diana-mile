@@ -22,6 +22,8 @@ type Copy = {
   cta?: string;
   precio_texto?: string;
   notas_visuales?: string;
+  /** Maqueta que Gemini ya leyo para escribir este copy; generar-seccion reusa esta misma. */
+  referencia_id?: string | null;
 };
 
 type AnguloResumen = {
@@ -146,7 +148,10 @@ export default function LandingMagica({
     }
   }
 
-  async function generarSeccion(copy: Copy): Promise<void> {
+  /** Backoff para el 429 de cuota de Gemini: espera creciente entre reintentos. */
+  const ESPERAS_REINTENTO_MS = [5000, 15000, 30000];
+
+  async function generarSeccion(copy: Copy, intento = 0): Promise<void> {
     setEstados((e) => ({ ...e, [copy.tipo]: { fase: "generando" } }));
     try {
       const res = await fetch(
@@ -158,11 +163,21 @@ export default function LandingMagica({
             tipo: copy.tipo,
             copy,
             angulo_id: anguloId ?? undefined,
+            referencia_id: copy.referencia_id ?? undefined,
           }),
         },
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Fallo la generacion.");
+      if (!res.ok) {
+        // 429 de cuota: se reintenta con espera creciente antes de rendirse.
+        // Sin esto, "concurrencia 3" no evita nada si la cuota del minuto ya
+        // se agoto con las primeras 3 — solo demora el mismo fallo.
+        if (data.reintentable && intento < ESPERAS_REINTENTO_MS.length) {
+          await new Promise((r) => setTimeout(r, ESPERAS_REINTENTO_MS[intento]));
+          return generarSeccion(copy, intento + 1);
+        }
+        throw new Error(data.error ?? "Fallo la generacion.");
+      }
       setEstados((e) => ({
         ...e,
         [copy.tipo]: {

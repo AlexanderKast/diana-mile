@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createAdminSupabaseClient,
   getAdminUser,
@@ -12,6 +11,12 @@ import { generarImagenSeccion, tieneGeminiApiKey } from "@/lib/gemini-imagen";
 import { construirPromptSeccion } from "@/lib/prompt-seccion";
 import { obtenerProducto } from "@/lib/shopify-catalogo";
 import { subirImagenBuffer } from "@/lib/shopify-archivos";
+import {
+  descargarComoB64,
+  elegirReferenciaSeccion,
+  referenciaPorId,
+  type ReferenciaImagen,
+} from "@/lib/referencias-secciones";
 
 export const maxDuration = 120;
 
@@ -31,8 +36,6 @@ const TIPOS_VALIDOS = new Set([
   "faq",
 ]);
 
-const BUCKET_REFERENCIAS = "referencias-secciones";
-
 /** Fotos de referencia que se le mandan al modelo ademas de la plantilla. */
 const MAX_FOTOS_PRODUCTO = 3;
 
@@ -47,62 +50,6 @@ const ANCHO_FALLBACK: Record<string, number> = {
   "3:4": 1536,
   "4:5": 1638,
 };
-
-/** Unico origen del que este endpoint acepta descargar (anti-SSRF). */
-const HOST_CDN = "cdn.shopify.com";
-
-/**
- * Descarga una referencia y la deja en base64. Solo del CDN de Shopify:
- * tanto las fotos del producto como las plantillas viven ahi, y sin esta
- * restriccion el endpoint seria un proxy de peticiones arbitrarias desde
- * el servidor (SSRF hacia la red interna o los metadatos del proveedor).
- * `redirect: "error"` cierra el rodeo de un 302 del CDN hacia otro host.
- */
-async function descargarComoB64(
-  url: string,
-): Promise<{ mimeType: string; dataB64: string }> {
-  let destino: URL;
-  try {
-    destino = new URL(url);
-  } catch {
-    throw new Error("URL de referencia invalida.");
-  }
-  if (destino.protocol !== "https:" || destino.hostname !== HOST_CDN) {
-    throw new Error(
-      `Solo se aceptan imagenes de https://${HOST_CDN} (recibido: ${destino.hostname}).`,
-    );
-  }
-
-  const res = await fetch(url, { redirect: "error" });
-  if (!res.ok) throw new Error(`No se pudo descargar ${url} (${res.status}).`);
-  const buffer = Buffer.from(await res.arrayBuffer());
-  return {
-    mimeType: res.headers.get("content-type")?.split(";")[0] || "image/jpeg",
-    dataB64: buffer.toString("base64"),
-  };
-}
-
-/**
- * Baja una referencia del bucket PRIVADO con el SDK, no por URL: no hay host
- * que validar ni URL firmada que pueda filtrarse, asi que la allowlist
- * anti-SSRF de descargarComoB64 se queda intacta (solo cdn.shopify.com).
- */
-async function descargarReferencia(
-  supabase: SupabaseClient,
-  ruta: string,
-): Promise<{ mimeType: string; dataB64: string }> {
-  const { data, error } = await supabase.storage
-    .from(BUCKET_REFERENCIAS)
-    .download(ruta);
-  if (error || !data) {
-    throw new Error(`No se pudo leer la referencia ${ruta}.`);
-  }
-  const buffer = Buffer.from(await data.arrayBuffer());
-  return {
-    mimeType: data.type || "image/png",
-    dataB64: buffer.toString("base64"),
-  };
-}
 
 /**
  * Dimensiones reales del PNG leyendo el IHDR (los primeros 8 bytes son la
@@ -148,6 +95,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       typeof body?.angulo_id === "string" && body.angulo_id
         ? body.angulo_id
         : null;
+    // La misma referencia que ya leyo Gemini para escribir este copy en
+    // `copy-secciones`: si se sorteara otra aqui, el texto pudo haberse
+    // escrito para una estructura distinta a la que termina dibujandose.
+    const referenciaIdFijada =
+      typeof body?.referencia_id === "string" && body.referencia_id
+        ? body.referencia_id
+        : null;
 
     if (!TIPOS_VALIDOS.has(tipo)) {
       return NextResponse.json({ error: "Tipo de seccion invalido." }, { status: 400 });
@@ -167,10 +121,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // La referencia de layout NUNCA viene del cliente: una URL elegida por
-    // el body convertiria este endpoint en un proxy de descargas. Cascada:
-    // biblioteca privada (aleatoria, para variar la composicion cada vez) →
-    // plantilla activa del tipo → sin referencia (layout descrito en texto).
+    // El cliente solo puede pedir un ID de la biblioteca (referenciaIdFijada),
+    // nunca una URL: una URL elegida por el body convertiria este endpoint en
+    // un proxy de descargas. Sin ID (o si ya no existe), cascada: biblioteca
+    // privada aleatoria → plantilla activa del tipo → sin referencia.
     const supabase = createAdminSupabaseClient();
 
     // El angulo se lee de la base por id (con el handle en el filtro), nunca
@@ -189,27 +143,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const referencias: { mimeType: string; dataB64: string }[] = [];
+    const referencias: ReferenciaImagen[] = [];
     let referenciaId: string | null = null;
 
-    const { data: aleatoria } = await supabase.rpc(
-      "referencia_seccion_aleatoria",
-      { p_tipo: tipo },
-    );
-    const elegida = Array.isArray(aleatoria) ? aleatoria[0] : null;
-
-    if (elegida?.ruta_storage) {
-      referencias.push(await descargarReferencia(supabase, elegida.ruta_storage));
-      referenciaId = elegida.id ?? null;
-    } else {
-      const { data: plantilla } = await supabase
-        .from("plantillas_secciones")
-        .select("url_imagen")
-        .eq("tipo_seccion", tipo)
-        .eq("activa", true)
-        .maybeSingle();
-      if (plantilla?.url_imagen) {
-        referencias.push(await descargarComoB64(plantilla.url_imagen));
+    if (referenciaIdFijada) {
+      const fijada = await referenciaPorId(supabase, referenciaIdFijada);
+      if (fijada) {
+        referencias.push(fijada);
+        referenciaId = referenciaIdFijada;
+      }
+    }
+    // Sin fijada (llamado directo, sin pasar por copy-secciones) o la fijada
+    // ya no existe (se apago o se borro entre el copy y la imagen): cascada
+    // normal, biblioteca aleatoria -> plantilla activa -> sin referencia.
+    if (referencias.length === 0) {
+      const elegida = await elegirReferenciaSeccion(supabase, tipo);
+      if (elegida) {
+        referencias.push(elegida.referencia);
+        referenciaId = elegida.referenciaId;
       }
     }
     const hayReferencia = referencias.length > 0;

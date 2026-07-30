@@ -228,6 +228,7 @@ REGLAS DURAS (violarlas invalida la respuesta):
 - El volumen y la trayectoria se atribuyen a Nu Skin (el fabricante), nunca a la tienda, y solo con cifras que te hayan dado. PROHIBIDO redondear anos de trayectoria o escribir "millones de clientes" si nadie te dio esa cifra.
 - La marca visible es "Milito" o "Milito Life Shop", jamas "Diana".
 - Espanol de Colombia impecable, con todas sus tildes. Cada texto CORTO: los titulares maximo 8 palabras, los bullets maximo 7 palabras — van renderizados en una imagen y el espacio es limitado.
+- Cuando una seccion trae MAQUETA (la lectura de una imagen de referencia real, con sus cantidades de espacio), esa cantidad manda SOBRE la regla general de arriba: si la maqueta pide un titular de 4 a 6 palabras, escribe 4 a 6, no 8. El texto se dibuja despues encima de esa estructura exacta, y si no cabe, se ve mal o se corta.
 
 TONO: respuesta directa, no catalogo. El titular es un GANCHO que le habla a ella de tu a tu sobre su problema concreto — no el nombre de la seccion ("Preguntas frecuentes", "Beneficios" y "Respaldado por X" son titulares muertos). Verbo en segunda persona, especifico y con tension. Los bullets empiezan con verbo o con el beneficio, nunca con relleno. El CTA es una orden clara, no una invitacion tibia. Vende fuerte con lo que SI es verdad: contraentrega, producto original, asesoria — la fuerza sale de la especificidad, jamas de inventar.
 
@@ -281,7 +282,7 @@ ${campos.map(([etiqueta, valor]) => `- ${etiqueta}: ${String(valor).trim()}`).jo
 
 /**
  * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
- * @param {{ brief?: string | null, secciones: string[], precios?: string | null, angulo?: Record<string, unknown> | null }} datos
+ * @param {{ brief?: string | null, secciones: string[], precios?: string | null, angulo?: Record<string, unknown> | null, layoutPorTipo?: Record<string, string> | null }} datos
  */
 export function buildSeccionesUserPrompt(product, datos) {
   const anguloBlock = bloqueAngulo(datos.angulo);
@@ -294,6 +295,7 @@ export function buildSeccionesUserPrompt(product, datos) {
   const seleccion = TIPOS_SECCION_MAGICA.filter((s) =>
     datos.secciones.includes(s.tipo),
   );
+  const layoutPorTipo = datos.layoutPorTipo ?? {};
 
   return `${anguloBlock}Escribe el copy de estas secciones-imagen para la landing del producto:
 
@@ -302,8 +304,15 @@ PRODUCTO:
 - Descripcion: ${product.description || "(sin descripcion)"}
 - Tipo: ${product.productType || "(no especificado)"}
 ${briefBlock}${preciosBlock}
-SECCIONES PEDIDAS (una entrada por cada una):
-${seleccion.map((s) => `- "${s.tipo}": ${s.proposito}`).join("\n")}
+SECCIONES PEDIDAS (una entrada por cada una; cuando trae MAQUETA, esa cantidad de espacio manda sobre las reglas generales de longitud):
+${seleccion
+  .map((s) => {
+    const maqueta = layoutPorTipo[s.tipo]
+      ? `\n  MAQUETA: ${layoutPorTipo[s.tipo]}`
+      : "";
+    return `- "${s.tipo}": ${s.proposito}${maqueta}`;
+  })
+  .join("\n")}
 
 Devuelve JSON con EXACTAMENTE esta forma:
 {
@@ -325,7 +334,7 @@ Todo en espanol con tildes correctas. Sin markdown.`;
 
 /**
  * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
- * @param {{ apiKey: string, model?: string, brief?: string | null, secciones: string[], precios?: string | null, angulo?: Record<string, unknown> | null }} options
+ * @param {{ apiKey: string, model?: string, brief?: string | null, secciones: string[], precios?: string | null, angulo?: Record<string, unknown> | null, layoutPorTipo?: Record<string, string> | null }} options
  */
 export async function generateCopySecciones(product, options) {
   return callMistral({
@@ -338,6 +347,7 @@ export async function generateCopySecciones(product, options) {
       secciones: options.secciones,
       precios: options.precios ?? null,
       angulo: options.angulo ?? null,
+      layoutPorTipo: options.layoutPorTipo ?? null,
     }),
   });
 }

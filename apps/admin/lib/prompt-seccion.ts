@@ -14,6 +14,54 @@ import type { AnguloVenta } from "@diana-mile/shared/landing/angulo";
  * estrellas no autoriza dibujar una.
  */
 
+/**
+ * Zonas del cuerpo que el angulo puede nombrar. Buscarlas por palabra clave
+ * en vez de confiar en que el modelo las infiera del enfoque en prosa: un
+ * angulo de "acne en el rostro" generando una espalda (visto en produccion)
+ * es exactamente lo que esto existe para evitar. La zona detectada se le da
+ * al modelo como un HECHO aparte, no enterrada en el contexto general.
+ */
+const ZONAS_CUERPO: Record<string, string[]> = {
+  rostro: ["rostro", "cara", "facial", "mejilla", "frente", "menton", "mentón"],
+  espalda: ["espalda"],
+  axilas: ["axila", "axilas"],
+  piernas: ["pierna", "piernas", "muslo", "muslos"],
+  brazos: ["brazo", "brazos"],
+  manos: ["mano", "manos"],
+  pies: ["pie", "pies", "talon", "talón"],
+  codos: ["codo", "codos"],
+  rodillas: ["rodilla", "rodillas"],
+  cuello: ["cuello", "escote"],
+  abdomen: ["abdomen", "vientre", "barriga"],
+  gluteos: ["gluteo", "glúteo", "gluteos", "glúteos"],
+};
+
+/**
+ * Detecta la zona del cuerpo de la que habla el angulo, buscando en su
+ * nombre y en los campos de estrategia (donde vive el lenguaje real de la
+ * clienta). Null si el angulo no menciona ninguna zona concreta — la
+ * mayoria de productos no la necesitan (ej. un shampoo, un suplemento).
+ */
+function detectarZonaCuerpo(angulo: AnguloVenta | null | undefined): string | null {
+  if (!angulo) return null;
+  const texto = [
+    angulo.nombre,
+    angulo.angulo_venta,
+    angulo.problema,
+    angulo.avatar,
+    angulo.resultado_deseado,
+  ]
+    .filter((v): v is string => typeof v === "string")
+    .join(" ")
+    .toLowerCase();
+  if (!texto.trim()) return null;
+
+  for (const [zona, palabras] of Object.entries(ZONAS_CUERPO)) {
+    if (palabras.some((p) => texto.includes(p))) return zona;
+  }
+  return null;
+}
+
 export type CopySeccion = {
   titular: string;
   subtitular?: string;
@@ -170,6 +218,16 @@ export function construirPromptSeccion(args: {
   bloques.push(
     `Eres director de arte senior de e-commerce premium. Diseña UNA sección publicitaria vertical de una landing de venta para el producto «${productoTitulo}».`,
   );
+
+  // 1b · Zona del cuerpo (si el angulo la nombra) — HECHO aparte, no
+  // enterrado en el contexto de abajo, y ANTES de las reglas de fidelidad
+  // del producto para que no pierda contra ellas.
+  const zonaCuerpo = detectarZonaCuerpo(angulo);
+  if (zonaCuerpo) {
+    bloques.push(
+      `ZONA DEL CUERPO DE ESTA LANDING: ${zonaCuerpo.toUpperCase()}. Toda piel, escena o situación que dibujes en esta sección tiene que mostrar o hablar de ESA zona, nunca otra — aunque el uso habitual del producto sea en otra parte del cuerpo, la escena se ajusta al enfoque que se pidió, no al uso genérico. PROHIBIDO mostrar una zona distinta (si la zona es "${zonaCuerpo}", nunca dibujes otra).`,
+    );
+  }
 
   // 2 · Uso de la referencia
   // El producto gana a la maqueta: con la maqueta pesando tanto, el modelo
@@ -339,6 +397,11 @@ export function construirPromptSeccion(args: {
     "PROHIBIDO EN PARTICULAR, aunque la maqueta los tenga: estrellas o puntuaciones de calificación, número de reseñas, conteos de clientes (\"más de 10.000 clientas\"), citas de testimonio con o sin nombre, sellos de \"garantía de satisfacción\" o de devolución del dinero, promesas de envío gratis o umbrales de compra, e ingredientes o propiedades que no estén escritos arriba. Nada de eso existe si no te lo entregaron en el copy.",
   ];
   if (PROHIBICIONES_TIPO[tipo]) prohibiciones.push(PROHIBICIONES_TIPO[tipo]);
+  if (zonaCuerpo) {
+    prohibiciones.push(
+      `RECORDATORIO FINAL DE ZONA: esta sección es sobre "${zonaCuerpo}". Antes de terminar, revisa que cualquier piel, escena o situación dibujada muestre esa zona y ninguna otra.`,
+    );
+  }
   bloques.push(prohibiciones.join(" "));
 
   // 9 · Formato
