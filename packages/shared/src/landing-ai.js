@@ -195,3 +195,95 @@ export async function generateCollectionLandingContent(collection, options) {
     userPrompt: buildCollectionUserPrompt(collection),
   });
 }
+
+// ── Landing magica: copy exacto por seccion-imagen ──────────────────────
+//
+// El copy que va RENDERIZADO DENTRO de las imagenes publicitarias (estilo
+// ecom-magic). El modelo de imagen recibe estos textos literales entre
+// comillas y los dibuja caracter por caracter — por eso deben ser cortos,
+// exactos y con ortografia perfecta. Nunca dejar que el modelo de imagen
+// redacte el espanol.
+
+export const TIPOS_SECCION_MAGICA = [
+  { tipo: "hero", proposito: "Gancho emocional: el dolor/deseo principal en una frase potente + el producto como protagonista." },
+  { tipo: "oferta", proposito: "El precio REAL y los packs con su ahorro REAL (se te dan las cifras; no inventes ninguna)." },
+  { tipo: "beneficios", proposito: "3-4 beneficios concretos y creibles, cada uno en pocas palabras." },
+  { tipo: "comparativa", proposito: "Comprar con Milito (contraentrega, original, asesoria por WhatsApp) vs comprar a un vendedor generico. Sobre el MODELO de compra, no sobre resultados." },
+  { tipo: "autoridad", proposito: "Respaldo real: producto original de Nu Skin, fabricante con decadas de trayectoria. El volumen es de Nu Skin, nunca de la tienda." },
+  { tipo: "uso", proposito: "3 pasos simples de uso, numerados, una linea cada uno." },
+  { tipo: "sensorial", proposito: "La experiencia de usarlo: textura, aroma, ritual. PROHIBIDO prometer resultados o antes/despues." },
+  { tipo: "logistica", proposito: "Contraentrega (pagas al recibir), envio 24-72h, y la garantia real: llega malo o no funciona, se repone sin costo." },
+  { tipo: "faq", proposito: "4 preguntas frecuentes MUY cortas con respuestas de una linea (desconfianza, envio, pago, tipo de piel)." },
+];
+
+export const SECCIONES_SYSTEM_PROMPT = `Eres un copywriter de respuesta directa experto en e-commerce contraentrega colombiano (tienda "Milito Life Shop", productos originales de Nu Skin). Escribes el texto EXACTO que ira dibujado dentro de imagenes publicitarias verticales de una landing.
+
+REGLAS DURAS (violarlas invalida la respuesta):
+- PROHIBIDO: escasez o urgencia fabricada (contadores, "solo quedan X", "solo hoy"), testimonios o personas inventadas, resenas falsas, cifras de ventas inventadas, claims de salud o promesas de resultado sobre cosmetica, precios o descuentos que no esten en los datos que se te dan.
+- La unica urgencia permitida es el corte real de despacho (pide hoy y sale hoy/manana).
+- El volumen y la trayectoria se atribuyen a Nu Skin (el fabricante), nunca a la tienda.
+- La marca visible es "Milito" o "Milito Life Shop", jamas "Diana".
+- Espanol de Colombia impecable, con todas sus tildes. Cada texto CORTO: los titulares maximo 8 palabras, los bullets maximo 7 palabras — van renderizados en una imagen y el espacio es limitado.
+
+Respondes SIEMPRE y UNICAMENTE con un objeto JSON valido, sin markdown.`;
+
+/**
+ * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
+ * @param {{ brief?: string | null, secciones: string[], precios?: string | null }} datos
+ */
+export function buildSeccionesUserPrompt(product, datos) {
+  const briefBlock = datos.brief
+    ? `\nBRIEF (lenguaje de audiencia, tiene prioridad):\n"""\n${datos.brief.trim()}\n"""\n`
+    : "";
+  const preciosBlock = datos.precios
+    ? `\nPRECIOS REALES (usa SOLO estas cifras, formateadas como $89.700):\n${datos.precios}\n`
+    : "";
+  const seleccion = TIPOS_SECCION_MAGICA.filter((s) =>
+    datos.secciones.includes(s.tipo),
+  );
+
+  return `Escribe el copy de estas secciones-imagen para la landing del producto:
+
+PRODUCTO:
+- Titulo: ${product.title}
+- Descripcion: ${product.description || "(sin descripcion)"}
+- Tipo: ${product.productType || "(no especificado)"}
+${briefBlock}${preciosBlock}
+SECCIONES PEDIDAS (una entrada por cada una):
+${seleccion.map((s) => `- "${s.tipo}": ${s.proposito}`).join("\n")}
+
+Devuelve JSON con EXACTAMENTE esta forma:
+{
+  "secciones": [
+    {
+      "tipo": "hero",
+      "titular": "string corto y potente",
+      "subtitular": "string opcional, una linea",
+      "bullets": ["maximo 4, cortos"],
+      "cta": "texto de boton opcional",
+      "precio_texto": "solo en 'oferta', con las cifras reales",
+      "notas_visuales": "direccion de arte en una frase: que mostrar, que ambiente"
+    }
+  ]
+}
+
+Todo en espanol con tildes correctas. Sin markdown.`;
+}
+
+/**
+ * @param {{ title: string, description?: string, productType?: string, tags?: string[] }} product
+ * @param {{ apiKey: string, model?: string, brief?: string | null, secciones: string[], precios?: string | null }} options
+ */
+export async function generateCopySecciones(product, options) {
+  return callMistral({
+    apiKey: options.apiKey,
+    model: options.model,
+    maxTokens: 3072,
+    systemPrompt: SECCIONES_SYSTEM_PROMPT,
+    userPrompt: buildSeccionesUserPrompt(product, {
+      brief: options.brief ?? null,
+      secciones: options.secciones,
+      precios: options.precios ?? null,
+    }),
+  });
+}
