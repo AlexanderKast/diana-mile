@@ -94,7 +94,7 @@ function tiempoDesde(iso: string): string {
   return `hace ${dias}d`;
 }
 
-type PanelAccion = "confirmar" | "envio" | "entrega" | null;
+type PanelAccion = "confirmar" | "envio" | "entrega" | "cancelar" | null;
 
 export default function OrdersTable({ pedidos }: OrdersTableProps) {
   const [filtroEstado, setFiltroEstado] = useState<EstadoPedido | "todos">("todos");
@@ -119,6 +119,7 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
   const [numeroGuia, setNumeroGuia] = useState("");
   const [costoEnvio, setCostoEnvio] = useState("");
   const [motivoDevolucion, setMotivoDevolucion] = useState("");
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
 
   const pedidosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -163,6 +164,7 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
     setNumeroGuia("");
     setCostoEnvio("");
     setMotivoDevolucion("");
+    setMotivoCancelacion("");
   };
 
   const actualizarPedidoLocal = (pedidoActualizado: Pedido) => {
@@ -234,6 +236,29 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
       actualizarPedidoLocal(json.pedido);
     } catch (e) {
       setErrorAccion(e instanceof Error ? e.message : "No se pudo asignar el envío.");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const handleCancelar = async (id: string) => {
+    setEnviando(true);
+    setErrorAccion(null);
+    try {
+      const res = await fetch(`/api/admin/pedidos/${id}/cancelar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo: motivoCancelacion.trim() || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error");
+      setPedidosLocal((prev) =>
+        prev.map((pedido) => (pedido.id === id ? { ...pedido, estado: "cancelado" } : pedido))
+      );
+      setFilaAbierta(null);
+      setPanelAccion(null);
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : "No se pudo cancelar el pedido.");
     } finally {
       setEnviando(false);
     }
@@ -392,42 +417,53 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
                         <span className="block text-xs text-ceniza">{tiempoDesde(pedido.created_at)}</span>
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
-                        {pedido.estado === "pendiente" && (
-                          <Button
-                            variant="secondary"
-                            className="!min-h-0 !py-1.5 !px-3 text-xs"
-                            onClick={() => abrirFila(pedido, "confirmar")}
-                          >
-                            Confirmar
-                          </Button>
-                        )}
-                        {pedido.estado === "confirmado" && (
-                          <Button
-                            variant="secondary"
-                            className="!min-h-0 !py-1.5 !px-3 text-xs"
-                            onClick={() => abrirFila(pedido, "envio")}
-                          >
-                            Asignar envío
-                          </Button>
-                        )}
-                        {pedido.estado === "enviado" && (
-                          <Button
-                            variant="secondary"
-                            className="!min-h-0 !py-1.5 !px-3 text-xs"
-                            onClick={() => abrirFila(pedido, "entrega")}
-                          >
-                            Actualizar entrega
-                          </Button>
-                        )}
-                        {["entregado", "devuelto", "cancelado", "fraude"].includes(pedido.estado) && (
-                          <button
-                            type="button"
-                            onClick={() => abrirFila(pedido)}
-                            className="text-xs text-morado underline underline-offset-2"
-                          >
-                            Ver detalle
-                          </button>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {pedido.estado === "pendiente" && (
+                            <Button
+                              variant="secondary"
+                              className="!min-h-0 !py-1.5 !px-3 text-xs"
+                              onClick={() => abrirFila(pedido, "confirmar")}
+                            >
+                              Confirmar
+                            </Button>
+                          )}
+                          {pedido.estado === "confirmado" && (
+                            <Button
+                              variant="secondary"
+                              className="!min-h-0 !py-1.5 !px-3 text-xs"
+                              onClick={() => abrirFila(pedido, "envio")}
+                            >
+                              Asignar envío
+                            </Button>
+                          )}
+                          {pedido.estado === "enviado" && (
+                            <Button
+                              variant="secondary"
+                              className="!min-h-0 !py-1.5 !px-3 text-xs"
+                              onClick={() => abrirFila(pedido, "entrega")}
+                            >
+                              Actualizar entrega
+                            </Button>
+                          )}
+                          {!["entregado", "devuelto", "cancelado", "fraude"].includes(pedido.estado) && (
+                            <button
+                              type="button"
+                              onClick={() => abrirFila(pedido, "cancelar")}
+                              className="text-xs text-error underline underline-offset-2"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                          {["entregado", "devuelto", "cancelado", "fraude"].includes(pedido.estado) && (
+                            <button
+                              type="button"
+                              onClick={() => abrirFila(pedido)}
+                              className="text-xs text-morado underline underline-offset-2"
+                            >
+                              Ver detalle
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                     {abierta && (
@@ -472,12 +508,16 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
                                 onChange={(e) => handleEstadoChange(pedido.id, e.target.value as EstadoPedido)}
                                 className="min-h-[44px] rounded-[2px] border border-arena bg-blanco px-3 py-2 text-sm text-carbon focus:outline-none focus:border-dorado disabled:opacity-50"
                               >
-                                {ESTADOS.filter((estado) => estado.value !== "todos").map((estado) => (
+                                {ESTADOS.filter(
+                                  (estado) => estado.value !== "todos" && estado.value !== "cancelado",
+                                ).map((estado) => (
                                   <option key={estado.value} value={estado.value}>
                                     {estado.label}
                                   </option>
                                 ))}
                               </select>
+                              {/* Cancelar tiene su propio boton/panel abajo: solo asi
+                                  se sincroniza con Shopify y se avisa al cliente. */}
                             </div>
                           </div>
 
@@ -573,6 +613,31 @@ export default function OrdersTable({ pedidos }: OrdersTableProps) {
                               >
                                 Registrar devolución
                               </Button>
+                            </div>
+                          )}
+
+                          {panelAccion === "cancelar" && (
+                            <div className="border-t border-arena/60 pt-4 flex flex-wrap items-end gap-3">
+                              <label className="text-sm flex-1 min-w-[240px]">
+                                <span className="block text-xs text-ceniza uppercase mb-1">Motivo (opcional)</span>
+                                <input
+                                  type="text"
+                                  value={motivoCancelacion}
+                                  onChange={(e) => setMotivoCancelacion(e.target.value)}
+                                  className="min-h-[44px] w-full rounded-[2px] border border-arena bg-blanco px-3 py-2 text-sm text-carbon focus:outline-none focus:border-dorado"
+                                />
+                              </label>
+                              <Button
+                                variant="secondary"
+                                disabled={enviando}
+                                onClick={() => handleCancelar(pedido.id)}
+                                className="!border-error/40 !text-error hover:!bg-error/5"
+                              >
+                                Confirmar cancelación
+                              </Button>
+                              <p className="w-full text-xs text-ceniza">
+                                Cancela en Shopify, deja nota y avisa al cliente por WhatsApp.
+                              </p>
                             </div>
                           )}
                         </td>
