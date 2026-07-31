@@ -27,6 +27,32 @@ function LockIcon({ className }: { className?: string }) {
   );
 }
 
+function EnvioGratisBanner() {
+  const { selectedVariant, selectedIsNuskin, discountApplied, pricing } = useOrderSheet();
+  if (selectedIsNuskin || !selectedVariant) return null;
+
+  const precioBase = parseFloat(selectedVariant.price);
+  const precioConDescuento = discountApplied
+    ? precioBase * (1 - pricing.discountPercent / 100)
+    : precioBase;
+  const faltante = pricing.envioGratisDesde - precioConDescuento;
+
+  if (faltante <= 0) {
+    return (
+      <div className="rounded-2xl bg-morado px-4 py-3 text-center text-sm font-semibold text-blanco">
+        🎉 ¡Envío GRATIS aplicado en tu pedido!
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border-[1.5px] border-dorado bg-crema px-4 py-3 text-center text-sm font-medium text-carbon">
+      🚚 Envío GRATIS en compras mayores a {formatCOP(pricing.envioGratisDesde)}.{" "}
+      Te faltan <span className="font-semibold text-dorado-oscuro">{formatCOP(faltante)}</span>.
+    </div>
+  );
+}
+
 function OrderSummary() {
   const { product, selectedVariant } = useOrderSheet();
   if (!selectedVariant) return null;
@@ -86,6 +112,8 @@ function SheetContent({ compact }: { compact: boolean }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <EnvioGratisBanner />
+
       <div>
         <h3 className="font-display text-xl text-carbon mb-2">Resumen del pedido</h3>
         <OrderSummary />
