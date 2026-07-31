@@ -109,19 +109,26 @@ export function InstallBanner({ activo = true }: { activo?: boolean }) {
     }
   }, []);
 
+  // Espera un poco antes de ofrecerlo: aparecer de una en el primer pintado
+  // se siente a interrupcion. Dar unos segundos para que decida entrar es
+  // menos invasivo sin dejar de ofrecerlo.
+  const RETRASO_MS = 4000;
+
   useEffect(() => {
     if (!activo || esStandalone() || estaDismisseado()) return;
 
     if (esIOS()) {
-      setMostrarIOS(true);
-      setVisible(true);
-      return;
+      const t = setTimeout(() => {
+        setMostrarIOS(true);
+        setVisible(true);
+      }, RETRASO_MS);
+      return () => clearTimeout(t);
     }
 
     function onBeforeInstallPrompt(e: Event) {
       e.preventDefault();
       setPromptEvent(e as BeforeInstallPromptEvent);
-      setVisible(true);
+      setTimeout(() => setVisible(true), RETRASO_MS);
     }
 
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
@@ -170,8 +177,11 @@ export function InstallBanner({ activo = true }: { activo?: boolean }) {
     dismissear();
   }
 
+  // No-sticky a proposito: aparece una vez, en su lugar, y se va con el
+  // scroll — un banner pegado al header en toda la visita se siente a
+  // interrupcion permanente, no a una oferta puntual.
   return (
-    <div className="sticky top-[60px] z-30 flex items-center justify-between gap-3 border-b border-arena bg-crema px-4 py-2.5 text-sm">
+    <div className="animate-fade-in-up mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-xl border border-arena bg-crema px-4 py-2.5 text-sm sm:mx-5 sm:mt-3 md:mx-6">
       {mostrarIOS ? (
         <p className="text-carbon-suave">
           Instala Milito Life Shop: toca{" "}

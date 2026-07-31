@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { monogramaMilito } from "@/lib/monograma-milito";
+import { iconoMilito } from "@/lib/logo-milito";
 
 /**
  * apple-touch-icon: lo que iOS usa al agregar la tienda a la pantalla de
@@ -10,5 +10,5 @@ export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
 export default function AppleIcon() {
-  return new ImageResponse(monogramaMilito(180), size);
+  return new ImageResponse(iconoMilito(180), size);
 }

@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { monogramaMilito } from "@/lib/monograma-milito";
+import { iconoMilito } from "@/lib/logo-milito";
 
 /**
  * Icono de marca para PWA/favicon. Sin datos ni parametros dinamicos, asi
@@ -7,9 +7,9 @@ import { monogramaMilito } from "@/lib/monograma-milito";
  * en produccion — no se regenera por visita. Solo en `next dev` se ve
  * lento, porque ahi no hay cache.
  *
- * El monograma deja un margen (safe zone) alrededor de la "M": Android
+ * El 60% de tamano deja margen (safe zone) alrededor de la marca: Android
  * recorta el icono en circulo/squircle segun el launcher, y sin margen la
- * letra queda guillotinada en esas mascaras.
+ * gota queda guillotinada en esas mascaras.
  */
 export function generateImageMetadata() {
   return [
@@ -22,5 +22,5 @@ export default async function Icon({ id }: { id: Promise<string | number> }) {
   const iconId = await id;
   const size = iconId === "512" ? 512 : 192;
 
-  return new ImageResponse(monogramaMilito(size), { width: size, height: size });
+  return new ImageResponse(iconoMilito(size), { width: size, height: size });
 }

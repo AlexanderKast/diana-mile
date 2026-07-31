@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCollections } from "@/lib/shopify";
 import { EnlaceWhatsApp } from "@/components/site/EnlaceWhatsApp";
 import { AjustesMovil } from "@/components/site/AjustesMovil";
+import { MarcaGota } from "@/lib/logo-milito";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -38,10 +39,13 @@ export async function SiteHeader() {
         <div className="flex shrink-0 items-center gap-1">
           <Link
             href="/"
-            className="whitespace-nowrap font-display text-[21px] text-carbon sm:text-2xl"
+            className="flex items-center gap-2 whitespace-nowrap"
             aria-label="Milito Life Shop inicio"
           >
-            Milito Life Shop
+            <MarcaGota size={26} colores={{ fondo: "#FAFAF8" }} />
+            <span className="font-display text-[21px] text-carbon sm:text-2xl">
+              Milito Life Shop
+            </span>
           </Link>
           {/* Solo en movil, junto al logo: es la unica via para activar las
               notificaciones despues, si se dijo que no al instalar. */}

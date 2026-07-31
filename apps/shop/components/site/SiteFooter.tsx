@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCollections } from "@/lib/shopify";
 import { EnlaceWhatsApp } from "@/components/site/EnlaceWhatsApp";
+import { MarcaGota } from "@/lib/logo-milito";
 
 const LINKTREE_URL = process.env.NEXT_PUBLIC_LINKTREE_URL || "/";
 
@@ -32,8 +33,14 @@ export async function SiteFooter() {
           {/* Marca: ocupa el ancho completo en movil para que el nombre no
               compita con las listas de enlaces. */}
           <div className="col-span-2">
-            <p className="font-display text-[22px] leading-none text-carbon sm:text-[26px]">
-              Milito Life Shop
+            <div className="flex items-center gap-2.5">
+              <MarcaGota size={30} colores={{ fondo: "#FAFAF8" }} />
+              <p className="font-display text-[22px] leading-none text-carbon sm:text-[26px]">
+                Milito Life Shop
+              </p>
+            </div>
+            <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-morado">
+              Wellness boutique · Colombia
             </p>
             <div className="linea-dorada mt-4 w-12" />
             <p className="mt-4 max-w-xs text-[13.5px] leading-relaxed text-carbon-suave">
