@@ -66,8 +66,8 @@ function NuskinPanel() {
     <div className="flex flex-col gap-3 rounded-2xl border border-arena bg-crema p-4">
       <h3 className="font-display text-lg text-carbon">¿Eres distribuidora Nu Skin?</h3>
       <p className="text-sm text-carbon-suave">
-        Compra a precio de distribuidora directamente en la plataforma oficial de Nu Skin y
-        acumula tus puntos con nuestro link.
+        Compra directo en Nu Skin desde 1 unidad a precio mayorista y
+        conviértete en distribuidor independiente y acumula puntos.
       </p>
       <Button
         variant="secondary"

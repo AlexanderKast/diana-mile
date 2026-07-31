@@ -66,6 +66,20 @@ function unitPriceLabel(variant: ProductVariant, pack: PackSize) {
   return `${formatCOP(unit)} por unidad`;
 }
 
+/**
+ * % de descuento derivado del compareAtPrice REAL de Shopify — nunca un
+ * numero inventado. Si no hay compareAtPrice o no es mayor al precio, no
+ * hay badge.
+ */
+function discountPercent(variant: ProductVariant): number | null {
+  if (!variant.compareAtPrice) return null;
+  const compare = parseFloat(variant.compareAtPrice);
+  const price = parseFloat(variant.price);
+  if (!Number.isFinite(compare) || !Number.isFinite(price) || compare <= price)
+    return null;
+  return Math.round((1 - price / compare) * 100);
+}
+
 type VariantSelectorProps = {
   compact?: boolean;
 };
@@ -231,6 +245,11 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
                   >
                     {formatCOP(variant.price)}
                   </span>
+                  {discountPercent(variant) !== null && (
+                    <span className="rounded-md bg-morado px-1.5 py-0.5 text-[10px] font-bold text-blanco">
+                      -{discountPercent(variant)}%
+                    </span>
+                  )}
                 </span>
               </div>
 
@@ -287,7 +306,8 @@ export function VariantSelector({ compact = false }: VariantSelectorProps) {
             {!compact && (
               <div className="pl-8">
                 <span className="text-xs text-ceniza">
-                  Precio distribuidora · Acumulas puntos Nu Skin
+                  Desde 1 unidad a precio mayorista · Conviértete en
+                  distribuidor independiente y acumula puntos
                 </span>
               </div>
             )}
