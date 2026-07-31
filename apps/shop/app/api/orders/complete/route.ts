@@ -125,8 +125,13 @@ export async function POST(request: NextRequest) {
       const precioConDescuento = descuentoAplicado
         ? precioBase * (1 - pricing.discountPercent / 100)
         : precioBase;
+      // Mismo umbral que ya decidio /api/orders/draft al armar la orden en
+      // Shopify — se recalcula aqui para que precio_total (lo que cobra el
+      // mensajero) incluya el mismo cargo de envio, nunca lo que mande el cliente.
+      const envioEstandarAplica = precioConDescuento < pricing.envioGratisDesde;
       precioTotal =
         precioConDescuento +
+        (envioEstandarAplica ? parseFloat(pricing.envioEstandarPrecio) : 0) +
         (envioPrioritario ? parseFloat(pricing.envioPrioritarioPrecio) : 0);
 
       // El costo que rige HOY, congelado en el pedido. Si se consultara

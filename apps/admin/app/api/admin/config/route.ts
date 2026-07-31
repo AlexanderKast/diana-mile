@@ -16,6 +16,8 @@ const CLAVES_PERMITIDAS = new Set([
   "descuento_popup_activo",
   "envio_prioritario_precio",
   "envio_prioritario_label",
+  "envio_estandar_precio",
+  "envio_gratis_desde",
   "pwa_banner_activo",
   "comunidad_whatsapp_link",
 ]);

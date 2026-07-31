@@ -8,7 +8,10 @@ import {
 } from "@diana-mile/shared/types";
 import { splitFullName } from "@diana-mile/shared/utils";
 import { createPublicClient } from "@diana-mile/shared/supabase/client";
-import { ENVIO_PRIORITARIO_VARIANT_ID } from "@/lib/pricing";
+import {
+  ENVIO_ESTANDAR_VARIANT_ID,
+  ENVIO_PRIORITARIO_VARIANT_ID,
+} from "@/lib/pricing";
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const STOREFRONT_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
@@ -907,6 +910,9 @@ export type CreateOrderInput = {
   lng?: number | null;
   discountPercent?: number;
   envioPrioritario?: boolean;
+  /** Decidido en el servidor comparando el precio real contra el umbral de
+   * envio gratis — nunca lo manda el cliente. */
+  envioEstandar?: boolean;
 };
 
 /**
@@ -1058,6 +1064,9 @@ export async function upsertCheckoutDraftOrder(
     ];
     if (input.envioPrioritario) {
       lineItems.push({ variant_id: ENVIO_PRIORITARIO_VARIANT_ID, quantity: 1 });
+    }
+    if (input.envioEstandar) {
+      lineItems.push({ variant_id: ENVIO_ESTANDAR_VARIANT_ID, quantity: 1 });
     }
 
     const payload = {

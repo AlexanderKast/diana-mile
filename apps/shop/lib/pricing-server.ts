@@ -1,6 +1,8 @@
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
 import {
   DISCOUNT_PERCENT,
+  ENVIO_ESTANDAR_PRECIO,
+  ENVIO_GRATIS_DESDE,
   ENVIO_PRIORITARIO_LABEL,
   ENVIO_PRIORITARIO_PRECIO,
 } from "@/lib/pricing";
@@ -10,6 +12,10 @@ export type PricingConfig = {
   discountPopupActivo: boolean;
   envioPrioritarioPrecio: string;
   envioPrioritarioLabel: string;
+  /** Cargo de envio estandar cuando el pedido no alcanza envioGratisDesde. */
+  envioEstandarPrecio: string;
+  /** Subtotal minimo (con descuento ya aplicado) para envio gratis. */
+  envioGratisDesde: number;
   pwaBannerActivo: boolean;
   /**
    * Tope de valor que el mensajero puede recibir en efectivo por un pedido
@@ -33,6 +39,8 @@ const DEFAULTS: PricingConfig = {
   discountPopupActivo: true,
   envioPrioritarioPrecio: ENVIO_PRIORITARIO_PRECIO,
   envioPrioritarioLabel: ENVIO_PRIORITARIO_LABEL,
+  envioEstandarPrecio: ENVIO_ESTANDAR_PRECIO,
+  envioGratisDesde: Number(ENVIO_GRATIS_DESDE),
   pwaBannerActivo: true,
   codTopePedido: 400000,
 };
@@ -42,6 +50,8 @@ const CLAVES = [
   "descuento_popup_activo",
   "envio_prioritario_precio",
   "envio_prioritario_label",
+  "envio_estandar_precio",
+  "envio_gratis_desde",
   "pwa_banner_activo",
   "cod_tope_pedido",
 ] as const;
@@ -53,6 +63,12 @@ const CLAVES = [
 function topeValido(valor: string | null | undefined): number {
   const n = Number(valor);
   return Number.isFinite(n) && n > 0 ? n : DEFAULTS.codTopePedido;
+}
+
+/** Mismo resguardo que topeValido: un umbral mal escrito cae al default. */
+function umbralValido(valor: string | null | undefined): number {
+  const n = Number(valor);
+  return Number.isFinite(n) && n >= 0 ? n : DEFAULTS.envioGratisDesde;
 }
 
 /**
@@ -90,6 +106,9 @@ export async function getPricingConfig(): Promise<PricingConfig> {
       envioPrioritarioLabel:
         valores.get("envio_prioritario_label") ||
         DEFAULTS.envioPrioritarioLabel,
+      envioEstandarPrecio:
+        valores.get("envio_estandar_precio") || DEFAULTS.envioEstandarPrecio,
+      envioGratisDesde: umbralValido(valores.get("envio_gratis_desde")),
       pwaBannerActivo: valores.has("pwa_banner_activo")
         ? valores.get("pwa_banner_activo") !== "false"
         : DEFAULTS.pwaBannerActivo,

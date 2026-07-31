@@ -160,12 +160,6 @@ function TruckIcon({ className }: { className?: string }) {
   );
 }
 
-const MINI_BADGES = [
-  { icon: IconPagoMini, label: "Paga al recibir" },
-  { icon: IconEnvioMini, label: "Envío gratis" },
-  { icon: IconSatisfaccionMini, label: "Satisfacción garantizada" },
-];
-
 export function CODForm({ product, selectedVariant }: CODFormProps) {
   const { discountApplied, markOrderCompleted, pricing } = useOrderSheet();
   const [step, setStep] = useState<1 | 2>(1);
@@ -194,9 +188,18 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
   const precioConDescuento = discountApplied
     ? precioBase * (1 - pricing.discountPercent / 100)
     : precioBase;
+  // Mismo umbral que decide el servidor (nunca al reves): esto solo pinta
+  // el desglose, /api/orders/draft y /api/orders/complete recalculan igual
+  // a partir del precio real de la variante.
+  const envioEstandarAplica = precioConDescuento < pricing.envioGratisDesde;
+  const envioEstandarMonto = envioEstandarAplica
+    ? parseFloat(pricing.envioEstandarPrecio)
+    : 0;
+  const envioPrioritarioMonto = envioPrioritario
+    ? parseFloat(pricing.envioPrioritarioPrecio)
+    : 0;
   const precioTotal =
-    precioConDescuento +
-    (envioPrioritario ? parseFloat(pricing.envioPrioritarioPrecio) : 0);
+    precioConDescuento + envioEstandarMonto + envioPrioritarioMonto;
 
   const ciudadesSugeridas = departamento
     ? (CIUDADES_POR_DEPARTAMENTO[departamento] ?? [])
@@ -645,6 +648,11 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
             placeholder="Calle, numero, apto..."
           />
 
+          <p className="text-xs text-ceniza">
+            🚚 Si la dirección está incompleta no será posible despachar tu
+            pedido.
+          </p>
+
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
@@ -711,18 +719,50 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
             </span>
           </label>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-            {MINI_BADGES.map(({ icon: Icon, label }) => (
-              <span
-                key={label}
-                className="flex items-center gap-1.5 text-[11px] text-carbon-suave"
-              >
-                <span className="text-dorado-oscuro">
-                  <Icon />
-                </span>
-                {label}
+          <div className="flex flex-col gap-1.5 rounded-2xl border border-arena bg-crema p-3.5 text-sm">
+            <div className="flex items-center justify-between text-carbon-suave">
+              <span>Subtotal</span>
+              <span>{formatCOP(precioConDescuento)}</span>
+            </div>
+            <div className="flex items-center justify-between text-carbon-suave">
+              <span>Envío</span>
+              <span className={envioEstandarAplica ? undefined : "text-dorado-oscuro font-medium"}>
+                {envioEstandarAplica ? formatCOP(envioEstandarMonto) : "Gratis"}
               </span>
-            ))}
+            </div>
+            {envioPrioritario && (
+              <div className="flex items-center justify-between text-carbon-suave">
+                <span>{pricing.envioPrioritarioLabel}</span>
+                <span>{formatCOP(envioPrioritarioMonto)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between border-t border-arena pt-1.5 font-semibold text-carbon">
+              <span>Total</span>
+              <span>{formatCOP(precioTotal)}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+            <span className="flex items-center gap-1.5 text-[11px] text-carbon-suave">
+              <span className="text-dorado-oscuro">
+                <IconPagoMini />
+              </span>
+              Paga al recibir
+            </span>
+            <span className="flex items-center gap-1.5 text-[11px] text-carbon-suave">
+              <span className="text-dorado-oscuro">
+                <IconEnvioMini />
+              </span>
+              {envioEstandarAplica
+                ? `Envío ${formatCOP(pricing.envioEstandarPrecio)}`
+                : "Envío gratis"}
+            </span>
+            <span className="flex items-center gap-1.5 text-[11px] text-carbon-suave">
+              <span className="text-dorado-oscuro">
+                <IconSatisfaccionMini />
+              </span>
+              Satisfacción garantizada
+            </span>
           </div>
         </div>
       )}
@@ -734,6 +774,13 @@ export function CODForm({ product, selectedVariant }: CODFormProps) {
           <div className="flex flex-col gap-2 rounded-2xl border border-arena bg-crema p-4 text-sm text-carbon">
             <p>
               ✓ {product.title} — {selectedVariant.title}
+            </p>
+            <p>
+              ✓ Subtotal: {formatCOP(precioConDescuento)}
+            </p>
+            <p>
+              ✓ Envío:{" "}
+              {envioEstandarAplica ? formatCOP(envioEstandarMonto) : "Gratis"}
             </p>
             <p>
               ✓ Total:{" "}

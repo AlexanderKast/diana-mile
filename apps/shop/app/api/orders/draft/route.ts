@@ -106,6 +106,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Mismo precio real que ya se leyo arriba para el tope COD — nunca se
+    // confia en si el cliente dice que aplica envio gratis o no.
+    const precioConDescuento = descuentoAplicado
+      ? valorLinea * (1 - pricing.discountPercent / 100)
+      : valorLinea;
+    const envioEstandarAplica = precioConDescuento < pricing.envioGratisDesde;
+
     const result = await upsertCheckoutDraftOrder(
       {
         variantId,
@@ -123,6 +130,7 @@ export async function POST(request: NextRequest) {
           ? pricing.discountPercent
           : undefined,
         envioPrioritario: Boolean(envioPrioritario),
+        envioEstandar: envioEstandarAplica,
       },
       draftOrderId || null,
     );

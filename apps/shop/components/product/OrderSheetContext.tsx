@@ -12,6 +12,8 @@ import {
 import type { Product, ProductVariant } from "@diana-mile/shared/types";
 import {
   DISCOUNT_PERCENT,
+  ENVIO_ESTANDAR_PRECIO,
+  ENVIO_GRATIS_DESDE,
   ENVIO_PRIORITARIO_LABEL,
   ENVIO_PRIORITARIO_PRECIO,
 } from "@/lib/pricing";
@@ -26,6 +28,8 @@ export type OrderSheetPricing = {
   discountPopupActivo: boolean;
   envioPrioritarioPrecio: string;
   envioPrioritarioLabel: string;
+  envioEstandarPrecio: string;
+  envioGratisDesde: number;
 };
 
 const PRICING_DEFAULT: OrderSheetPricing = {
@@ -33,6 +37,8 @@ const PRICING_DEFAULT: OrderSheetPricing = {
   discountPopupActivo: true,
   envioPrioritarioPrecio: ENVIO_PRIORITARIO_PRECIO,
   envioPrioritarioLabel: ENVIO_PRIORITARIO_LABEL,
+  envioEstandarPrecio: ENVIO_ESTANDAR_PRECIO,
+  envioGratisDesde: Number(ENVIO_GRATIS_DESDE),
 };
 
 type OrderSheetContextValue = {

@@ -52,6 +52,8 @@ export default function ConfiguracionPage() {
   const [envioLabel, setEnvioLabel] = useState(
     "Envío Prioritario + Seguro Adicional",
   );
+  const [envioEstandarPrecio, setEnvioEstandarPrecio] = useState("12000");
+  const [envioGratisDesde, setEnvioGratisDesde] = useState("100000");
   const [pwaBannerActivo, setPwaBannerActivo] = useState(true);
   const [comunidadWhatsappLink, setComunidadWhatsappLink] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -89,6 +91,12 @@ export default function ConfiguracionPage() {
         const envioLabelFila = filas.find(
           (fila) => fila.clave === "envio_prioritario_label",
         );
+        const envioEstandarPrecioFila = filas.find(
+          (fila) => fila.clave === "envio_estandar_precio",
+        );
+        const envioGratisDesdeFila = filas.find(
+          (fila) => fila.clave === "envio_gratis_desde",
+        );
         const pwaBannerFila = filas.find(
           (fila) => fila.clave === "pwa_banner_activo",
         );
@@ -106,6 +114,10 @@ export default function ConfiguracionPage() {
           setDescuentoActivo(descuentoAct.valor !== "false");
         if (envioPrecioFila?.valor) setEnvioPrecio(envioPrecioFila.valor);
         if (envioLabelFila?.valor) setEnvioLabel(envioLabelFila.valor);
+        if (envioEstandarPrecioFila?.valor)
+          setEnvioEstandarPrecio(envioEstandarPrecioFila.valor);
+        if (envioGratisDesdeFila?.valor)
+          setEnvioGratisDesde(envioGratisDesdeFila.valor);
         if (pwaBannerFila?.valor)
           setPwaBannerActivo(pwaBannerFila.valor !== "false");
 
@@ -183,6 +195,11 @@ export default function ConfiguracionPage() {
           },
           { clave: "envio_prioritario_precio", valor: envioPrecio },
           { clave: "envio_prioritario_label", valor: envioLabel },
+          {
+            clave: "envio_estandar_precio",
+            valor: envioEstandarPrecio,
+          },
+          { clave: "envio_gratis_desde", valor: envioGratisDesde },
           { clave: "pwa_banner_activo", valor: String(pwaBannerActivo) },
           {
             clave: "comunidad_whatsapp_link",
@@ -283,6 +300,23 @@ export default function ConfiguracionPage() {
             max={100}
             value={descuentoPorcentaje}
             onChange={(e) => setDescuentoPorcentaje(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-3 pt-2 border-t border-arena">
+          <Input
+            label="Envío gratis desde (COP)"
+            type="number"
+            min={0}
+            value={envioGratisDesde}
+            onChange={(e) => setEnvioGratisDesde(e.target.value)}
+          />
+          <Input
+            label="Cargo de envío estándar si no llega al mínimo (COP)"
+            type="number"
+            min={0}
+            value={envioEstandarPrecio}
+            onChange={(e) => setEnvioEstandarPrecio(e.target.value)}
           />
         </div>
 
