@@ -29,6 +29,8 @@ export type UsuarioPlan = {
   zona_oferta: "co_cod" | "usd_premium" | null;
   pais: string | null;
   quiz_respuesta_id: string | null;
+  /** Identidad anonima (cookie ml_visitante) con la que respondio quizzes — permite resolver su ULTIMO test completado, no solo el primero. */
+  visitante_id: string | null;
   /** Instante del primer registro en usuarios_plan — dia 0 del reto de 7 dias, ver lib/reto.ts. */
   creado_en: string;
 };
@@ -82,7 +84,7 @@ export async function obtenerUsuarioPlanPorSesion(): Promise<UsuarioPlan | null>
   if (usuarioIdPorCookie) {
     const { data: usuario, error } = await admin
       .from("usuarios_plan")
-      .select("id, nombre, email, zona_oferta, pais, quiz_respuesta_id, creado_en")
+      .select("id, nombre, email, zona_oferta, pais, quiz_respuesta_id, visitante_id, creado_en")
       .eq("id", usuarioIdPorCookie)
       .maybeSingle<UsuarioPlan>();
 
@@ -104,7 +106,7 @@ export async function obtenerUsuarioPlanPorSesion(): Promise<UsuarioPlan | null>
 
   const { data: usuario, error } = await admin
     .from("usuarios_plan")
-    .select("id, nombre, email, zona_oferta, pais, quiz_respuesta_id, creado_en")
+    .select("id, nombre, email, zona_oferta, pais, quiz_respuesta_id, visitante_id, creado_en")
     .eq("email", user.email.toLowerCase())
     .maybeSingle<UsuarioPlan>();
 
@@ -208,8 +210,36 @@ export async function obtenerContextoMiPlan(): Promise<ContextoMiPlan | null> {
     progreso = await obtenerFilasProgreso(admin, usuario.id);
   }
 
+  // El diagnostico del panel es SIEMPRE el ultimo test COMPLETADO de la
+  // persona — antes se leia solo `usuario.quiz_respuesta_id` (el PRIMER
+  // test con el que se registro, que ademas nunca se actualiza por el
+  // fill-null de /api/acceso), y quien terminaba un segundo test veia el
+  // panel invitandola a "hacer el test" de nuevo. Reglas: cada test es
+  // independiente, el panel muestra el mas reciente; el historial completo
+  // podra vivir en "mi cuenta" mas adelante (decision de Alexander).
   let diagnostico: DiagnosticoPanel | null = null;
-  if (usuario.quiz_respuesta_id) {
+
+  const candidatos: { puerta: string; segmento: string | null; fecha_objetivo: string | null; score: number | null }[] = [];
+
+  if (usuario.visitante_id) {
+    const { data: porVisitante, error: errorVisitante } = await admin
+      .from("quiz_respuestas")
+      .select("puerta, segmento, fecha_objetivo, score")
+      .eq("visitante_id", usuario.visitante_id)
+      .eq("completado", true)
+      .order("actualizado_en", { ascending: false })
+      .limit(1);
+
+    if (errorVisitante) {
+      console.error("[mi-plan] error leyendo quiz por visitante:", errorVisitante.message);
+    } else if (porVisitante?.[0]) {
+      candidatos.push(porVisitante[0]);
+    }
+  }
+
+  // Respaldo: el test con el que se registro (cuentas anteriores a la
+  // cookie de visitante, o cookie borrada).
+  if (candidatos.length === 0 && usuario.quiz_respuesta_id) {
     const { data: filaQuiz, error: errorQuiz } = await admin
       .from("quiz_respuestas")
       .select("puerta, segmento, fecha_objetivo, score")
@@ -218,17 +248,22 @@ export async function obtenerContextoMiPlan(): Promise<ContextoMiPlan | null> {
 
     if (errorQuiz) {
       console.error("[mi-plan] error leyendo quiz_respuestas:", errorQuiz.message);
-    } else if (
-      filaQuiz?.segmento &&
-      CONTRATOS_RESULTADO[filaQuiz.puerta as QuizPuerta]?.segmentos[filaQuiz.segmento] !== undefined
-    ) {
-      diagnostico = {
-        puerta: filaQuiz.puerta as QuizPuerta,
-        segmento: filaQuiz.segmento,
-        fechaObjetivo: filaQuiz.fecha_objetivo,
-        score: filaQuiz.score,
-      };
+    } else if (filaQuiz) {
+      candidatos.push(filaQuiz);
     }
+  }
+
+  const filaQuiz = candidatos[0];
+  if (
+    filaQuiz?.segmento &&
+    CONTRATOS_RESULTADO[filaQuiz.puerta as QuizPuerta]?.segmentos[filaQuiz.segmento] !== undefined
+  ) {
+    diagnostico = {
+      puerta: filaQuiz.puerta as QuizPuerta,
+      segmento: filaQuiz.segmento,
+      fechaObjetivo: filaQuiz.fecha_objetivo,
+      score: filaQuiz.score,
+    };
   }
 
   return { usuario, progreso, diagnostico };

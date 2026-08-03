@@ -147,27 +147,10 @@ export function EscaleraOferta({
           </a>
         </div>
 
-        {/* Puerta de ingresos — invitacion suave a la oportunidad de
-            distribuidora, en TODOS los funnels (decision de Alexander:
-            bienestar + posibilidad de mejorar ingresos). El copy respeta
-            nuskin-negocio.ts: cero cifras, cero "pasivo", cero promesa —
-            solo invita al test que califica con transparencia. */}
-        <div className="flex flex-col gap-2 rounded-2xl border border-arena p-4">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ceniza">
-            ¿Y si además generas ingresos?
-          </span>
-          <p className="text-sm text-carbon">
-            El bienestar también puede ser tu negocio: conoce cómo funciona
-            ser distribuidora Nu Skin — un negocio real de venta, sin
-            promesas mágicas. Un test corto te dice si es tu momento.
-          </p>
-          <Link
-            href="/test/negocio"
-            className="mt-1 flex min-h-[44px] w-full items-center justify-center rounded-lg border border-arena px-6 py-3 text-sm font-semibold text-carbon transition-colors hover:bg-crema active:scale-[0.97]"
-          >
-            Hacer el test de negocio
-          </Link>
-        </div>
+        {/* La invitacion al test de negocio se retiro de aca: los tests no
+            se mezclan dentro del funnel (decision de Alexander 2026-08-03 —
+            quien termina el de energia no puede aterrizar en otro test).
+            La oportunidad de ingresos vivira en "mi cuenta" mas adelante. */}
       </div>
     </section>
   );
