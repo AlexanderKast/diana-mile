@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ mensaje: "Sesion invalida." }, { status: 401 });
   }
 
-  let body: { semana?: number; completada?: boolean };
+  let body: { semana?: number; completada?: boolean; notas?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -35,10 +35,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ mensaje: "Semana invalida." }, { status: 400 });
   }
 
+  // Notas personales de la semana — opcionales, tope 2000 caracteres.
+  // `undefined` = no tocar las notas existentes (un check-in solo).
+  let notas: string | undefined;
+  if (typeof body.notas === "string") {
+    notas = body.notas.slice(0, 2000);
+  }
+
   // El usuario_id sale de la credencial resuelta arriba, nunca del body:
   // quien llama solo puede afectar su propia fila, jamas la de otra persona
   // aunque intente mandar otro id a mano.
-  const filaActualizada = await marcarCheckIn(usuario.id, semana, completada);
+  const filaActualizada = await marcarCheckIn(usuario.id, semana, completada, notas);
 
   if (!filaActualizada) {
     return NextResponse.json(

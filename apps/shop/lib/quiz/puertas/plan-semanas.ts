@@ -29,7 +29,7 @@ export const SEMANAS_PLAN: EtapaPlan[] = [
   {
     numero: 3,
     titulo: "Ajuste fino",
-    resumen: "Afinamos cantidades y frecuencia segun como responde tu piel.",
+    resumen: "Afinamos cantidades y frecuencia segun como va respondiendo tu rutina.",
   },
   {
     numero: 4,

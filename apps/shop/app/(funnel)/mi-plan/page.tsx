@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CONTRATOS_RESULTADO } from "@/lib/quiz/puertas/contratos";
-import { obtenerContextoMiPlan } from "@/lib/mi-plan";
+import { obtenerContextoMiPlan, usuarioTieneCompra } from "@/lib/mi-plan";
 import { obtenerProgresoReto } from "@/lib/reto";
 import { getComunidadWhatsappLink } from "@/lib/community";
 import { TOTAL_DIAS_RETO } from "@/lib/quiz/puertas/reto-contenido";
@@ -53,7 +53,10 @@ export default async function MiPlanPage() {
   // Avance global: quiz hecho (1 parte) + dias de reto (7) + semanas (8).
   // Ponderado por unidades reales de trabajo, no por secciones — asi cada
   // check-in mueve la barra lo mismo.
-  const progresoReto = await obtenerProgresoReto(usuario.id);
+  const [progresoReto, tieneCompra] = await Promise.all([
+    obtenerProgresoReto(usuario.id),
+    usuarioTieneCompra(usuario),
+  ]);
   const diasRetoCompletados = progresoReto.filter((f) => f.completado_en !== null).length;
   const partesTotales = 1 + TOTAL_DIAS_RETO + 8;
   const partesHechas = (diagnostico ? 1 : 0) + diasRetoCompletados + totalCompletadas;
@@ -144,7 +147,7 @@ export default async function MiPlanPage() {
           <h2 className="font-display text-lg text-carbon">Tu plan de 8 semanas</h2>
           <span className="text-xs text-ceniza">{totalCompletadas}/8 completadas</span>
         </div>
-        <ListaSemanas progreso={progreso} />
+        <ListaSemanas progreso={progreso} tieneCompra={tieneCompra} />
       </section>
 
       {/* 5. Tu progreso */}

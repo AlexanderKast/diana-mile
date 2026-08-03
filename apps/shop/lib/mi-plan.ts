@@ -270,6 +270,55 @@ export async function obtenerContextoMiPlan(): Promise<ContextoMiPlan | null> {
 }
 
 /**
+ * ¿La persona ya compro? Gate de las semanas 3-8 del plan (decision de
+ * Alexander 2026-08-03: semanas 1-2 gratis, el resto se abre con el ritual
+ * o el coaching). Dos caminos, cualquiera alcanza:
+ *   a) un pedido en `pedidos` con su TELEFONO cuyo estado no sea
+ *      cancelado/fraude/devuelto (a diferencia de clienteTieneComunidad, no
+ *      se exige "entregado": pagar/pedir ya abre el contenido), o
+ *   b) una suscripcion de coaching grupal `autorizada` con su EMAIL.
+ * Sin telefono ni email, o sin coincidencias -> false. Best-effort: un
+ * error de consulta tambien es false (el gate cierra, nunca revienta).
+ */
+export async function usuarioTieneCompra(usuario: {
+  email: string | null;
+  id: string;
+}): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+
+  try {
+    const { data: fila } = await admin
+      .from("usuarios_plan")
+      .select("telefono")
+      .eq("id", usuario.id)
+      .maybeSingle();
+    const telefono = (fila?.telefono as string | null) ?? null;
+
+    if (telefono) {
+      const { count } = await admin
+        .from("pedidos")
+        .select("id", { count: "exact", head: true })
+        .eq("telefono", telefono)
+        .not("estado", "in", "(cancelado,fraude,devuelto)");
+      if ((count ?? 0) > 0) return true;
+    }
+
+    if (usuario.email) {
+      const { count } = await admin
+        .from("suscripciones_sesion_grupal")
+        .select("id", { count: "exact", head: true })
+        .eq("email", usuario.email.toLowerCase())
+        .eq("estado", "autorizada");
+      if ((count ?? 0) > 0) return true;
+    }
+  } catch (error) {
+    console.error("[mi-plan] error verificando compra:", error);
+  }
+
+  return false;
+}
+
+/**
  * Marca (o desmarca) el check-in de una semana — SOLO si le pertenece a
  * `usuarioId` y SOLO si ya esta desbloqueada. Devuelve la fila actualizada o
  * `null` si no aplico (no es duena de la fila, semana fuera de rango, o
@@ -283,6 +332,7 @@ export async function marcarCheckIn(
   usuarioId: string,
   semana: number,
   completada: boolean,
+  notas?: string,
 ): Promise<FilaPlanProgreso | null> {
   const admin = createAdminSupabaseClient();
 
@@ -304,7 +354,11 @@ export async function marcarCheckIn(
 
   const { data: filaActualizada, error: errorUpdate } = await admin
     .from("plan_progreso")
-    .update({ completada })
+    .update({
+      completada,
+      // Las notas solo se tocan si vienen (el check-in solo no las borra).
+      ...(notas !== undefined ? { notas: notas || null } : {}),
+    })
     .eq("id", fila.id)
     .select("id, semana, desbloqueada_en, completada, notas")
     .single<FilaPlanProgreso>();

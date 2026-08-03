@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SEMANAS_PLAN } from "@/lib/quiz/puertas/plan-semanas";
+import { SEMANA_GRATIS_HASTA } from "@/lib/quiz/puertas/plan-contenido";
 import {
   formatearFechaDesbloqueo,
   semanaDesbloqueada,
@@ -12,13 +13,26 @@ import { IconoCandado, IconoCheck } from "./icons";
  * con `desbloqueada_en <= ahora` es clickeable. Las futuras se muestran con
  * candado y su fecha de apertura, a proposito NO como links — es una cita
  * semanal, no una lista para adelantarse.
+ *
+ * Segundo candado (semanas 3-8): sin compra (`tieneCompra` false) esas
+ * semanas se marcan "Se abre con tu ritual o el coaching" y SI son links —
+ * llevan a la pagina de la semana, que explica que las desbloquea.
  */
-export function ListaSemanas({ progreso }: { progreso: FilaPlanProgreso[] }) {
+export function ListaSemanas({
+  progreso,
+  tieneCompra,
+}: {
+  progreso: FilaPlanProgreso[];
+  tieneCompra: boolean;
+}) {
   return (
     <ol className="flex flex-col gap-2">
       {SEMANAS_PLAN.map((etapa) => {
         const fila = progreso.find((p) => p.semana === etapa.numero);
-        const desbloqueada = fila ? semanaDesbloqueada(fila) : false;
+        const abiertaPorFecha = fila ? semanaDesbloqueada(fila) : false;
+        const bloqueadaPorCompra =
+          etapa.numero > SEMANA_GRATIS_HASTA && !tieneCompra;
+        const desbloqueada = abiertaPorFecha && !bloqueadaPorCompra;
         const completada = fila?.completada ?? false;
 
         const contenido = (
@@ -38,10 +52,17 @@ export function ListaSemanas({ progreso }: { progreso: FilaPlanProgreso[] }) {
               <span className={`block text-sm ${desbloqueada ? "text-carbon" : "text-carbon-suave"}`}>
                 Semana {etapa.numero} — {etapa.titulo}
               </span>
-              {!desbloqueada && fila?.desbloqueada_en && (
-                <span className="block text-xs text-ceniza">
-                  Se abre el {formatearFechaDesbloqueo(fila.desbloqueada_en)}
+              {bloqueadaPorCompra ? (
+                <span className="block text-xs text-dorado-oscuro">
+                  Se abre con tu ritual o el coaching
                 </span>
+              ) : (
+                !desbloqueada &&
+                fila?.desbloqueada_en && (
+                  <span className="block text-xs text-ceniza">
+                    Se abre el {formatearFechaDesbloqueo(fila.desbloqueada_en)}
+                  </span>
+                )
               )}
             </span>
             {desbloqueada ? (
@@ -49,12 +70,16 @@ export function ListaSemanas({ progreso }: { progreso: FilaPlanProgreso[] }) {
                 <span className="shrink-0 text-xs font-medium text-verde-ok">Completada</span>
               )
             ) : (
-              <IconoCandado />
+              <span className={bloqueadaPorCompra ? "text-dorado-oscuro" : undefined}>
+                <IconoCandado />
+              </span>
             )}
           </>
         );
 
-        if (desbloqueada) {
+        // Bloqueada por compra: link a la pagina de la semana, que muestra
+        // que la desbloquea (el pitch honesto del ritual/coaching).
+        if (desbloqueada || bloqueadaPorCompra) {
           return (
             <li key={etapa.numero}>
               <Link
