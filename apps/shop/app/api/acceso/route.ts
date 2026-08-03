@@ -139,13 +139,21 @@ export async function POST(request: NextRequest) {
     // recibir sesion inmediata o no. Ver el porque justo abajo, donde se usa.
     const filaYaExistia = Boolean(usuarioId);
 
-    // Cuenta "nunca estrenada": existe pero NADIE ha entrado jamas
-    // (ultimo_acceso null). Se deja entrar directo — no hay progreso ni
-    // sesion previa que robar, es un registro que quedo abandonado. Esto
-    // elimina el muro de "revisa tu correo" para el caso mas absurdo
-    // (registrarse y volver a intentar). ultimo_acceso se escribe al emitir
-    // cookie, asi que esta via solo funciona mientras la cuenta siga virgen.
-    const nuncaEstrenada = filaYaExistia && !filaExistente?.ultimo_acceso;
+    // Cuenta "nunca estrenada": existe, NADIE ha entrado jamas
+    // (ultimo_acceso null) Y la cookie de visitante de ESTE request es la
+    // misma con la que se creo la cuenta — o sea, es el mismo dispositivo
+    // que la registro, no un extraño que solo sabe el email. Sin ese
+    // amarre, cualquiera podia tomar una cuenta registrada-y-abandonada
+    // con un POST y ver nombre + diagnostico ajenos (hallazgo de la
+    // revision de seguridad del commit, corregido de inmediato).
+    // ultimo_acceso se escribe al emitir cookie: la via se cierra sola.
+    const visitanteCoincide = Boolean(
+      visitanteId &&
+        filaExistente?.visitante_id &&
+        filaExistente.visitante_id === visitanteId,
+    );
+    const nuncaEstrenada =
+      filaYaExistia && !filaExistente?.ultimo_acceso && visitanteCoincide;
     // Telefono guardado en la cuenta — habilita el OTP por WhatsApp para
     // cuentas ya estrenadas (en Colombia el correo no se revisa; WhatsApp si).
     const telefonoCuenta = (filaExistente?.telefono as string | null) ?? null;
