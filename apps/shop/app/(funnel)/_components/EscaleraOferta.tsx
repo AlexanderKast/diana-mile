@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 import type { QuizPuerta } from "@/lib/quiz/tipos";
 import type { FichaSegmentoProducto } from "@/lib/quiz/puertas/ficha-segmento";
 
@@ -86,6 +87,35 @@ export function EscaleraOferta({
                 <p className="text-sm font-semibold text-carbon">{kit.nombre}</p>
                 <p className="text-xs text-carbon-suave">
                   Kit de inicio oficial Nu Skin — {kit.precio}
+                </p>
+                {/* Los kits de la lista oficial son literalmente "Kits de
+                    Inicio" de distribuidora — dato real, no gancho. Copy
+                    dentro de las reglas de nuskin-negocio.ts: cero cifras
+                    de ingreso, cero "pasivo", cero promesa. */}
+                <p className="mt-2 border-t border-dorado/40 pt-2 text-xs text-carbon-suave">
+                  Este kit también es la puerta de entrada para volverte
+                  distribuidora oficial Nu Skin y arrancar tu propio negocio
+                  de venta, si te interesa.
+                  {(() => {
+                    const whatsappNegocio = enlaceConTexto(
+                      process.env.NEXT_PUBLIC_WHATSAPP_NUMERO,
+                      `Hola Milito, me interesa el ${kit.nombre} y quiero saber cómo funciona ser distribuidora Nu Skin.`,
+                    );
+                    return whatsappNegocio ? (
+                      <>
+                        {" "}
+                        <a
+                          href={whatsappNegocio}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-dorado-oscuro underline decoration-dorado underline-offset-2"
+                        >
+                          Milito te cuenta cómo
+                        </a>
+                        .
+                      </>
+                    ) : null;
+                  })()}
                 </p>
               </div>
             )}
