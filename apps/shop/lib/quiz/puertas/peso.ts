@@ -242,6 +242,16 @@ export function crearPuertaPeso(): Puerta {
       etiquetaMax: "Muy estresada",
     },
 
+    // 10b. Dashboard intermedio — espejo de los habitos respondidos hasta
+    // aca, estilo muscle-booster. No pregunta nada.
+    {
+      id: "resumen_habitos",
+      tipo: "resumen_parcial",
+      titulo: "Asi van tus habitos",
+      descripcion: "Lo que nos contaste hasta ahora, en un vistazo.",
+      textoContinuar: "Ver mi objetivo",
+    },
+
     // 11. Objetivo especifico — pregunta generica, cubre las 3 ramas (ver
     // nota de diseno arriba del archivo: no se triplico este paso porque
     // el criterio principal de la tabla de decision ya quedo fijado en el

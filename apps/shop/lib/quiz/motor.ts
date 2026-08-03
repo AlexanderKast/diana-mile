@@ -44,7 +44,13 @@ export function avanzarHastaPendiente(puerta: Puerta, estado: EstadoQuiz): Estad
   for (let i = 0; i < puerta.pasos.length; i++) {
     const paso = obtenerPaso(puerta, actual.pasoActualId);
     if (!paso) break;
-    if (paso.tipo === "payoff" || paso.tipo === "cargando") break;
+    if (
+      paso.tipo === "payoff" ||
+      paso.tipo === "cargando" ||
+      paso.tipo === "resumen_parcial"
+    ) {
+      break;
+    }
     if (actual.respuestas[paso.id] === undefined) break;
 
     const siguienteId = siguientePasoId(puerta, actual.pasoActualId, actual.respuestas);

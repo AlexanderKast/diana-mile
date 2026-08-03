@@ -31,6 +31,7 @@ import { PasoNumero } from "./pasos/PasoNumero";
 import { PasoPayoff } from "./pasos/PasoPayoff";
 import { PasoPais } from "./pasos/PasoPais";
 import { PasoCargando } from "./pasos/PasoCargando";
+import { PasoResumenParcial } from "./pasos/PasoResumenParcial";
 
 const DEBOUNCE_ABANDONO_MS = 1200;
 
@@ -305,10 +306,13 @@ export function QuizRunner({
     pasoActual.tipo === "opcion_multiple" ||
     pasoActual.tipo === "escala" ||
     pasoActual.tipo === "numero" ||
-    pasoActual.tipo === "payoff";
+    pasoActual.tipo === "payoff" ||
+    pasoActual.tipo === "resumen_parcial";
 
   const continuarHabilitado =
-    pasoActual.tipo === "payoff" || esRespuestaValida(pasoActual, valorPendiente);
+    pasoActual.tipo === "payoff" ||
+    pasoActual.tipo === "resumen_parcial" ||
+    esRespuestaValida(pasoActual, valorPendiente);
 
   // Gamificacion derivada del propio historial (nada que persistir): cada
   // paso visitado suma puntos fijos; la racha son los pasos seguidos de la
@@ -439,6 +443,10 @@ export function QuizRunner({
 
         {pasoActual.tipo === "payoff" && <PasoPayoff paso={pasoActual} />}
 
+        {pasoActual.tipo === "resumen_parcial" && (
+          <PasoResumenParcial puertaId={puertaId} respuestas={estado.respuestas} />
+        )}
+
         {pasoActual.tipo === "pais" && (
           <PasoPais
             valor={valorPendiente}
@@ -477,7 +485,7 @@ export function QuizRunner({
             disabled={!continuarHabilitado || enviando}
             onClick={() => irASiguiente(valorPendiente)}
           >
-            {pasoActual.tipo === "payoff"
+            {pasoActual.tipo === "payoff" || pasoActual.tipo === "resumen_parcial"
               ? (pasoActual.textoContinuar ?? "Continuar")
               : "Continuar"}
           </Button>

@@ -18,7 +18,8 @@ export type TipoPaso =
   | "numero"
   | "payoff"
   | "pais"
-  | "cargando";
+  | "cargando"
+  | "resumen_parcial";
 
 export type Opcion = {
   valor: string;
@@ -113,6 +114,18 @@ export type PasoCargando = PasoBase & {
   imagenUrl?: string;
 };
 
+/**
+ * Dashboard intermedio (estilo muscle-booster): a mitad del quiz muestra
+ * las barras de habito calculadas con lo respondido hasta ahi
+ * (`dimensionesHabito` del contrato de la puerta). No pregunta nada, solo
+ * boton de continuar. Solo tiene sentido en puertas con dimensiones
+ * (piel/energia/peso).
+ */
+export type PasoResumenParcial = PasoBase & {
+  tipo: "resumen_parcial";
+  textoContinuar?: string;
+};
+
 export type PasoQuiz =
   | PasoOpcionUnica
   | PasoOpcionMultiple
@@ -120,7 +133,8 @@ export type PasoQuiz =
   | PasoNumero
   | PasoPayoff
   | PasoPais
-  | PasoCargando;
+  | PasoCargando
+  | PasoResumenParcial;
 
 /**
  * Respuestas acumuladas, indexadas por id de paso. Sin tipar el valor: cada

@@ -169,6 +169,16 @@ export function crearPuertaEnergia(): Puerta {
       textoContinuar: "Seguir",
     },
 
+    // 10b. Dashboard intermedio — espejo de los habitos respondidos hasta
+    // aca, estilo muscle-booster. No pregunta nada.
+    {
+      id: "resumen_habitos",
+      tipo: "resumen_parcial",
+      titulo: "Asi van tus habitos",
+      descripcion: "Lo que nos contaste hasta ahora, en un vistazo.",
+      textoContinuar: "Ver mi objetivo",
+    },
+
     // 11. Objetivo
     {
       id: "objetivo_principal",
