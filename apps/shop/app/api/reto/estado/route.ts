@@ -51,6 +51,9 @@ export async function GET(request: NextRequest) {
     dia: diaActualReto(usuario.creado_en),
     totalDias: TOTAL_DIAS_RETO,
     zonaOferta: usuario.zona_oferta,
+    // Puerta del diagnostico — n8n la encadena a /api/reto/contenido/[dia]
+    // ?puerta= para mandar el mensaje del reto correcto por WhatsApp.
+    puerta: usuario.puerta ?? "piel",
     diasCompletados: progreso
       .filter((fila) => fila.completado_en !== null)
       .map((fila) => fila.dia),

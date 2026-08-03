@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validarSecretoReto } from "@/lib/reto";
 import {
+  esPuertaReto,
   obtenerContenidoReto,
   TOTAL_DIAS_RETO,
   type ZonaOferta,
@@ -45,7 +46,13 @@ export async function GET(
   const zonaParam = request.nextUrl.searchParams.get("zona");
   const zonaOferta: ZonaOferta = zonaParam === "usd_premium" ? "usd_premium" : "co_cod";
 
-  const contenido = obtenerContenidoReto(dia, zonaOferta);
+  // Cada funnel tiene su propio plan de 7 dias: `?puerta=` decide el set
+  // (viene de /api/reto/estado, que ya la resuelve). Sin parametro o con
+  // un valor invalido cae a "piel" — compatible con llamadas anteriores.
+  const puertaParam = request.nextUrl.searchParams.get("puerta");
+  const puerta = esPuertaReto(puertaParam) ? puertaParam : "piel";
+
+  const contenido = obtenerContenidoReto(dia, zonaOferta, puerta);
 
   return NextResponse.json({ contenido });
 }

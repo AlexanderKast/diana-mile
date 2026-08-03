@@ -11,7 +11,7 @@ import {
   obtenerContextoReto,
 } from "@/lib/reto";
 import type { QuizPuerta } from "@/lib/quiz/tipos";
-import { obtenerContenidoReto, TOTAL_DIAS_RETO } from "@/lib/quiz/puertas/reto-contenido";
+import { esPuertaReto, obtenerContenidoReto, TOTAL_DIAS_RETO } from "@/lib/quiz/puertas/reto-contenido";
 import { getComunidadWhatsappLink } from "@/lib/community";
 import { reescribirConHechos } from "@/lib/ia/reescribir";
 import { BarraProgreso } from "../../_components/quiz/BarraProgreso";
@@ -58,6 +58,9 @@ export default async function RetoPage() {
   const diaActual = diaActualReto(fechaBase);
   const hrefRitual =
     HREF_RITUAL_POR_PUERTA[usuario.puerta ?? "piel"] ?? HREF_RITUAL_POR_PUERTA.piel!;
+  // Cada funnel con su propio plan de 7 dias — sesion/negocio (que no
+  // deberian llegar aca) caen al set de piel, igual que el href de arriba.
+  const puertaReto = esPuertaReto(usuario.puerta) ? usuario.puerta : "piel";
   const totalCompletados = progreso.filter((fila) => fila.completado_en !== null).length;
   const racha = calcularRachaReto(progreso);
 
@@ -76,13 +79,14 @@ export default async function RetoPage() {
   // Si falla o no hay API key, se cae al texto estatico de siempre.
   let contenidoHoyPersonalizado: string | null = null;
   if (diaDesbloqueadoReto(fechaBase, diaActual)) {
-    const contenidoHoyBase = obtenerContenidoReto(diaActual, usuario.zona_oferta);
+    const contenidoHoyBase = obtenerContenidoReto(diaActual, usuario.zona_oferta, puertaReto);
     if (contenidoHoyBase) {
       contenidoHoyPersonalizado = await reescribirConHechos({
         instruccion:
           "Reescribi 'contenidoBase' del mensaje de hoy del reto, mismo largo aproximado, voz de Milito (calida, paisa, directa). 'tipoVenta' te dice si hoy toca vender suave/fuerte o solo dar valor — respeta ese tono, no lo subas de intensidad.",
         hechos: {
           dia: diaActual,
+          puerta: puertaReto,
           titulo: contenidoHoyBase.titulo,
           contenidoBase: contenidoHoyBase.contenido,
           tipoVenta: contenidoHoyBase.tipoVenta,
@@ -144,7 +148,7 @@ export default async function RetoPage() {
             );
           }
 
-          const contenidoDia = obtenerContenidoReto(dia, usuario.zona_oferta);
+          const contenidoDia = obtenerContenidoReto(dia, usuario.zona_oferta, puertaReto);
           if (!contenidoDia) return null; // no deberia pasar: dia siempre 1-7 aca
 
           const esDia5Oferta = dia === 5 && contenidoDia.tipoVenta === "fuerte";

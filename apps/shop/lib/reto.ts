@@ -37,8 +37,12 @@ export type UsuarioPlanReto = {
 
 const PUERTA_POR_DEFECTO: QuizPuerta = "piel";
 
-/** `null`/vacio o fila borrada -> puerta por defecto, nunca rompe la pantalla. */
-async function resolverPuertaUsuario(
+/**
+ * `null`/vacio o fila borrada -> puerta por defecto, nunca rompe la
+ * pantalla. Exportada para que `buscarUsuarioPlanPorIdentificador` y los
+ * endpoints de n8n puedan resolver la puerta del reto por puerta propia.
+ */
+export async function resolverPuertaUsuario(
   admin: ReturnType<typeof createAdminSupabaseClient>,
   quizRespuestaId: string | null,
 ): Promise<QuizPuerta> {
@@ -178,16 +182,21 @@ export async function buscarUsuarioPlanPorIdentificador(
 
   const { data, error } = await admin
     .from("usuarios_plan")
-    .select("id, email, zona_oferta, creado_en")
+    .select("id, email, zona_oferta, creado_en, quiz_respuesta_id")
     .eq(esUUID ? "id" : "email", esUUID ? valor : valor.toLowerCase())
-    .maybeSingle<UsuarioPlanReto>();
+    .maybeSingle<UsuarioPlanReto & { quiz_respuesta_id: string | null }>();
 
   if (error) {
     console.error("[reto] error buscando usuario por identificador:", error.message);
     return null;
   }
 
-  return data;
+  if (!data) return null;
+
+  // La puerta tambien por este camino: n8n la necesita para pedir el
+  // contenido del reto correcto (/api/reto/contenido/[dia]?puerta=...).
+  const puerta = await resolverPuertaUsuario(admin, data.quiz_respuesta_id);
+  return { ...data, puerta };
 }
 
 /** Progreso de un usuario ya resuelto (por sesion o por identificador). */
