@@ -69,12 +69,13 @@ export function crearPuertaPeso(): Puerta {
       tipo: "opcion_unica",
       titulo: "¿Cual es tu objetivo principal hoy?",
       opciones: [
-        { valor: "bajar_peso", etiqueta: "Bajar de peso", icono: "balanza" },
-        { valor: "subir_masa", etiqueta: "Subir masa muscular", icono: "musculo" },
+        { valor: "bajar_peso", etiqueta: "Bajar de peso", icono: "balanza", imagenUrl: "/images/quiz/sesion_bajar_peso.jpg" },
+        { valor: "subir_masa", etiqueta: "Subir masa muscular", icono: "musculo", imagenUrl: "/images/quiz/sesion_fuerza.jpg" },
         {
           valor: "tonificar_definir",
           etiqueta: "Tonificar / definir, sin cambiar mucho el peso",
           icono: "pesas",
+          imagenUrl: "/images/quiz/peso_tonificar.jpg",
         },
       ],
       siguiente: (respuestas) => {
@@ -262,13 +263,14 @@ export function crearPuertaPeso(): Puerta {
       seccion: "Tu objetivo",
       titulo: "¿Que te gustaria notar primero?",
       opciones: [
-        { valor: "perder_grasa", etiqueta: "Perder grasa corporal", icono: "balanza" },
-        { valor: "ganar_musculo", etiqueta: "Ganar musculo y fuerza", icono: "musculo" },
-        { valor: "verme_mas_definida", etiqueta: "Verme mas definida / tonificada", icono: "pesas" },
+        { valor: "perder_grasa", etiqueta: "Perder grasa corporal", icono: "balanza", imagenUrl: "/images/quiz/sesion_bajar_peso.jpg" },
+        { valor: "ganar_musculo", etiqueta: "Ganar musculo y fuerza", icono: "musculo", imagenUrl: "/images/quiz/sesion_fuerza.jpg" },
+        { valor: "verme_mas_definida", etiqueta: "Verme mas definida / tonificada", icono: "pesas", imagenUrl: "/images/quiz/peso_tonificar.jpg" },
         {
           valor: "mejores_habitos",
           etiqueta: "Simplemente sentirme mejor con mis habitos",
           icono: "check",
+          imagenUrl: "/images/quiz/peso_habitos.jpg",
         },
       ],
     },

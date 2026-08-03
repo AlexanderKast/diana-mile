@@ -29,24 +29,27 @@ export function crearPuertaNegocio(): Puerta {
       seccion: "Tu interes",
       titulo: "¿Que te llamo la atencion de la oportunidad de negocio?",
       opciones: [
-        { valor: "ingreso_extra", etiqueta: "Un ingreso extra", puntaje: 2, icono: "billete" },
+        { valor: "ingreso_extra", etiqueta: "Un ingreso extra", puntaje: 2, icono: "billete", imagenUrl: "/images/quiz/negocio_ingreso.jpg" },
         {
           valor: "ser_propia_jefa",
           etiqueta: "Ser mi propia jefa y manejar mi tiempo",
           puntaje: 2,
           icono: "maletin",
+          imagenUrl: "/images/quiz/negocio_jefa.jpg",
         },
         {
           valor: "me_gusta_producto",
           etiqueta: "Me gusta el producto y quiero conocer mas",
           puntaje: 1,
           icono: "corazon",
+          imagenUrl: "/images/quiz/negocio_producto.jpg",
         },
         {
           valor: "sin_saber_bien",
           etiqueta: "No se bien, quiero informacion",
           puntaje: 0,
           icono: "interrogacion",
+          imagenUrl: "/images/quiz/negocio_info.jpg",
         },
       ],
     },

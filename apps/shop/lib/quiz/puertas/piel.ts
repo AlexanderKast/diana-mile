@@ -207,12 +207,12 @@ export function crearPuertaPiel(): Puerta {
       seccion: "Tu objetivo",
       titulo: "¿Que te gustaria notar primero?",
       opciones: [
-        { valor: "piel_mas_luminosa", etiqueta: "Piel mas luminosa y pareja", icono: "brillo" },
-        { valor: "piel_mas_firme", etiqueta: "Piel mas firme", icono: "arruga" },
-        { valor: "menos_brillo_brotes", etiqueta: "Menos brillo y brotes", icono: "mancha" },
-        { valor: "poros_menos_visibles", etiqueta: "Poros menos visibles", icono: "cara" },
-        { valor: "piel_mas_hidratada", etiqueta: "Piel mas hidratada y calmada", icono: "gota" },
-        { valor: "solo_mantenerla", etiqueta: "Solo mantenerla sana", icono: "check" },
+        { valor: "piel_mas_luminosa", etiqueta: "Piel mas luminosa y pareja", icono: "brillo", imagenUrl: "/images/quiz/piel_luminosa.jpg" },
+        { valor: "piel_mas_firme", etiqueta: "Piel mas firme", icono: "arruga", imagenUrl: "/images/quiz/piel_firme.jpg" },
+        { valor: "menos_brillo_brotes", etiqueta: "Menos brillo y brotes", icono: "mancha", imagenUrl: "/images/quiz/piel_menos_brillo.jpg" },
+        { valor: "poros_menos_visibles", etiqueta: "Poros menos visibles", icono: "cara", imagenUrl: "/images/quiz/piel_poros.jpg" },
+        { valor: "piel_mas_hidratada", etiqueta: "Piel mas hidratada y calmada", icono: "gota", imagenUrl: "/images/quiz/piel_hidratada.jpg" },
+        { valor: "solo_mantenerla", etiqueta: "Solo mantenerla sana", icono: "check", imagenUrl: "/images/quiz/piel_mantener.jpg" },
       ],
     },
 

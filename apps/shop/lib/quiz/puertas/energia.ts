@@ -186,11 +186,11 @@ export function crearPuertaEnergia(): Puerta {
       seccion: "Tu objetivo",
       titulo: "¿Que te gustaria notar primero?",
       opciones: [
-        { valor: "energia_manana", etiqueta: "Tener mas energia en las mananas", icono: "sol" },
-        { valor: "aguantar_tarde", etiqueta: "Aguantar la tarde sin bajon", icono: "rayo" },
-        { valor: "dormir_mejor", etiqueta: "Dormir mejor", icono: "luna" },
-        { valor: "manejar_estres", etiqueta: "Manejar mejor el estres", icono: "cerebro" },
-        { valor: "solo_mantenerla", etiqueta: "Solo mantenerla", icono: "check" },
+        { valor: "energia_manana", etiqueta: "Tener mas energia en las mananas", icono: "sol", imagenUrl: "/images/quiz/energia_manana.jpg" },
+        { valor: "aguantar_tarde", etiqueta: "Aguantar la tarde sin bajon", icono: "rayo", imagenUrl: "/images/quiz/energia_tarde.jpg" },
+        { valor: "dormir_mejor", etiqueta: "Dormir mejor", icono: "luna", imagenUrl: "/images/quiz/energia_dormir.jpg" },
+        { valor: "manejar_estres", etiqueta: "Manejar mejor el estres", icono: "cerebro", imagenUrl: "/images/quiz/energia_estres.jpg" },
+        { valor: "solo_mantenerla", etiqueta: "Solo mantenerla", icono: "check", imagenUrl: "/images/quiz/energia_mantener.jpg" },
       ],
     },
 
