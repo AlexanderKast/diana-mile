@@ -2,14 +2,20 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { esPuertaReto } from "@/lib/quiz/puertas/reto-contenido";
-import { obtenerSemanaPlan, SEMANA_GRATIS_HASTA } from "@/lib/quiz/puertas/plan-contenido";
 import {
+  obtenerDiasPlan,
+  obtenerSemanaPlan,
+  SEMANA_GRATIS_HASTA,
+} from "@/lib/quiz/puertas/plan-contenido";
+import {
+  diaDesbloqueado,
   formatearFechaDesbloqueo,
   obtenerContextoMiPlan,
   semanaDesbloqueada,
   usuarioTieneCompra,
 } from "@/lib/mi-plan";
 import { CheckInSemana } from "../../_components/CheckInSemana";
+import { DiasSemana, type DiaSemanaVista } from "../../_components/DiasSemana";
 import { NotasSemana } from "../../_components/NotasSemana";
 import { RutinaSemana } from "../../_components/RutinaSemana";
 import { VideoSegmento } from "../../_components/VideoSegmento";
@@ -83,6 +89,28 @@ export default async function SemanaPage({
               </p>
             ))}
           </section>
+
+          <DiasSemana
+            semana={semana.numero}
+            dias={obtenerDiasPlan(puerta, semana.numero).map(
+              (d): DiaSemanaVista => ({
+                dia: d.dia,
+                titulo: d.titulo,
+                contenido: d.contenido,
+                accion: d.accion,
+                completadoInicial: fila.dias_completados.includes(d.dia),
+                desbloqueado: diaDesbloqueado(fila, d.dia),
+                fechaDesbloqueo: fila.desbloqueada_en
+                  ? formatearFechaDesbloqueo(
+                      new Date(
+                        new Date(fila.desbloqueada_en).getTime() +
+                          (d.dia - 1) * 24 * 60 * 60 * 1000,
+                      ).toISOString(),
+                    )
+                  : null,
+              }),
+            )}
+          />
 
           <RutinaSemana semana={semana.numero} acciones={semana.acciones} />
 

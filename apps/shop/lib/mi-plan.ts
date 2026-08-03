@@ -41,6 +41,8 @@ export type FilaPlanProgreso = {
   desbloqueada_en: string | null;
   completada: boolean;
   notas: string | null;
+  /** Dias (1-7) marcados como hechos dentro de esta semana. Fase 22. */
+  dias_completados: number[];
 };
 
 export type DiagnosticoPanel = {
@@ -135,13 +137,15 @@ export function formatearFechaDesbloqueo(iso: string): string {
   });
 }
 
+const SELECT_FILA_PLAN_PROGRESO = "id, semana, desbloqueada_en, completada, notas, dias_completados";
+
 async function obtenerFilasProgreso(
   admin: ReturnType<typeof createAdminSupabaseClient>,
   usuarioId: string,
 ): Promise<FilaPlanProgreso[]> {
   const { data, error } = await admin
     .from("plan_progreso")
-    .select("id, semana, desbloqueada_en, completada, notas")
+    .select(SELECT_FILA_PLAN_PROGRESO)
     .eq("usuario_id", usuarioId)
     .order("semana", { ascending: true });
 
@@ -338,7 +342,7 @@ export async function marcarCheckIn(
 
   const { data: fila, error: errorLectura } = await admin
     .from("plan_progreso")
-    .select("id, semana, desbloqueada_en, completada, notas")
+    .select(SELECT_FILA_PLAN_PROGRESO)
     .eq("usuario_id", usuarioId)
     .eq("semana", semana)
     .maybeSingle<FilaPlanProgreso>();
@@ -360,12 +364,81 @@ export async function marcarCheckIn(
       ...(notas !== undefined ? { notas: notas || null } : {}),
     })
     .eq("id", fila.id)
-    .select("id, semana, desbloqueada_en, completada, notas")
+    .select(SELECT_FILA_PLAN_PROGRESO)
     .single<FilaPlanProgreso>();
 
   if (errorUpdate || !filaActualizada) {
     console.error(
       "[mi-plan] error actualizando check-in:",
+      errorUpdate?.message ?? "sin fila devuelta",
+    );
+    return null;
+  }
+
+  return filaActualizada;
+}
+
+const MS_POR_DIA = 24 * 60 * 60 * 1000;
+
+/**
+ * ¿El DIA (1-7) dentro de la semana ya desbloqueo por fecha? Cada dia abre
+ * 24h despues del anterior, contando desde que la semana se desbloqueo —
+ * dia 1 coincide exactamente con `semanaDesbloqueada`.
+ */
+export function diaDesbloqueado(fila: FilaPlanProgreso, dia: number): boolean {
+  if (!fila.desbloqueada_en) return false;
+  if (!Number.isInteger(dia) || dia < 1 || dia > 7) return false;
+  const umbral = new Date(fila.desbloqueada_en).getTime() + (dia - 1) * MS_POR_DIA;
+  return umbral <= Date.now();
+}
+
+/**
+ * Marca (o desmarca) un DIA (1-7) dentro de una semana — SOLO si le
+ * pertenece a `usuarioId` y SOLO si ese dia ya desbloqueo por fecha. Mismo
+ * patron de pertenencia/desbloqueo que `marcarCheckIn`, pero a nivel de dia
+ * en vez de semana completa (Fase 22).
+ */
+export async function marcarDiaPlan(
+  usuarioId: string,
+  semana: number,
+  dia: number,
+  completado: boolean,
+): Promise<FilaPlanProgreso | null> {
+  const admin = createAdminSupabaseClient();
+
+  const { data: fila, error: errorLectura } = await admin
+    .from("plan_progreso")
+    .select(SELECT_FILA_PLAN_PROGRESO)
+    .eq("usuario_id", usuarioId)
+    .eq("semana", semana)
+    .maybeSingle<FilaPlanProgreso>();
+
+  if (errorLectura || !fila) {
+    if (errorLectura) {
+      console.error("[mi-plan] error leyendo fila para dia del plan:", errorLectura.message);
+    }
+    return null;
+  }
+
+  if (!diaDesbloqueado(fila, dia)) return null;
+
+  const actuales = fila.dias_completados ?? [];
+  const nuevos = completado
+    ? actuales.includes(dia)
+      ? actuales
+      : [...actuales, dia].sort((a, b) => a - b)
+    : actuales.filter((d) => d !== dia);
+
+  const { data: filaActualizada, error: errorUpdate } = await admin
+    .from("plan_progreso")
+    .update({ dias_completados: nuevos })
+    .eq("id", fila.id)
+    .select(SELECT_FILA_PLAN_PROGRESO)
+    .single<FilaPlanProgreso>();
+
+  if (errorUpdate || !filaActualizada) {
+    console.error(
+      "[mi-plan] error actualizando dia del plan:",
       errorUpdate?.message ?? "sin fila devuelta",
     );
     return null;

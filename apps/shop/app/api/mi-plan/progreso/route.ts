@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { marcarCheckIn, obtenerUsuarioPlanPorSesion } from "@/lib/mi-plan";
+import { marcarCheckIn, marcarDiaPlan, obtenerUsuarioPlanPorSesion } from "@/lib/mi-plan";
 
 /**
  * Check-in de una semana del panel pre-venta: marca/desmarca `completada` en
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ mensaje: "Sesion invalida." }, { status: 401 });
   }
 
-  let body: { semana?: number; completada?: boolean; notas?: unknown };
+  let body: { semana?: number; dia?: number; completada?: boolean; notas?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -33,6 +33,27 @@ export async function POST(request: NextRequest) {
 
   if (!Number.isInteger(semana) || semana < 1 || semana > 8) {
     return NextResponse.json({ mensaje: "Semana invalida." }, { status: 400 });
+  }
+
+  // Con `dia` presente (1-7): check-in DIARIO (Fase 22), independiente del
+  // check-in semanal y de las notas — no toca esos campos.
+  if (body.dia !== undefined) {
+    const dia = Number(body.dia);
+    if (!Number.isInteger(dia) || dia < 1 || dia > 7) {
+      return NextResponse.json({ mensaje: "Dia invalido." }, { status: 400 });
+    }
+
+    // El usuario_id sale de la credencial resuelta arriba, nunca del body.
+    const filaActualizada = await marcarDiaPlan(usuario.id, semana, dia, completada);
+
+    if (!filaActualizada) {
+      return NextResponse.json(
+        { mensaje: "Ese dia todavia no esta disponible." },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ fila: filaActualizada });
   }
 
   // Notas personales de la semana — opcionales, tope 2000 caracteres.

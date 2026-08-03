@@ -1,4 +1,7 @@
 import { esPuertaReto, type PuertaReto } from "./reto-contenido";
+import { DIAS_PIEL } from "./plan-dias-piel";
+import { DIAS_ENERGIA } from "./plan-dias-energia";
+import { DIAS_PESO } from "./plan-dias-peso";
 
 /**
  * Contenido REAL del plan de 8 semanas, POR PUERTA (piel/energia/peso) —
@@ -29,6 +32,20 @@ export type SemanaPlanContenido = {
   acciones: string[];
   /** Video de Milito para la semana — null hasta que exista. */
   videoId: string | null;
+};
+
+/**
+ * Contenido de UN DIA (1-7) dentro de una semana (Fase 22). Desarrolla la
+ * leccion semanal en la practica dia a dia — no la repite: el dia 1 arranca
+ * el tema, los dias 2-6 lo aterrizan, el dia 7 cierra/revisa.
+ */
+export type DiaPlanContenido = {
+  dia: number;
+  titulo: string;
+  /** 1 parrafo corto (2-4 lineas), voz de Milito. */
+  contenido: string[];
+  /** La tarea concreta del dia, corta e imperativa. */
+  accion: string;
 };
 
 /** Ultima semana gratuita — de la siguiente en adelante exige compra. */
@@ -499,6 +516,12 @@ const PLAN_PESO: SemanaPlanContenido[] = [
   },
 ];
 
+const DIAS_POR_PUERTA: Record<PuertaReto, Record<number, DiaPlanContenido[]>> = {
+  piel: DIAS_PIEL,
+  energia: DIAS_ENERGIA,
+  peso: DIAS_PESO,
+};
+
 export const PLAN_POR_PUERTA: Record<PuertaReto, SemanaPlanContenido[]> = {
   piel: PLAN_PIEL,
   energia: PLAN_ENERGIA,
@@ -511,4 +534,18 @@ export function obtenerSemanaPlan(
   numero: number,
 ): SemanaPlanContenido | null {
   return PLAN_POR_PUERTA[puerta].find((s) => s.numero === numero) ?? null;
+}
+
+/** Los 7 dias de una semana del plan de la puerta. Array vacio si no existe. */
+export function obtenerDiasPlan(puerta: PuertaReto, semana: number): DiaPlanContenido[] {
+  return DIAS_POR_PUERTA[puerta]?.[semana] ?? [];
+}
+
+/** Un dia (1-7) puntual dentro de una semana. `null` si no existe. */
+export function obtenerDiaPlan(
+  puerta: PuertaReto,
+  semana: number,
+  dia: number,
+): DiaPlanContenido | null {
+  return obtenerDiasPlan(puerta, semana).find((d) => d.dia === dia) ?? null;
 }
