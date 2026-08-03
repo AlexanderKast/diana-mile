@@ -1,6 +1,9 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
-const TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 dias — cubre las 8 semanas del plan con margen.
+// 1 año: quien entro una vez desde su celular no vuelve a ver la pantalla
+// de acceso en ese dispositivo — el muro de "revisa tu correo" era el punto
+// de fuga del funnel (decision de Alexander, 2026-08-03).
+const TTL_MS = 365 * 24 * 60 * 60 * 1000;
 const NOMBRE_COOKIE = "milito_mi_plan";
 
 function secret(): string {

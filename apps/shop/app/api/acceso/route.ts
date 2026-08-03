@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     // aparece, es una fila nueva.
     const { data: porEmail } = await admin
       .from("usuarios_plan")
-      .select("id, nombre, telefono, quiz_respuesta_id, pais, zona_oferta, visitante_id")
+      .select("id, nombre, telefono, quiz_respuesta_id, pais, zona_oferta, visitante_id, ultimo_acceso")
       .eq("email", email)
       .maybeSingle();
 
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     if (!usuarioId && quizRespuestaId) {
       const { data: porQuiz } = await admin
         .from("usuarios_plan")
-        .select("id, nombre, telefono, quiz_respuesta_id, pais, zona_oferta, visitante_id")
+        .select("id, nombre, telefono, quiz_respuesta_id, pais, zona_oferta, visitante_id, ultimo_acceso")
         .eq("quiz_respuesta_id", quizRespuestaId)
         .maybeSingle();
       usuarioId = porQuiz?.id as string | undefined;
@@ -138,6 +138,17 @@ export async function POST(request: NextRequest) {
     // Capturado ANTES de crear/actualizar: decide si esta llamada puede
     // recibir sesion inmediata o no. Ver el porque justo abajo, donde se usa.
     const filaYaExistia = Boolean(usuarioId);
+
+    // Cuenta "nunca estrenada": existe pero NADIE ha entrado jamas
+    // (ultimo_acceso null). Se deja entrar directo — no hay progreso ni
+    // sesion previa que robar, es un registro que quedo abandonado. Esto
+    // elimina el muro de "revisa tu correo" para el caso mas absurdo
+    // (registrarse y volver a intentar). ultimo_acceso se escribe al emitir
+    // cookie, asi que esta via solo funciona mientras la cuenta siga virgen.
+    const nuncaEstrenada = filaYaExistia && !filaExistente?.ultimo_acceso;
+    // Telefono guardado en la cuenta — habilita el OTP por WhatsApp para
+    // cuentas ya estrenadas (en Colombia el correo no se revisa; WhatsApp si).
+    const telefonoCuenta = (filaExistente?.telefono as string | null) ?? null;
 
     if (usuarioId) {
       // Este endpoint es publico y no exige sesion (es justamente el punto
@@ -179,17 +190,25 @@ export async function POST(request: NextRequest) {
       usuarioId = nuevo.id;
     }
 
-    // Sesion propia de /mi-plan: se emite YA, sin esperar a que confirme el
-    // correo — pero SOLO si la cuenta es nueva en este mismo request. Este
-    // endpoint es publico y sin autenticar: si `filaYaExistia` es true,
-    // alguien esta usando un email que YA tiene cuenta, y no hay forma de
-    // saber aca si es su dueño real o alguien que solo sabe/adivino ese
-    // email. Emitir la cookie en ese caso era un account takeover de un
-    // POST (hallazgo de seguridad real, arreglado el mismo dia). Para
-    // cuentas existentes se vuelve a exigir el link magico normal — eso SI
-    // prueba que el email es suyo, porque solo el dueño puede clickearlo.
+    // Sesion propia de /mi-plan: se emite YA para cuentas nuevas y para
+    // cuentas nunca estrenadas (ver arriba). Para cuentas YA usadas este
+    // endpoint publico no puede saber si quien escribe es el dueño real —
+    // emitir cookie ahi era un account takeover de un POST (hallazgo de
+    // seguridad real). Esas cuentas prueban identidad con el OTP por
+    // WhatsApp (si dejaron telefono) o con el link magico al correo.
     const esCuentaNueva = !filaYaExistia;
-    const miPlanToken = esCuentaNueva ? signMiPlanToken(usuarioId!) : null;
+    const emitirCookieDirecta = esCuentaNueva || nuncaEstrenada;
+    const requiereOtp = !emitirCookieDirecta && Boolean(telefonoCuenta);
+    const miPlanToken = emitirCookieDirecta ? signMiPlanToken(usuarioId!) : null;
+
+    // ultimo_acceso marca la cuenta como "estrenada": la via de entrada
+    // directa de arriba deja de aplicarle desde este momento.
+    if (emitirCookieDirecta) {
+      await admin
+        .from("usuarios_plan")
+        .update({ ultimo_acceso: new Date().toISOString() })
+        .eq("id", usuarioId!);
+    }
 
     // El link magico: signInWithOtp con email, sin password. Se usa el
     // MISMO patron de cliente Supabase que /cuenta/login (@supabase/ssr,
@@ -219,6 +238,27 @@ export async function POST(request: NextRequest) {
         "[acceso] error enviando link magico (no bloquea el acceso):",
         otpError.message,
       );
+    }
+
+    // OTP por WhatsApp para cuentas ya estrenadas con telefono: Supabase
+    // genera y valida el codigo, y lo entrega el Send SMS Hook ya montado
+    // (apps/admin/app/api/auth/otp-whatsapp -> Botcake -> WhatsApp), el
+    // mismo que usa el login de clientas en /cuenta. El link al correo de
+    // arriba queda como respaldo. Best-effort: si falla, el formulario cae
+    // a la pantalla de "revisa tu correo" de siempre.
+    let otpEnviado = false;
+    if (requiereOtp && telefonoCuenta) {
+      const { error: errorOtpWhatsapp } = await supabaseAuth.auth.signInWithOtp({
+        phone: telefonoCuenta,
+        options: { shouldCreateUser: true },
+      });
+      otpEnviado = !errorOtpWhatsapp;
+      if (errorOtpWhatsapp) {
+        console.error(
+          "[acceso] error enviando OTP por WhatsApp (cae al correo):",
+          errorOtpWhatsapp.message,
+        );
+      }
     }
 
     // Webhook de bienvenida a n8n — opcional y best-effort. Va envuelto en
@@ -254,12 +294,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // `requiereConfirmacion: true` le dice al formulario que mande a
-    // /acceso/revisa-correo en vez de entrar directo a /mi-plan — es el
-    // caso "email ya tenia cuenta", donde no se emitio cookie.
+    // Tres salidas para el formulario:
+    // - cookie directa (cuenta nueva o nunca estrenada) -> /mi-plan
+    // - requiereOtp -> pantalla de codigo de WhatsApp inline
+    // - requiereConfirmacion -> /acceso/revisa-correo (sin telefono u OTP caido)
     const respuesta = NextResponse.json({
       ok: true,
-      requiereConfirmacion: !esCuentaNueva,
+      requiereOtp: otpEnviado,
+      telefonoPista: otpEnviado && telefonoCuenta ? telefonoCuenta.slice(-4) : null,
+      requiereConfirmacion: !emitirCookieDirecta && !otpEnviado,
     });
     if (miPlanToken) {
       respuesta.cookies.set(NOMBRE_COOKIE_MI_PLAN, miPlanToken, OPCIONES_COOKIE_MI_PLAN);
