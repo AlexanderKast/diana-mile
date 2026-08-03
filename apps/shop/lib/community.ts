@@ -1,4 +1,5 @@
 import { createAdminSupabaseClient } from "@diana-mile/shared/supabase/server";
+import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 const CLAVE_LINK = "comunidad_whatsapp_link";
 
@@ -6,7 +7,9 @@ const CLAVE_LINK = "comunidad_whatsapp_link";
  * Link de invitacion al grupo de WhatsApp de la comunidad Milito Life,
  * editable en el admin (tabla config). Si el admin todavia no ha configurado
  * el link del grupo, cae a un chat directo por WhatsApp para que el boton
- * nunca quede roto.
+ * nunca quede roto — usando `enlaceConTexto`, que valida el numero (nunca
+ * pinta un boton con el placeholder de desarrollo "57XXXXXXXXXX"), en vez
+ * de armar el `wa.me` a mano como hacia esta funcion antes.
  */
 export async function getComunidadWhatsappLink(): Promise<string> {
   try {
@@ -22,11 +25,12 @@ export async function getComunidadWhatsappLink(): Promise<string> {
     // Config no disponible -> usar el fallback de abajo.
   }
 
-  const numero = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO;
-  const mensaje = "Hola! Quiero unirme a la comunidad Milito Life";
-  return numero
-    ? `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`
-    : "https://wa.me/";
+  return (
+    enlaceConTexto(
+      process.env.NEXT_PUBLIC_WHATSAPP_NUMERO,
+      "Hola! Quiero unirme a la comunidad Milito Life",
+    ) ?? "https://wa.me/"
+  );
 }
 
 /**

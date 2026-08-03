@@ -13,9 +13,9 @@ import { TrustStrip } from "@/components/ui/TrustStrip";
 import { enlaceConTexto } from "@diana-mile/shared/whatsapp/mensajes";
 
 export const metadata: Metadata = {
-  title: "Milito Life Shop — Bienestar y piel con pago contraentrega",
+  title: "Milito Life Shop — Bienestar y entrenamiento con pago contraentrega",
   description:
-    "Nu Skin y otras marcas seleccionadas por Milito, siempre producto original. En buena parte de Colombia pagas cuando el mensajero te lo entrega, no antes.",
+    "Milito, entrenadora física, selecciona Nu Skin y otras marcas para tu bienestar diario — piel incluida. En buena parte de Colombia pagas cuando el mensajero te lo entrega, no antes.",
 };
 
 const WHATSAPP_ENTRENAMIENTO_HREF = enlaceConTexto(
@@ -97,7 +97,7 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-11 sm:gap-10 sm:px-6 sm:py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-14 lg:py-24">
           <div className="animate-fade-in-up order-2 md:order-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-carbon-suave sm:text-[11px]">
-              Bienestar, piel y cuidado personal
+              Bienestar, entrenamiento y cuidado personal
             </p>
             <h1 className="mt-4 font-display text-[42px] leading-[0.94] tracking-tight text-carbon sm:mt-5 sm:text-[56px] lg:text-[76px]">
               Primero lo recibes,
@@ -106,9 +106,9 @@ export default async function HomePage() {
             </h1>
             <div className="linea-dorada mt-5 w-14 sm:mt-7 sm:w-16" />
             <p className="mt-5 max-w-md text-[14.5px] leading-relaxed text-carbon-suave sm:mt-7 sm:text-[15px]">
-              Nu Skin y otras marcas que Milito selecciona, siempre producto
-              original. En la mayor parte del país le pagas al mensajero, no
-              antes.
+              Milito es entrenadora física y personal de salud, y selecciona
+              Nu Skin y otras marcas para tu bienestar diario. En la mayor
+              parte del país le pagas al mensajero, no antes.
             </p>
             <div className="mt-7 flex flex-col items-start gap-4 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center">
               <Link href="/productos" className="w-full sm:w-auto">

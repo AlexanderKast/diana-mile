@@ -50,7 +50,10 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
       className={`${cormorant.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden">
+      <body
+        className="min-h-full flex flex-col bg-blanco text-carbon overflow-x-hidden"
+        suppressHydrationWarning
+      >
         <TrackingScripts />
         <RegistroVisita sitio="shop" />
         <ProveedorWhatsApp numero={whatsappNumero}>

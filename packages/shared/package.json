@@ -43,6 +43,7 @@
     "./whatsapp/mensajes": "./src/whatsapp/mensajes.ts",
     "./whatsapp/clics": "./src/whatsapp/clics.ts",
     "./botcake/ia/upsell": "./src/botcake/ia/upsell.ts",
+    "./botcake/ia/mistral": "./src/botcake/ia/mistral.ts",
     "./analitica/visitas": "./src/analitica/visitas.ts",
     "./logistica/despacho": "./src/logistica/despacho.ts",
     "./landing/*": "./src/landing/*.ts",

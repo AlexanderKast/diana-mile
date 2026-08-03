@@ -203,8 +203,162 @@ body:has([data-ocultar-footer]) #sitio-footer {
   .btn-shine::after,
   .cta-pulse,
   .cta-pulse-morado,
-  .animate-pulse-scale {
+  .animate-pulse-scale,
+  .animate-pulse {
     animation: none;
+  }
+}
+
+/* ── Quiz: feedback "vivo" en cada paso ──────────────────────────────────
+   Tres piezas puramente decorativas, todas hand-rolled (sin libreria):
+   1) check-pop: el check que confirma la opcion elegida antes de avanzar.
+   2) paso-entrada: fade+slide corto al montar un paso nuevo (via key en
+      QuizRunner, que ya remonta el bloque en cada pasoActualId).
+   3) barra-pulso: punto de luz en el extremo derecho de la barra de
+      progreso cada vez que avanza (key=porcentaje en BarraProgreso).
+   Los tres se desactivan en prefers-reduced-motion mas abajo — el control
+   de SI se retrasa el avance (para que se alcance a ver el check) vive en
+   JS, en los componentes de paso, consultando matchMedia. */
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-check-pop {
+  animation: check-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes paso-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-paso-entrada {
+  animation: paso-entrada 250ms ease-out both;
+}
+
+@keyframes barra-pulso {
+  0% {
+    opacity: 0;
+    transform: translate(50%, -50%) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(50%, -50%) scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(50%, -50%) scale(1.8);
+  }
+}
+
+.barra-pulso-punto {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--dorado-oscuro);
+  box-shadow: 0 0 6px 1px rgba(168, 136, 94, 0.7);
+  pointer-events: none;
+  animation: barra-pulso 700ms ease-out both;
+}
+
+/* 4) puntos-pop: el contador de puntos del quiz "salta" al subir (key=puntos
+   en QuizRunner remonta el span en cada avance, mismo patron que check-pop). */
+@keyframes puntos-pop {
+  from {
+    transform: scale(1.25);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.animate-puntos-pop {
+  animation: puntos-pop 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-check-pop,
+  .animate-paso-entrada,
+  .animate-puntos-pop {
+    animation: none;
+  }
+
+  .barra-pulso-punto {
+    display: none;
+  }
+}
+
+/* ── Payoff del quiz: insignia + estallido de particulas ─────────────────
+   Los pasos "payoff" (piel.ts, pasos 5 y 10) son el unico momento del quiz
+   que se siente como un logro. Dos piezas, ambas hand-rolled:
+   1) payoff-badge-pop: el icono central entra con rebote suave.
+   2) payoff-particula: 8 puntos (generados en PasoPayoff.tsx via trigonometria,
+      cada uno con --tx/--ty propios) que salen del centro y se desvanecen.
+   PasoPayoff.tsx ya decide en JS si renderiza las particulas segun
+   matchMedia — este media query es el respaldo para el icono, que si se
+   renderiza siempre pero sin la clase de animacion cuando hay reduccion de
+   movimiento. */
+@keyframes payoff-badge-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-payoff-badge-pop {
+  animation: payoff-badge-pop 550ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes payoff-particula {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty)))
+      scale(1);
+  }
+}
+
+.animate-payoff-particula {
+  animation: payoff-particula 700ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-payoff-badge-pop {
+    animation: none;
+  }
+
+  .animate-payoff-particula {
+    display: none;
   }
 }
 

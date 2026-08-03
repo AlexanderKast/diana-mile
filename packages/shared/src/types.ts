@@ -598,3 +598,79 @@ export type PushSuscripcion = {
   user_agent: string | null;
   created_at: string;
 };
+
+/** Puerta de entrada del quiz del funnel pre-venta: cada una tiene su propio cuestionario. */
+export type QuizPuerta = "piel" | "energia" | "peso" | "sesion" | "negocio";
+
+/**
+ * Zona de oferta que ve la persona segun su pais, derivada en codigo
+ * (nunca elegida a mano): `co_cod` es contraentrega en COP, `usd_premium`
+ * es el plan premium en USD.
+ */
+export type ZonaOferta = "co_cod" | "usd_premium";
+
+/**
+ * Diagnostico del funnel pre-venta (tabla `quiz_respuestas`), respondido
+ * ANTES de que exista cuenta. `score` y `segmento` se calculan en codigo, no
+ * en la base. `paso_abandono` solo tiene sentido cuando `completado` es
+ * false: en que pregunta se cayo la persona.
+ */
+export type QuizRespuesta = {
+  id: string;
+  puerta: QuizPuerta;
+  respuestas: Record<string, unknown>;
+  score: number | null;
+  segmento: string | null;
+  /** Codigo ISO del pais (ej. "CO", "US"). */
+  pais: string | null;
+  zona_oferta: ZonaOferta | null;
+  fecha_objetivo: string | null;
+  completado: boolean;
+  paso_abandono: number | null;
+  creado_en: string;
+  actualizado_en: string;
+};
+
+/**
+ * Cuenta ligera del panel pre-venta (`/mi-plan`), tabla `usuarios_plan`.
+ * NO es lo mismo que `UsuarioAdmin` (login del dashboard) ni que la sesion
+ * OTP de `/cuenta` (clientas que ya compraron): se entra por link magico de
+ * Supabase Auth con el email.
+ */
+export type UsuarioPlan = {
+  id: string;
+  email: string | null;
+  telefono: string | null;
+  nombre: string | null;
+  quiz_respuesta_id: string | null;
+  pais: string | null;
+  zona_oferta: ZonaOferta | null;
+  creado_en: string;
+  ultimo_acceso: string | null;
+};
+
+/**
+ * Avance semanal (1-8) del programa dentro del panel pre-venta (tabla
+ * `plan_progreso`). `desbloqueada_en` queda null hasta que le toque a esa
+ * semana.
+ */
+export type PlanProgreso = {
+  id: string;
+  usuario_id: string;
+  semana: number;
+  desbloqueada_en: string | null;
+  completada: boolean;
+  notas: string | null;
+};
+
+/**
+ * Avance diario (1-7) del reto corto del funnel pre-venta (tabla
+ * `reto_progreso`). `completado_en` guarda el momento exacto, no solo un
+ * booleano.
+ */
+export type RetoProgreso = {
+  id: string;
+  usuario_id: string;
+  dia: number;
+  completado_en: string | null;
+};
